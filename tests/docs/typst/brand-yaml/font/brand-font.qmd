@@ -1,0 +1,29 @@
+---
+title: brand font `#context text.font`{=typst}
+format: 
+  typst:
+    font-paths:
+      - .
+---
+
+# This heading should be in `#context text.font`{=typst}
+
+Paragraph `#context text.font`{=typst}.
+
+```{=typst}
+#text(font: "Fira Code")[Some text with font set explicitly to #context text.font]
+```
+
+```
+A Quarto code block, with font `#context text.font`{=typst}
+```
+
+````{=typst}
+```
+A Typst code block with font #context text.font
+```
+````
+
+
+{{< lipsum 5 >}}
+
