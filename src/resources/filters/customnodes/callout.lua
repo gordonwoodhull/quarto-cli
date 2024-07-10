@@ -231,6 +231,14 @@ function _callout_main()
   end, function(callout)
     ensure_typst_font_awesome()
 
+    local callout_theme_color_map = {
+      note = "primary",
+      warning = "warning",
+      important = "danger",
+      tip = "success",
+      caution = nil -- ?
+    }
+
     local attrs = _quarto.modules.callouts.callout_attrs[callout.type]
     local background_color, icon_color, icon
     if attrs == nil then
@@ -242,6 +250,12 @@ function _callout_main()
       icon_color = "rgb(\"#" .. attrs.color .. "\")";
       icon = attrs.fa_icon_typst
     end
+    local brand = param("brand")
+    local theme = brand and brand.color and brand.color.theme
+    background_color = theme and callout_theme_color_map[callout.type] and
+      theme[callout_theme_color_map[callout.type]] and
+      "brand-theme-background." .. callout_theme_color_map[callout.type]
+      or background_color
 
     local title = callout.title
     if title == nil then

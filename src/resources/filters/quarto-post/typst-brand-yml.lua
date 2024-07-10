@@ -37,6 +37,8 @@ function render_typst_brand_yml()
   return {
     Pandoc = function(pandoc)
       local brand = param('brand')
+      if not brand then return nil end
+
       if brand.color and brand.color.palette then
         local palette = {}
         for name, color in pairs(brand.color.palette) do
@@ -51,6 +53,16 @@ function render_typst_brand_yml()
           theme[name] = output_typst_color(parse_css_color(color))
         end
         local decl = '#let brand-theme = ' .. to_typst_dict_indent(theme)
+        quarto.doc.include_text('before-body', decl)
+      end
+      local BACKGROUND_OPACITY = 0.1
+      if brand.color and brand.color.theme then
+        local themebk = {}
+        for name, color in pairs(brand.color.theme) do
+          themebk[name] = output_typst_color(parse_css_color(color),
+            {unit = 'fraction', value = BACKGROUND_OPACITY})
+        end
+        local decl = '// theme colors at opacity ' .. BACKGROUND_OPACITY .. '\n#let brand-theme-background = ' .. to_typst_dict_indent(themebk)
         quarto.doc.include_text('before-body', decl)
       end
     end
