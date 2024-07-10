@@ -48,9 +48,14 @@ function render_typst_brand_yml()
         quarto.doc.include_text('page-level', decl)
       end
       if brand.color and brand.color.theme then
+        local BACKGROUND_OPACITY = 0.1
         local theme = {}
+        local themebk = {}
         for name, color in pairs(brand.color.theme) do
+          color = brand.color.palette and brand.color.palette[color] or color
           theme[name] = output_typst_color(parse_css_color(color))
+          themebk[name] = output_typst_color(parse_css_color(color),
+            {unit = 'fraction', value = BACKGROUND_OPACITY})
         end
         local decl = '#let brand-theme = ' .. to_typst_dict_indent(theme)
         quarto.doc.include_text('page-level', decl)
@@ -60,14 +65,6 @@ function render_typst_brand_yml()
         end
         if brand.color.theme.foreground then
           quarto.doc.include_text('page-level', '#set text(fill: brand-theme.foreground)')
-        end
-      end
-      local BACKGROUND_OPACITY = 0.1
-      if brand.color and brand.color.theme then
-        local themebk = {}
-        for name, color in pairs(brand.color.theme) do
-          themebk[name] = output_typst_color(parse_css_color(color),
-            {unit = 'fraction', value = BACKGROUND_OPACITY})
         end
         local decl = '// theme colors at opacity ' .. BACKGROUND_OPACITY .. '\n#let brand-theme-background = ' .. to_typst_dict_indent(themebk)
         quarto.doc.include_text('page-level', decl)
