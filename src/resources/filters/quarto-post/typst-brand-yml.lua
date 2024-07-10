@@ -39,6 +39,21 @@ function render_typst_brand_yml()
       local brand = param('brand')
       if not brand then return nil end
 
+      -- logo
+      if brand.logo then
+        local logo = brand.logo
+        if type(logo) ~= 'string' then
+          if logo.large then
+            logo = logo.large
+          end
+          -- and dark/light
+        end
+        if logo then
+          quarto.doc.include_text('page-level', '#set page(background: image("' .. logo .. '"))')
+        end
+      end
+
+      -- color
       if brand.color and brand.color.palette then
         local palette = {}
         for name, color in pairs(brand.color.palette) do
