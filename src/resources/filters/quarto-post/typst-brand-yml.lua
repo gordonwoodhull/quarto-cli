@@ -45,7 +45,7 @@ function render_typst_brand_yml()
           palette[name] = output_typst_color(parse_css_color(color))
         end
         local decl = '#let brand-palette = ' .. to_typst_dict_indent(palette)
-        quarto.doc.include_text('before-body', decl)
+        quarto.doc.include_text('page-level', decl)
       end
       if brand.color and brand.color.theme then
         local theme = {}
@@ -53,7 +53,14 @@ function render_typst_brand_yml()
           theme[name] = output_typst_color(parse_css_color(color))
         end
         local decl = '#let brand-theme = ' .. to_typst_dict_indent(theme)
-        quarto.doc.include_text('before-body', decl)
+        quarto.doc.include_text('page-level', decl)
+        -- for demo purposes only, should implement backgroundcolor and fontcolor 
+        if brand.color.theme.background then
+          quarto.doc.include_text('page-level', '#set page(fill: brand-theme.background)')
+        end
+        if brand.color.theme.foreground then
+          quarto.doc.include_text('page-level', '#set text(fill: brand-theme.foreground)')
+        end
       end
       local BACKGROUND_OPACITY = 0.1
       if brand.color and brand.color.theme then
@@ -63,7 +70,7 @@ function render_typst_brand_yml()
             {unit = 'fraction', value = BACKGROUND_OPACITY})
         end
         local decl = '// theme colors at opacity ' .. BACKGROUND_OPACITY .. '\n#let brand-theme-background = ' .. to_typst_dict_indent(themebk)
-        quarto.doc.include_text('before-body', decl)
+        quarto.doc.include_text('page-level', decl)
       end
     end
   }

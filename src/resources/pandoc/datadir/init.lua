@@ -1281,9 +1281,10 @@ local kDependencyTypeFile = "file";
 local kDependencyTypeText = "text";
 
 -- locations that dependencies may be injected
+local kPageLevel = "page-level";
+local kInHeader = "in-header";
 local kBeforeBody = "before-body";
 local kAfterBody = "after-body";
-local kInHeader = "in-header";
 
 -- common requires
 -- this is in the global scope - anyone downstream of init may use this
@@ -1470,7 +1471,9 @@ end
 -- converts the friendly Quartio location names 
 -- in the pandoc location
 local function resolveLocation(location) 
-   if (location == kInHeader) then
+   if (location == kPageLevel) then
+      return "page-level"
+   elseif(location == kInHeader) then
      return "header-includes"
    elseif (location == kAfterBody) then
      return "include-after"
@@ -1547,8 +1550,13 @@ local function processTextDependency(dependency, meta)
 
    if meta[textLoc] == nil then
       meta[textLoc] = {}
+      -- absurd fix for next line
+      -- lua tables don't by default have metatables
+      -- but pandoc lua tables do
+      setmetatable(meta[textLoc], {__index = table})
    end
    meta[textLoc]:insert(pandoc.RawBlock(FORMAT, rawText.text))
+   -- or table.insert(meta[textLoc], pandoc.RawBlock(FORMAT, rawText.text))
  end
 
  -- make the usePackage statement
