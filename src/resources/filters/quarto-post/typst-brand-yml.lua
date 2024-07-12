@@ -49,7 +49,8 @@ function render_typst_brand_yml()
           -- and dark/light
         end
         if logo then
-          quarto.doc.include_text('page-level', '#set page(background: image("' .. logo .. '"))')
+          quarto.doc.include_text('page-level',
+            '#set page(background: align(top+left, box(inset: 0.5in, image("' .. logo .. '", width: 2in))))')
         end
       end
 
