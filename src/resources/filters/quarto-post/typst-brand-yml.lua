@@ -85,6 +85,39 @@ function render_typst_brand_yml()
         local decl = '// theme colors at opacity ' .. BACKGROUND_OPACITY .. '\n#let brand-theme-background = ' .. to_typst_dict_indent(themebk)
         quarto.doc.include_text('page-level', decl)
       end
+
+      -- typography
+      if brand.typography then
+        -- this is the only diagnostic Typst currently offers for font not found
+        quarto.doc.include_text('page-level', '#set text(fallback: false)')
+        local fontdir
+        for target, font in pairs(brand.typography) do
+          if target == 'font' then
+            for _, entry in ipairs(brand.typography.font) do
+              if entry['files'] then fontdir = '.' end
+            end
+            if not fontdir then
+              quarto.log.warning('hacky brand.yml only supports font: file: right now')
+            end
+          else
+            local family = font.family
+            if target == 'headings' then            
+              quarto.doc.include_text('page-level', '#show heading: set text(font: "' .. family .. '")')
+              -- quarto.doc.include_text('page-level', '#show article: set text(font: "' .. family .. '")')
+            elseif target == 'monospace' then            
+              quarto.doc.include_text('page-level', '#show raw: set text(font: "' .. family .. '")')
+            end
+          end
+        end
+      end
+    end,
+    Meta = function(meta)
+      local brand = param('brand')
+      if brand and brand.typography and brand.typography.base then
+        quarto.log.output('mainfont', brand.typography.base.family)
+        meta['mainfont'] = brand.typography.base.family 
+        return meta
+      end
     end
   }
 end
