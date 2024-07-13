@@ -92,14 +92,7 @@ function render_typst_brand_yml()
         quarto.doc.include_text('page-level', '#set text(fallback: false)')
         local fontdir
         for target, font in pairs(brand.typography) do
-          if target == 'font' then
-            for _, entry in ipairs(brand.typography.font) do
-              if entry['files'] then fontdir = '.' end
-            end
-            if not fontdir then
-              quarto.log.warning('hacky brand.yml only supports font: file: right now')
-            end
-          else
+          if target ~= 'font' then   -- handled in Meta
             local family = font.family
             if target == 'headings' then            
               quarto.doc.include_text('page-level', '#show heading: set text(font: "' .. family .. '")')
@@ -113,9 +106,27 @@ function render_typst_brand_yml()
     end,
     Meta = function(meta)
       local brand = param('brand')
-      if brand and brand.typography and brand.typography.base then
-        quarto.log.output('mainfont', brand.typography.base.family)
-        meta['mainfont'] = brand.typography.base.family 
+      if brand and brand.typography then
+        if brand.typography.base then
+          meta['mainfont'] = brand.typography.base.family 
+        end
+        if brand.typography.font then
+          local kFontPaths = 'font-paths' -- no luck importing this
+          for _, entry in ipairs(brand.typography.font) do
+            if entry['files'] then fontdir = '.' end
+          end
+          if not fontdir then
+            quarto.log.warning('hacky brand.yml only supports font: file: right now')
+          else
+            local fontPaths = meta[kFontPaths]
+            if not fontPaths then
+              meta[kFontPaths] = {fontdir}
+              -- alas, lua cannot change ts metadata?
+              -- at least, this is not seen at command/render/output-typst.ts
+            end
+            -- lots of other cases here to politely upgrade nil -> str -> array
+          end
+        end
         return meta
       end
     end
