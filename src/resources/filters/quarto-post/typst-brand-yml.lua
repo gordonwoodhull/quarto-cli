@@ -68,8 +68,12 @@ function render_typst_brand_yml()
         local theme = {}
         local themebk = {}
         for name, color in pairs(brand.color.theme) do
-          color = brand.color.palette and brand.color.palette[color] or color
-          theme[name] = output_typst_color(parse_css_color(color))
+          if brand.color.palette and brand.color.palette[color] then
+            theme[name] = 'brand-palette.' .. color
+            color = brand.color.palette[color] -- no nice idiomatic way to do bk color
+          else
+            theme[name] = output_typst_color(parse_css_color(color))
+          end
           themebk[name] = output_typst_color(parse_css_color(color),
             {unit = 'fraction', value = BACKGROUND_OPACITY})
         end
