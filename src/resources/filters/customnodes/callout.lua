@@ -252,11 +252,11 @@ function _callout_main()
     end
     local brand = param("brand")
     local theme = brand and brand.color and brand.color.theme
-    background_color = theme and callout_theme_color_map[callout.type] and
-      theme[callout_theme_color_map[callout.type]] and
-      "brand-theme-background." .. callout_theme_color_map[callout.type]
-      or background_color
-
+    if theme and callout_theme_color_map[callout.type] and
+        theme[callout_theme_color_map[callout.type]] then
+      background_color =  "brand-theme-background." .. callout_theme_color_map[callout.type]
+      icon_color = "brand-theme." .. callout_theme_color_map[callout.type]
+    end
     local title = callout.title
     if title == nil then
       title = pandoc.Plain(_quarto.modules.callouts.displayName(callout.type))
