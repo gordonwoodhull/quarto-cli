@@ -114,6 +114,9 @@ function render_typst_brand_yml()
         if brand.typography.base then
           meta['mainfont'] = brand.typography.base.family 
         end
+        if brand.typography.headings then
+          meta['title-font'] = brand.typography.headings.family
+        end
         if brand.typography.font then
           local kFontPaths = 'font-paths' -- no luck importing this
           for _, entry in ipairs(brand.typography.font) do

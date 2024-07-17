@@ -1,5 +1,5 @@
 ---
-title: brand font
+title: brand font `#context text.font`{=typst}
 format: 
   typst:
     font-paths:
