@@ -1,7 +1,9 @@
 ---
 title: brand font
 format: 
-  typst: default
+  typst:
+    font-paths:
+      - .
 ---
 
 # This heading should be in `#context text.font`{=typst}
