@@ -8,24 +8,6 @@ end
 
 parse_css_color, parse_css_opacity, output_typst_color =
  (function()
-  local function to_kv(prop_clause)
-    return string.match(prop_clause, '([%w-]+)%s*:%s*(.*)$')
-  end
-  local _warnings
-  local function new_table()
-    local ret = {}
-    setmetatable(ret, {__index = table})
-    return ret
-  end
-  local function aggregate_warnings()
-    local counts = {}
-    for _, warning in ipairs(_warnings) do
-      counts[warning] = (counts[warning] or 0) + 1
-    end
-    for warning, count in pairs(counts) do
-      quarto.log.warning('(' .. string.format('%4d', count) .. ' times) ' .. warning)
-    end
-  end
   local css_named_colors = {
     transparent = 'rgba(0, 0, 0, 0)',
     aliceblue = 'rgb(240, 248, 255)',
@@ -446,6 +428,22 @@ function render_typst_css_to_props()
 
   local function to_kv(prop_clause)
     return string.match(prop_clause, '([%w-]+)%s*:%s*(.*)$')
+  end
+
+  local _warnings
+  local function new_table()
+    local ret = {}
+    setmetatable(ret, {__index = table})
+    return ret
+  end
+  local function aggregate_warnings()
+    local counts = {}
+    for _, warning in ipairs(_warnings) do
+      counts[warning] = (counts[warning] or 0) + 1
+    end
+    for warning, count in pairs(counts) do
+      quarto.log.warning('(' .. string.format('%4d', count) .. ' times) ' .. warning)
+    end
   end
 
   local function sortedPairs(t, f)
