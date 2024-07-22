@@ -34,6 +34,7 @@
   set heading(numbering: sectionnumbering)
   if title != none {
     align(center)[#block(inset: 2em)[
+      // = #title
       #if title-font != none {
         text(weight: "bold", size: 1.5em, font: title-font)[#title]
       } else {
