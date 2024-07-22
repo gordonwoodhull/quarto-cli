@@ -2514,6 +2514,25 @@
             schema: string
             description: >
               A link or path to the brand's dark-colored logo or icon.
+    - object:
+        closed: true
+        properties:
+          src:
+            schema: string
+            description: >
+              URL or path to logo image.
+          location:
+            schema: string
+            description: >
+              Horizontal and vertical CSS alignment, separated with `-`.
+          padding:
+            schema: string
+            description: >
+              CSS padding for logo.
+          width:
+            schema: string
+            description: >
+              CSS width for logo.
 
 - id: brand-logo
   description: >

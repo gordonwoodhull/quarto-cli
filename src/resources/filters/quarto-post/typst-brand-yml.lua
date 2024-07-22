@@ -34,6 +34,27 @@ function render_typst_brand_yml()
     return '(\n' .. inside .. table.concat(entries, ',\n' .. inside) .. '\n' .. curr .. ')'
   end
 
+  local horz_to_typst = {
+    left = "left",
+    center = "center",
+    right = "right",
+  }
+  local vert_to_typst = {
+    top = "top",
+    middle = "horizon",
+    bottom = "bottom",
+  }
+
+  local function location_to_typst_align(location)
+    local _, ndash = location:gsub('-', '')
+    if ndash ~= 1 then return nil end
+    local horz, vert = location:match '(%a+)--(%a+)'
+    quarto.log.output('lota', horz, vert)
+    if not horz_to_typst[horz] or not vert_to_typst[vert] then return nil end
+    quarto.log.output('lota3', horz, vert)
+    return horz_to_typst[horz] .. '+' .. vert_to_typst[vert]
+  end
+
   return {
     Pandoc = function(pandoc)
       local brand = param('brand')
@@ -50,8 +71,21 @@ function render_typst_brand_yml()
           -- and dark/light
         end
         if logo then
-          quarto.doc.include_text('in-header',
-            '#set page(background: align(top+left, box(inset: 0.5in, image("' .. logo .. '", width: 2in))))')
+          local src = logo
+          local padding = '0.5in'
+          local width = '2in'
+          local location = 'left+top'
+          if type(logo) ~= 'string' then
+            src = logo.src
+            padding = logo.padding or padding
+            width = logo.width or width
+            location = logo.location and location_to_typst_align(logo.location) or location
+            quarto.log.output('logggooo', location)
+          end
+          if src then
+            quarto.doc.include_text('in-header',
+              '#set page(background: align(' .. location .. ', box(inset: ' .. padding .. ', image("' .. src .. '", width: ' .. width .. '))))')
+          end
         end
       end
 
