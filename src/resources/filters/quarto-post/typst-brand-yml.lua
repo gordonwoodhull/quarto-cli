@@ -50,7 +50,7 @@ function render_typst_brand_yml()
           -- and dark/light
         end
         if logo then
-          quarto.doc.include_text('page-level',
+          quarto.doc.include_text('in-header',
             '#set page(background: align(top+left, box(inset: 0.5in, image("' .. logo .. '", width: 2in))))')
         end
       end
@@ -62,7 +62,7 @@ function render_typst_brand_yml()
           palette[name] = output_typst_color(parse_css_color(color))
         end
         local decl = '#let brand-palette = ' .. to_typst_dict_indent(palette)
-        quarto.doc.include_text('page-level', decl)
+        quarto.doc.include_text('in-header', decl)
       end
       if brand.color then
         local BACKGROUND_OPACITY = 0.1
@@ -81,31 +81,31 @@ function render_typst_brand_yml()
           end
         end
         local decl = '#let brand-theme = ' .. to_typst_dict_indent(theme)
-        quarto.doc.include_text('page-level', decl)
+        quarto.doc.include_text('in-header', decl)
         -- for demo purposes only, should implement backgroundcolor and fontcolor 
         if brand.color.background then
-          quarto.doc.include_text('page-level', '#set page(fill: brand-theme.background)')
+          quarto.doc.include_text('in-header', '#set page(fill: brand-theme.background)')
         end
         if brand.color.foreground then
-          quarto.doc.include_text('page-level', '#set text(fill: brand-theme.foreground)')
+          quarto.doc.include_text('in-header', '#set text(fill: brand-theme.foreground)')
         end
         local decl = '// theme colors at opacity ' .. BACKGROUND_OPACITY .. '\n#let brand-theme-background = ' .. to_typst_dict_indent(themebk)
-        quarto.doc.include_text('page-level', decl)
+        quarto.doc.include_text('in-header', decl)
       end
 
       -- typography
       if brand.typography then
         -- this is the only diagnostic Typst currently offers for font not found
-        quarto.doc.include_text('page-level', '#set text(fallback: false)')
+        quarto.doc.include_text('in-header', '#set text(fallback: false)')
         local fontdir
         for target, font in pairs(brand.typography) do
           if target ~= 'font' then   -- handled in Meta
             local family = font.family
             if target == 'headings' then            
-              quarto.doc.include_text('page-level', '#show heading: set text(font: "' .. family .. '")')
-              -- quarto.doc.include_text('page-level', '#show article: set text(font: "' .. family .. '")')
+              quarto.doc.include_text('in-header', '#show heading: set text(font: "' .. family .. '")')
+              -- quarto.doc.include_text('in-header', '#show article: set text(font: "' .. family .. '")')
             elseif target == 'monospace' then            
-              quarto.doc.include_text('page-level', '#show raw: set text(font: "' .. family .. '")')
+              quarto.doc.include_text('in-header', '#show raw: set text(font: "' .. family .. '")')
             end
           end
         end

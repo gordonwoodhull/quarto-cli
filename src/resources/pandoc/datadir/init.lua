@@ -1471,9 +1471,7 @@ end
 -- converts the friendly Quartio location names 
 -- in the pandoc location
 local function resolveLocation(location) 
-   if (location == kPageLevel) then
-      return "page-level"
-   elseif(location == kInHeader) then
+   if (location == kInHeader) then
      return "header-includes"
    elseif (location == kAfterBody) then
      return "include-after"
