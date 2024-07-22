@@ -38,6 +38,7 @@ function render_typst_brand_yml()
     Pandoc = function(pandoc)
       local brand = param('brand')
       if not brand then return nil end
+      brand = brand.brand or brand
 
       -- logo
       if brand.logo then
@@ -112,6 +113,7 @@ function render_typst_brand_yml()
     end,
     Meta = function(meta)
       local brand = param('brand')
+      brand = brand.brand or brand
       if brand and brand.typography then
         if brand.typography.base then
           meta['mainfont'] = brand.typography.base.family 
