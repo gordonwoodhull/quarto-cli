@@ -251,12 +251,14 @@ function _callout_main()
       icon = attrs.fa_icon_typst
     end
     local brand = param("brand")
-    brand = brand.brand or brand
-    local theme = brand and brand.color
-    if theme and callout_theme_color_map[callout.type] and
-        theme[callout_theme_color_map[callout.type]] then
-      background_color =  "brand-theme-background." .. callout_theme_color_map[callout.type]
-      icon_color = "brand-theme." .. callout_theme_color_map[callout.type]
+    if brand then 
+      brand = brand.brand or brand
+      local theme = brand and brand.color
+      if theme and callout_theme_color_map[callout.type] and
+          theme[callout_theme_color_map[callout.type]] then
+        background_color =  "brand-theme-background." .. callout_theme_color_map[callout.type]
+        icon_color = "brand-theme." .. callout_theme_color_map[callout.type]
+      end
     end
     local title = callout.title
     if title == nil then
