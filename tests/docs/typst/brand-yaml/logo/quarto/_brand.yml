@@ -1,16 +1,11 @@
 logo:
-  large:
-    src: quarto.png
-    location: center-top
-    padding: 2em
-    width: 3in
+  large: quarto.png
 defaults:
   quarto:
     format:
       typst:
-        brand:
-          brand:
-            logo:
-              large:
-                width: 6in
-                padding: 2.5in
+        logo:
+          src: large
+          location: center-top
+          width:
+          padding:
