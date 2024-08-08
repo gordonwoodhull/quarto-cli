@@ -27,6 +27,7 @@ import {
 } from "../../core/typst.ts";
 import { asArray } from "../../core/array.ts";
 import { ProjectContext } from "../../project/types.ts";
+import { getStack } from "../../core/deno/debug.ts";
 
 export function useTypstPdfOutputRecipe(
   format: Format,
@@ -53,6 +54,7 @@ export function typstPdfOutputRecipe(
   } else {
     pandoc[kOutputFile] = output;
   }
+  console.log(getStack("ansi"));
 
   // when pandoc is done, we need to run the pdf generator and then copy the
   // output to the user's requested destination
@@ -60,14 +62,21 @@ export function typstPdfOutputRecipe(
     // input file is pandoc's output
     const input = join(inputDir, output);
 
-    console.log("typst-pdf-output-recipe complete", format.metadata);
+    console.log(
+      "typstPdfOutputRecipe.complete format.metadata ",
+      format.metadata,
+    );
+    console.log(
+      "typstPdfOutputRecipe.complete recipe.format.metadata ",
+      recipe.format.metadata,
+    );
 
     // run typst
     await validateRequiredTypstVersion();
     const pdfOutput = join(inputDir, inputStem + ".pdf");
     const typstOptions: TypstCompileOptions = {
       quiet: options.flags?.quiet,
-      fontPaths: asArray(format.metadata?.[kFontPaths]) as string[],
+      fontPaths: asArray(recipe.format.metadata?.[kFontPaths]) as string[],
     };
     if (project?.dir) {
       typstOptions.rootDir = project.dir;

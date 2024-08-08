@@ -1,6 +1,8 @@
 ---
 title: logo background
-format: typst
+format:
+  typst:
+    logo: brand-typst-with-good-padding
 ---
 
 {{< lipsum 4 >}}

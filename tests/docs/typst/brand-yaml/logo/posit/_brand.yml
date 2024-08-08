@@ -1,6 +1,9 @@
 logo:
+  with:
+    brand-typst-with-good-padding: good-padding.png
+
   small: posit-icon.png
-  medium: 
+  medium:
     light: posit.png
     dark: posit-reverse.png
   large: posit-logo-2024.svg

@@ -139,6 +139,7 @@ import { kDefaultHighlightStyle } from "./constants.ts";
 import {
   HtmlPostProcessor,
   HtmlPostProcessResult,
+  OutputRecipe,
   PandocOptions,
   RunPandocResult,
 } from "./types.ts";
@@ -211,6 +212,7 @@ let traceCount = 0;
 export async function runPandoc(
   options: PandocOptions,
   sysFilters: string[],
+  recipe: OutputRecipe,
 ): Promise<RunPandocResult | null> {
   const beforePandocHooks: (() => unknown)[] = [];
   const afterPandocHooks: (() => unknown)[] = [];
@@ -426,6 +428,7 @@ export async function runPandoc(
       options.libDir,
       options.services.temp,
       dependenciesFile,
+      recipe,
       options.project,
     );
 
@@ -1288,6 +1291,7 @@ async function resolveExtras(
   libDir: string,
   temp: TempContext,
   dependenciesFile: string,
+  recipe: OutputRecipe,
   project?: ProjectContext,
 ) {
   // resolve format resources
@@ -1345,13 +1349,18 @@ async function resolveExtras(
   // perform typst-specific merging
   if (isTypstOutput(format.pandoc)) {
     extras.postprocessors = extras.postprocessors || [];
+    console.log(getStack("ansi"));
     extras.postprocessors.push(async () => {
-      console.log(getStack("ansi"));
       const fontPaths = await resolveTypstFontPaths(dependenciesFile);
       //      format.metadata.format.typst[kFontPaths] = fontPaths;
-      format.metadata[kFontPaths] = fontPaths;
+      // (recipe.format.metadata
+      //   .format as Record<
+      //   string,
+      //   Record<string, string[]>
+      // >).typst
+      recipe.format.metadata[kFontPaths] = fontPaths;
       console.log("got font paths", fontPaths);
-      console.log("out", format.metadata);
+      console.log("out", recipe.format.metadata);
     });
   }
 

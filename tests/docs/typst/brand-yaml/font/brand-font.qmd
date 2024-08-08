@@ -1,9 +1,6 @@
 ---
 title: brand font - title is `#context text.font`{=typst} `#context text.size`{=typst}
 format: typst
-  typst:
-    font-paths:
-      - .
 ---
 
 ## heading-2 is `#context text.font`{=typst} `#context text.size`{=typst}
