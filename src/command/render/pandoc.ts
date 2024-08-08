@@ -211,7 +211,6 @@ let traceCount = 0;
 export async function runPandoc(
   options: PandocOptions,
   sysFilters: string[],
-  recipe: OutputRecipe,
 ): Promise<RunPandocResult | null> {
   const beforePandocHooks: (() => unknown)[] = [];
   const afterPandocHooks: (() => unknown)[] = [];
@@ -427,7 +426,7 @@ export async function runPandoc(
       options.libDir,
       options.services.temp,
       dependenciesFile,
-      recipe,
+      options.recipe,
       options.project,
     );
 

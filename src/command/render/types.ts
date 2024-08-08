@@ -226,6 +226,10 @@ export interface PandocOptions {
 
   // optional offset from file to project dir
   offset?: string;
+
+  // output recipe
+  // (redundant? many of above options are taken from recipe)
+  recipe: OutputRecipe;
 }
 
 // command line flags that we need to inspect
