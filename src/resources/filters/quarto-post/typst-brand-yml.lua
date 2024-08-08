@@ -114,9 +114,7 @@ function render_typst_brand_yml()
               {unit = 'fraction', value = BACKGROUND_OPACITY})
           end
         end
-        local decl = '#let brand-theme = ' .. to_typst_dict_indent(theme)
-        quarto.doc.include_text('in-header', decl)
-        -- for demo purposes only, should implement backgroundcolor and fontcolor 
+        -- for demo purposes only, should implement backgroundcolor and fontcolor
         if brand.color.background then
           quarto.doc.include_text('in-header', '#set page(fill: brand-theme.background)')
         end
@@ -135,10 +133,10 @@ function render_typst_brand_yml()
         for target, font in pairs(brand.typography) do
           if target ~= 'font' then   -- handled in Meta
             local family = font.family
-            if target == 'headings' then            
+            if target == 'headings' then
               quarto.doc.include_text('in-header', '#show heading: set text(font: "' .. family .. '")')
               -- quarto.doc.include_text('in-header', '#show article: set text(font: "' .. family .. '")')
-            elseif target == 'monospace' then            
+            elseif target == 'monospace' then
               quarto.doc.include_text('in-header', '#show raw: set text(font: "' .. family .. '")')
             end
           end
@@ -159,12 +157,11 @@ function render_typst_brand_yml()
           return pandoc.utils.stringify(dependenciesFile)
         end
       end
-      
+
       local depsFile = dependenciesFile()
-      quarto.log.output('deps file', depsFile)
       if brand and brand.typography then
         if brand.typography.base then
-          meta['mainfont'] = brand.typography.base.family 
+          meta['mainfont'] = brand.typography.base.family
         end
         if brand.typography.headings then
           meta['title-font'] = brand.typography.headings.family
@@ -177,14 +174,9 @@ function render_typst_brand_yml()
           if not fontdir then
             quarto.log.warning('hacky brand.yml only supports font: file: right now')
           else
-            quarto.log.output('adding typst font path')
             quarto.doc.add_typst_font_path(fontdir)
           end
         end
-        local f = assert(io.open(depsFile, "rb"))
-        local content = f:read("*all")
-        quarto.log.output(content)
-        f:close()
         return meta
       end
     end

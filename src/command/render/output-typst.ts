@@ -27,7 +27,6 @@ import {
 } from "../../core/typst.ts";
 import { asArray } from "../../core/array.ts";
 import { ProjectContext } from "../../project/types.ts";
-import { getStack } from "../../core/deno/debug.ts";
 
 export function useTypstPdfOutputRecipe(
   format: Format,
@@ -54,22 +53,12 @@ export function typstPdfOutputRecipe(
   } else {
     pandoc[kOutputFile] = output;
   }
-  console.log(getStack("ansi"));
 
   // when pandoc is done, we need to run the pdf generator and then copy the
   // output to the user's requested destination
   const complete = async () => {
     // input file is pandoc's output
     const input = join(inputDir, output);
-
-    console.log(
-      "typstPdfOutputRecipe.complete format.metadata ",
-      format.metadata,
-    );
-    console.log(
-      "typstPdfOutputRecipe.complete recipe.format.metadata ",
-      recipe.format.metadata,
-    );
 
     // run typst
     await validateRequiredTypstVersion();

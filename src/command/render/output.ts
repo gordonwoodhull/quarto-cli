@@ -84,7 +84,6 @@ export function outputRecipe(
   } else if (useContextPdfOutputRecipe(format, options.flags)) {
     return contextPdfOutputRecipe(input, output, options, format);
   } else if (useTypstPdfOutputRecipe(format)) {
-    console.log("typst-pdf-output-recipe");
     return typstPdfOutputRecipe(
       input,
       output,

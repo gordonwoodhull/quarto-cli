@@ -64,7 +64,6 @@ export function readAndInjectDependencies(
   const htmlDependencies: FormatDependency[] = [];
   const htmlAttachments: HtmlAttachmentDependency[] = [];
   lines(dependencyJsonStream).forEach((json) => {
-    console.log("pandoc-dependencies-html");
     if (json) {
       const dependency = JSON.parse(json);
       if (dependency.type === "html") {
@@ -142,17 +141,13 @@ export function readAndInjectDependencies(
 export function resolveTypstFontPaths(
   dependenciesFile: string,
 ) {
-  console.log("resolve-typst-font-paths", dependenciesFile);
   const dependencyJsonStream = Deno.readTextFileSync(dependenciesFile);
   const fontPaths: string[] = [];
   lines(dependencyJsonStream).forEach((json) => {
-    console.log("resolve-typst-font-paths II", json);
     if (json) {
       const dependency = JSON.parse(json);
-      console.log("resolve-typst-font-paths III");
       if (dependency.type === "typst-font-path") {
         const path = dependency?.content?.path;
-        console.log("resolve-typst-font-paths IV", path);
         fontPaths.push(path);
       }
     }

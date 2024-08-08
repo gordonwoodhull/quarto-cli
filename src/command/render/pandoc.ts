@@ -203,7 +203,6 @@ import {
   MarkdownPipelineHandler,
 } from "../../core/markdown-pipeline.ts";
 import { getEnv } from "../../../package/src/util/utils.ts";
-import { getStack } from "../../core/deno/debug.ts";
 
 // in case we are running multiple pandoc processes
 // we need to make sure we capture all of the trace files
@@ -1349,18 +1348,9 @@ async function resolveExtras(
   // perform typst-specific merging
   if (isTypstOutput(format.pandoc)) {
     extras.postprocessors = extras.postprocessors || [];
-    console.log(getStack("ansi"));
     extras.postprocessors.push(async () => {
       const fontPaths = await resolveTypstFontPaths(dependenciesFile);
-      //      format.metadata.format.typst[kFontPaths] = fontPaths;
-      // (recipe.format.metadata
-      //   .format as Record<
-      //   string,
-      //   Record<string, string[]>
-      // >).typst
       recipe.format.metadata[kFontPaths] = fontPaths;
-      console.log("got font paths", fontPaths);
-      console.log("out", recipe.format.metadata);
     });
   }
 

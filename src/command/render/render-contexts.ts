@@ -606,7 +606,7 @@ async function resolveFormats(
 
     // resolve brand in project and forward it to format
     const brand = await project.resolveBrand();
-    console.log("before", format, brand);
+    // console.log("before", format, brand);
     mergedFormats[format].render.brand = brand;
     const format_defaults: FormatRender =
       (brand?.brand?.defaults?.quarto as unknown as Record<
@@ -619,7 +619,7 @@ async function resolveFormats(
         mergedFormats[format].render,
         format_defaults,
       );
-      console.log("after", format, mergedFormats[format].render);
+      // console.log("after", format, mergedFormats[format].render);
     }
 
     // ensure that we have a valid forma
