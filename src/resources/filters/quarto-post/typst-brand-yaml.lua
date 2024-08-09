@@ -1,4 +1,4 @@
-function render_typst_brand_yml()
+function render_typst_brand_yaml()
   if not _quarto.format.isTypstOutput() then
     return {}
   end
