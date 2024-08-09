@@ -57,9 +57,9 @@ function render_typst_brand_yml()
 
   return {
     Pandoc = function(pandoc)
-      local brand = param('brand')
-      if not brand then return nil end
-      brand = brand.brand or brand
+      local brandTop = param('brand')
+      if not brandTop then return nil end
+      local brand = brandTop.brand or brandTop
 
       -- logo
       if brand.logo then
@@ -90,38 +90,27 @@ function render_typst_brand_yml()
       end
 
       -- color
-      if brand.color and brand.color.with then
-        local palette = {}
-        for name, color in pairs(brand.color.with) do
-          palette[name] = output_typst_color(parse_css_color(color))
+      if brandTop.processedData and brandTop.processedData.color and next(brandTop.processedData.color) then
+        local colors = {}
+        for name, color in pairs(brandTop.processedData.color) do
+          colors[name] = output_typst_color(parse_css_color(color))
         end
-        local decl = '#let brand-palette = ' .. to_typst_dict_indent(palette)
+        local decl = '#let brand-color = ' .. to_typst_dict_indent(colors)
         quarto.doc.include_text('in-header', decl)
-      end
-      if brand.color then
         local BACKGROUND_OPACITY = 0.1
-        local theme = {}
         local themebk = {}
-        for name, color in pairs(brand.color) do
-          if name ~= 'with' then
-            if brand.color.with and brand.color.with[color] then
-              theme[name] = 'brand-palette.' .. color
-              color = brand.color.with[color] -- no nice idiomatic way to do bk color
-            else
-              theme[name] = output_typst_color(parse_css_color(color))
-            end
-            themebk[name] = output_typst_color(parse_css_color(color),
-              {unit = 'fraction', value = BACKGROUND_OPACITY})
-          end
+        for name, color in pairs(brandTop.processedData.color) do
+          themebk[name] = output_typst_color(parse_css_color(color),
+            {unit = 'fraction', value = BACKGROUND_OPACITY})
         end
         -- for demo purposes only, should implement backgroundcolor and fontcolor
         if brand.color.background then
-          quarto.doc.include_text('in-header', '#set page(fill: brand-theme.background)')
+          quarto.doc.include_text('in-header', '#set page(fill: brand-color.background)')
         end
         if brand.color.foreground then
-          quarto.doc.include_text('in-header', '#set text(fill: brand-theme.foreground)')
+          quarto.doc.include_text('in-header', '#set text(fill: brand-color.foreground)')
         end
-        local decl = '// theme colors at opacity ' .. BACKGROUND_OPACITY .. '\n#let brand-theme-background = ' .. to_typst_dict_indent(themebk)
+        local decl = '// theme colors at opacity ' .. BACKGROUND_OPACITY .. '\n#let brand-color-background = ' .. to_typst_dict_indent(themebk)
         quarto.doc.include_text('in-header', decl)
       end
 

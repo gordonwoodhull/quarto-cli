@@ -252,12 +252,11 @@ function _callout_main()
     end
     local brand = param("brand")
     if brand then
-      brand = brand.brand or brand
-      local theme = brand and brand.color
-      if theme and callout_theme_color_map[callout.type] and
-          theme[callout_theme_color_map[callout.type]] then
-        background_color =  "brand-theme-background." .. callout_theme_color_map[callout.type]
-        icon_color = "brand-theme." .. callout_theme_color_map[callout.type]
+      local color = brand.processedData and brand.processedData.color
+      if color and callout_theme_color_map[callout.type] and
+          color[callout_theme_color_map[callout.type]] then
+        background_color =  "brand-color-background." .. callout_theme_color_map[callout.type]
+        icon_color = "brand-color." .. callout_theme_color_map[callout.type]
       end
     end
     local title = callout.title
