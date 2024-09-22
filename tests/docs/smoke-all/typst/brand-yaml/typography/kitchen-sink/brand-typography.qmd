@@ -1,0 +1,32 @@
+---
+title: title is `#context text.fill`{=typst} `#context text.font`{=typst} `#context text.weight`{=typst} `#context text.style`{=typst} `#context text.size`{=typst}
+format: typst
+include-in-header:
+  text: |
+    #set text(fallback: false, weight: 100)
+_quarto:
+  tests:
+    typst:
+      ensurePdfRegexMatches:
+      -
+        - 'title is roboto slab bold normal 16.5pt'
+        - 'heading-2 is roboto slab bold normal 15.4pt'
+        - 'paragraph is open sans thin normal 11pt'
+        - 'fib = num => num < 2'
+      - []
+---
+
+## heading-2 is `#context text.fill #context text.font #context text.weight #context text.style #context text.size`{=typst}
+
+Paragraph is `#context text.fill #context text.font #context text.weight #context text.style #context text.size`{=typst}, \
+and here's an inline code block `{js} fib(90)` (lorem ipsum dolor).
+
+```
+const fib = num => num < 2 ? num : fib(num-1) + fib(num - 2);
+console.log(fib(12))
+```
+
+Now let's throw in a [link in `#context text.font`{=typst} `#context text.weight`{=typst} `#context text.style`{=typst} `#context text.size`{=typst}](https://www.example.com) before hitting a wall of text.
+
+{{< lipsum 3 >}}
+

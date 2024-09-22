@@ -2,7 +2,6 @@
 
 #let article(
   title: none,
-  title-font: none,
   authors: none,
   date: none,
   abstract: none,
@@ -14,6 +13,11 @@
   region: "US",
   font: "linux libertine",
   fontsize: 11pt,
+  title-size: 1.5em,
+  heading-family: none,
+  heading-weight: "bold",
+  heading-style: "normal",
+  heading-color: black,
   sectionnumbering: none,
   toc: false,
   toc_title: none,
@@ -27,16 +31,20 @@
     numbering: "1",
   )
   set par(justify: true)
-  set text(lang: lang,
-           region: region,
-           font: font,
-           size: fontsize)
+  set text(
+    lang: lang,
+    region: region,
+    font: font,
+    size: fontsize,
+  )
+  if heading-family == none {
+    heading-family = font
+  }
   set heading(numbering: sectionnumbering)
   if title != none {
     align(center)[#block(inset: 2em)[
-      // = #title
-      #if title-font != none {
-        text(weight: "bold", size: 1.5em, font: title-font)[#title]
+      #if heading-family != none or heading-weight != "bold" or heading-style != "normal" {
+        text(font: heading-family, size: title-size, weight: heading-weight, style: heading-style, fill: heading-color)[#title]
       } else {
         text(weight: "bold", size: 1.5em)[#title]
       }

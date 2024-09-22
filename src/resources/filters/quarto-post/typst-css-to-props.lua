@@ -232,7 +232,14 @@ parse_css_color, parse_css_opacity, output_typst_color =
     end
     return comps
   end
-  local function parse_rgb(text)
+  local function output_warning(warnings, message)
+    if warnings then
+      warnings:insert(message)
+    else
+      quarto.log.warning(message)
+    end
+  end
+  local function parse_rgb(text, warnings)
     local parms = text:match('rgba?%((.*)%)')
     local colorspace = 'rgb'
     if not parms then return nil end
@@ -244,7 +251,7 @@ parse_css_color, parse_css_opacity, output_typst_color =
         if not matches then return nil end
         comps = parse_color_components(matches)
       else
-        _warnings:insert(colorspace .. ' should have 3-4 components ' .. text)
+        output_warning(warnings, colorspace .. ' should have 3-4 components ' .. text)
         return nil
       end
     else
@@ -252,7 +259,7 @@ parse_css_color, parse_css_opacity, output_typst_color =
       local colors, alpha
       if nslash > 0 then
         if nslash > 1 then
-          _warnings:insert(colorspace .. ' with multiple slashes ' .. text)
+          output_warning(warnings, colorspace .. ' with multiple slashes ' .. text)
           return nil
         end
         colors, alpha = parms:match('(.*) */ *(.*)')
@@ -274,7 +281,7 @@ parse_css_color, parse_css_opacity, output_typst_color =
     }
   end
 
-  local function parse_css_color(color)
+  local function parse_css_color(color, warnings)
     if color:sub(1, 1) == '#' then
       local value = color:sub(2)
       local short = value:len() < 5
@@ -307,7 +314,7 @@ parse_css_color, parse_css_opacity, output_typst_color =
         value = color
       }
     end
-    _warnings:insert('invalid color ' .. color)
+    output_warning(warnings, 'invalid color ' .. color)
     return nil
   end
 
@@ -315,7 +322,7 @@ parse_css_color, parse_css_opacity, output_typst_color =
     return format_typst_float(x) .. '%'
   end
 
-  local function output_typst_color(color, opacity)
+  local function output_typst_color(color, opacity, warnings)
     quarto.log.debug('output_typst_color input', color, opacity)
     if opacity then
       if not color then
@@ -330,7 +337,7 @@ parse_css_color, parse_css_opacity, output_typst_color =
       end
       if color.type == 'named' then
         if not typst_named_colors[color.value] and not css_named_colors[color.value] then
-          _warnings:insert('unknown color ' .. color.value)
+          output_warning(warnings, 'unknown color ' .. color.value)
           return nil
         end
         color = parse_css_color(typst_named_colors[color.value] or css_named_colors[color.value])
@@ -634,7 +641,7 @@ function render_typst_css_to_props()
   end
 
   local function translate_border_color(v)
-    return output_typst_color(parse_css_color(v), nil)
+    return output_typst_color(parse_css_color(v, _warnings), nil, _warnings)
   end
 
   local border_translators = {
@@ -827,11 +834,11 @@ function render_typst_css_to_props()
         if not k or not v then
           -- pass
         elseif k == 'background-color' then
-          cell.attributes['typst:fill'] = output_typst_color(parse_css_color(v), nil)
+          cell.attributes['typst:fill'] = output_typst_color(parse_css_color(v, _warnings), nil, _warnings)
         elseif k == 'color' then
-          color = parse_css_color(v)
+          color = parse_css_color(v, _warnings)
         elseif k == 'opacity' then
-          opacity = parse_css_opacity(v)
+          opacity = parse_css_opacity(v, _warnings)
         elseif k == 'font-size' then
           cell.attributes['typst:text:size'] = translate_length(v)
         elseif k == 'vertical-align' then
@@ -850,7 +857,7 @@ function render_typst_css_to_props()
         cell.attributes['typst:align'] = table.concat(aligns, ' + ')
       end
       if color or opacity then
-        cell.attributes['typst:text:fill'] = output_typst_color(color, opacity)
+        cell.attributes['typst:text:fill'] = output_typst_color(color, opacity, _warnings)
       end
 
       -- inset seems either buggy or hard to get right, see
@@ -904,7 +911,7 @@ function render_typst_css_to_props()
       for clause in style:gmatch('([^;]+)') do
         local k, v = to_kv(clause)
         if k == 'background-color' then
-          hlprops.fill = output_typst_color(parse_css_color(v), nil)
+          hlprops.fill = output_typst_color(parse_css_color(v, _warnings), nil, _warnings)
         end
       end
     end

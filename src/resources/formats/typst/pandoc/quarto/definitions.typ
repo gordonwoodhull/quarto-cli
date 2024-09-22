@@ -23,13 +23,6 @@
 
 // Some quarto-specific definitions.
 
-#show raw.where(block: true): block.with(
-    fill: luma(230), 
-    width: 100%, 
-    inset: 8pt, 
-    radius: 2pt
-  )
-
 #let block_with_new_content(old_block, new_content) = {
   let d = (:)
   let fields = old_block.fields()
@@ -40,6 +33,10 @@
     fields.below = fields.below.amount
   }
   return block.with(..fields)(new_content)
+}
+
+#let unescape-eval(str) = {
+  return eval(str.replace("\\", ""))
 }
 
 #let empty(v) = {
