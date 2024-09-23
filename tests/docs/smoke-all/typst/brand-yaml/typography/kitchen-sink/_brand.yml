@@ -27,9 +27,11 @@ typography:
     family: Baskerville
     style: italic
     weight: 200
+    color: "#040104"
   headings:
     family: Montserrat
     weight: 900
+    color: "#010702"
   monospace:
     family: Inconsolata
   monospace-inline:
