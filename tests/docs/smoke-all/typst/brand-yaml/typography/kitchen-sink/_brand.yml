@@ -28,6 +28,7 @@ typography:
     style: italic
     weight: 200
     color: "#080180"
+    line-height: 2
   headings:
     family: Montserrat
     weight: 900

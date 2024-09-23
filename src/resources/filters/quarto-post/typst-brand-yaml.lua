@@ -104,6 +104,18 @@ function render_typst_brand_yaml()
               ')'
             }))
         end
+        if base and base['line-height'] then
+          local lineHeight = base['line-height']
+          local leading
+          if type(lineHeight) == 'number' then
+            leading = (lineHeight - 0.75) .. 'em'
+          end
+          if leading then
+            quarto.doc.include_text('in-header', table.concat({
+              '#set par(leading: ', leading, ')'
+            }))
+          end
+        end
         local headings = _quarto.modules.brand.get_typography('headings')
         if headings and (headings.weight or headings.style or headings.color) then
             quarto.doc.include_text('in-header', table.concat({
