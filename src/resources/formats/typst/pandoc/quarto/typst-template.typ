@@ -15,7 +15,7 @@
   fontsize: 11pt,
   title-size: 1.5em,
   heading-family: none,
-  heading-weight: "regular",
+  heading-weight: "bold",
   heading-style: "normal",
   sectionnumbering: none,
   toc: false,
@@ -36,10 +36,12 @@
     font: font,
     size: fontsize,
   )
+  if heading-family == none {
+    heading-family = font
+  }
   set heading(numbering: sectionnumbering)
   if title != none {
     align(center)[#block(inset: 2em)[
-      // = #title
       #if heading-family != none or heading-weight != "bold" or heading-style != "normal" {
         text(font: heading-family, size: title-size, weight: heading-weight, style: heading-style)[#title]
       } else {

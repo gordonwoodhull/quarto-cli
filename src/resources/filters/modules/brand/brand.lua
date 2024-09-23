@@ -31,6 +31,7 @@ local function get_typography(fontName)
   brand = brand and brand.processedData -- from src/core/brand/brand.ts
   if not brand then return nil end
   local typography = brand.typography and brand.typography[fontName]
+  if not typography then return nil end
   local typsted = {}
   for k, v in pairs(typography) do
     if k == 'color' or k == 'background-color' then
