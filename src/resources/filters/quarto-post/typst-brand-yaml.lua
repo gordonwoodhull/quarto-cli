@@ -181,6 +181,7 @@ function render_typst_brand_yaml()
             conditional_entry('font', link.family),
             conditional_entry('weight', link.weight),
             conditional_entry('style', link.style),
+            conditional_entry('size', link.size, false),
             conditional_entry('fill', link.color, false),
             ')'
           }))
@@ -241,6 +242,14 @@ function render_typst_brand_yaml()
     end,
     Meta = function(meta)
       meta.brand = meta.brand or {typography = {}}
+      local base = _quarto.modules.brand.get_typography('base')
+      if base and base.family then
+        meta.brand.typography.base = {
+          family = base.family,
+          size = base.size,
+        }
+      end
+
       local headings = _quarto.modules.brand.get_typography('headings')
       if headings and headings.family then
         meta.brand.typography.headings = {

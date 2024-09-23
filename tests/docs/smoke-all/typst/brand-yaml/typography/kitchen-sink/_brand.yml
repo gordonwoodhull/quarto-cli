@@ -19,6 +19,7 @@ typography:
       style: [normal, italic]
     - source: google
       family: Inconsolata
+      style: [normal, italic]
       weight: [400, 600]
     - source: google
       family: Roboto Slab
@@ -26,6 +27,7 @@ typography:
   base:
     family: Baskerville
     style: italic
+    size: 12pt
     weight: 200
     color: "#080180"
     line-height: 1.5
@@ -36,7 +38,6 @@ typography:
     style: normal # because base is italic
   monospace:
     family: Inconsolata
-    style: normal
   monospace-inline:
     weight: 600
     color: rgb(8, 111, 15)
@@ -47,5 +48,6 @@ typography:
     line-height: 2.5
   link:
     family: "Roboto Slab"
+    size: 10pt
     color: maroon
     decoration: underline
