@@ -93,11 +93,21 @@ function render_typst_brand_yaml()
           if quote_strings then value = quote_string(value) end
           return key .. ': ' .. value .. ', '
         end
+        -- an approximation found here
+        -- https://github.com/typst/typst/issues/159
+        local function line_height_to_leading(lineHeight)
+          if type(lineHeight) == 'number' then
+            return (lineHeight - 0.75) .. 'em'
+          else
+            quarto.log.warn("don't know how to use line-height " .. lineHeight .. ", only numeric supported atm")
+          end
+        end
         -- typography
         local base = _quarto.modules.brand.get_typography('base')
         if base and (base.weight or base.style or base.color) then
             quarto.doc.include_text('in-header', table.concat({
               '#set text(',
+              -- '#show par: set text(', has narrow effect than #show heading!
               conditional_entry('weight', base.weight),
               conditional_entry('style', base.style),
               conditional_entry('fill', base.color, false),
@@ -106,10 +116,7 @@ function render_typst_brand_yaml()
         end
         if base and base['line-height'] then
           local lineHeight = base['line-height']
-          local leading
-          if type(lineHeight) == 'number' then
-            leading = (lineHeight - 0.75) .. 'em'
-          end
+          local leading = line_height_to_leading(lineHeight)
           if leading then
             quarto.doc.include_text('in-header', table.concat({
               '#set par(leading: ', leading, ')'
@@ -148,6 +155,15 @@ function render_typst_brand_yaml()
             conditional_entry('fill', monospaceBlock.color, false),
             ')'
           }))
+        end
+        if monospaceBlock and monospaceBlock['line-height'] then
+          local lineHeight = monospaceBlock['line-height']
+          local leading = line_height_to_leading(lineHeight)
+          if leading then
+            quarto.doc.include_text('in-header', table.concat({
+              '#show raw.where(block: true): set par(leading: ', leading, ')'
+            }))
+          end
         end
         local link = _quarto.modules.brand.get_typography('link')
         if link and link.family then

@@ -28,7 +28,7 @@ typography:
     style: italic
     weight: 200
     color: "#080180"
-    line-height: 2
+    line-height: 1.5
   headings:
     family: Montserrat
     weight: 900
@@ -44,6 +44,7 @@ typography:
   monospace-block:
     color: firebrick
     background-color: "#110750"
+    line-height: 2.5
   link:
     family: "Roboto Slab"
     color: maroon
