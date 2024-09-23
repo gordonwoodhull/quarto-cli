@@ -2749,6 +2749,7 @@
         ref: brand-maybe-named-color
       background-color:
         ref: brand-maybe-named-color
+      decoration: string
 
 - id: brand-typography-options-block
   description: Typographic options for block monospace elements.

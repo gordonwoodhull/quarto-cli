@@ -116,6 +116,17 @@ function render_typst_brand_yaml()
             ')'
           }))
         end
+        local link = _quarto.modules.brand.get_typography('link')
+        if link and link.family then
+          quarto.doc.include_text('in-header', table.concat({
+            '#show link: set text(',
+            conditional_entry('font', link.family),
+            conditional_entry('weight', link.weight),
+            conditional_entry('style', link.style),
+            conditional_entry('fill', link.color, false),
+            ')'
+          }))
+        end
         -- logo
         local logo = param('logo')
         local logoOptions = {}
@@ -196,6 +207,18 @@ function render_typst_brand_yaml()
         local div = pandoc.Div({}, pandoc.Attr('', {}, {['typst:fill'] = monospaceBlock['background-color']}))
         div.content:insert(codeblock)
         return div
+      end
+    end,
+    Link = function(link)
+      local linkTypography = _quarto.modules.brand.get_typography('link')
+      if linkTypography and linkTypography.decoration then
+        if linkTypography.decoration == 'underline' then
+          return pandoc.Inlines({
+            pandoc.RawInline('typst', '#underline['),
+            link,
+            pandoc.RawInline('typst', ']')
+          })
+        end
       end
     end
   }

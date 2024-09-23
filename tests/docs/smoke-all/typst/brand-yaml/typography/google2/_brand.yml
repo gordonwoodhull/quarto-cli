@@ -20,6 +20,9 @@ typography:
     - source: google
       family: Inconsolata
       weight: [400, 600]
+    - source: google
+      family: Roboto Slab
+      weight: [400]
   base:
     family: Baskerville
     style: italic
@@ -36,3 +39,8 @@ typography:
   monospace-block:
     color: firebrick
     background-color: "#110750"
+  link:
+    family: "Roboto Slab"
+    color: maroon
+    style: normal # because base is italic
+    decoration: underline
