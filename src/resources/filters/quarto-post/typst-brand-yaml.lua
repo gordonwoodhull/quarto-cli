@@ -58,6 +58,7 @@ function render_typst_brand_yaml()
   return {
     Pandoc = function(pandoc)
       local brand = param('brand')
+      local raw_block_shown = false
       if brand and brand.processedData then
         -- color
         if brand.processedData.color and next(brand.processedData.color) then
@@ -156,6 +157,14 @@ function render_typst_brand_yaml()
             ')'
           }))
         end
+        if monospaceBlock and monospaceBlock['background-color'] then
+          raw_block_shown = true
+          quarto.doc.include_text('in-header', table.concat({
+            '#show raw.where(block: true): content => block(',
+            conditional_entry('fill', monospaceBlock['background-color'], false),
+            'width: 100%, inset: 8pt, radius: 2pt)[#content]'
+          }))
+        end
         if monospaceBlock and monospaceBlock['line-height'] then
           local lineHeight = monospaceBlock['line-height']
           local leading = line_height_to_leading(lineHeight)
@@ -219,6 +228,16 @@ function render_typst_brand_yaml()
             '#set page(background: align(' .. logoOptions.location .. ', box(inset: ' .. logoOptions.padding .. ', image("' .. logoOptions.src .. '", width: ' .. logoOptions.width .. '))))')
         end  
       end
+      if not raw_block_shown then
+        quarto.doc.include_text('in-header', table.concat({
+          '#show raw.where(block: true): block.with(',
+          '    fill: luma(230),',
+          '    width: 100%,',
+          '    inset: 8pt,',
+          '    radius: 2pt',
+          '  )'
+        }))
+      end
     end,
     Meta = function(meta)
       meta.brand = meta.brand or {typography = {}}
@@ -242,14 +261,6 @@ function render_typst_brand_yaml()
           code,
           pandoc.RawInline('typst', ']')
         })
-      end
-    end,
-    CodeBlock = function(codeblock)
-      local monospaceBlock = _quarto.modules.brand.get_typography('monospace-block')
-      if monospaceBlock and monospaceBlock['background-color'] then
-        local div = pandoc.Div({}, pandoc.Attr('', {}, {['typst:fill'] = monospaceBlock['background-color']}))
-        div.content:insert(codeblock)
-        return div
       end
     end,
     Link = function(link)

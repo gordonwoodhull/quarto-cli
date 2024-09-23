@@ -42,8 +42,8 @@ typography:
     color: rgb(8, 111, 15)
     background-color: rgb(255, 250, 224)
   monospace-block:
-    color: firebrick
-    background-color: "#110750"
+    color: mintcream
+    background-color: "#77aae1"
     line-height: 2.5
   link:
     family: "Roboto Slab"
