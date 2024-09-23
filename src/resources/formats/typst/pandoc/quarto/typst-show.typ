@@ -42,12 +42,6 @@ $if(fontsize)$
 $elseif(brand.typography.base.size)$
   fontsize: $brand.typography.base.size$,
 $endif$
-$if(brand.typography.base.weight)$
-  base-weight: $brand.typography.base.weight$,
-$endif$
-$if(brand.typography.base.style)$
-  base-style: "$brand.typography.base.style$",
-$endif$
 $if(title)$
 $if(brand.typography.headings.family)$
   heading-family: ("$brand.typography.headings.family$",),

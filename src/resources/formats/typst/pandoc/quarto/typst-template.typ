@@ -17,8 +17,6 @@
   heading-family: none,
   heading-weight: "regular",
   heading-style: "normal",
-  base-weight: "normal",
-  base-style: "normal",
   sectionnumbering: none,
   toc: false,
   toc_title: none,
@@ -37,20 +35,13 @@
     region: region,
     font: font,
     size: fontsize,
-    weight: base-weight,
-    style: base-style,
   )
   set heading(numbering: sectionnumbering)
-  show heading: set text(
-    font: heading-family,
-    weight: heading-weight,
-    style: heading-style,
-  )
   if title != none {
     align(center)[#block(inset: 2em)[
       // = #title
       #if heading-family != none or heading-weight != "bold" or heading-style != "normal" {
-        text(weight: heading-weight, size: title-size, font: heading-family, style: heading-style)[#title]
+        text(font: heading-family, size: title-size, weight: heading-weight, style: heading-style)[#title]
       } else {
         text(weight: "bold", size: 1.5em)[#title]
       }

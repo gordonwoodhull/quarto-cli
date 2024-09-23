@@ -94,6 +94,27 @@ function render_typst_brand_yaml()
           return key .. ': ' .. value .. ', '
         end
         -- typography
+        local base = _quarto.modules.brand.get_typography('base')
+        if base and (base.weight or base.style or base.color) then
+            quarto.doc.include_text('in-header', table.concat({
+              '#set text(',
+              conditional_entry('weight', base.weight),
+              conditional_entry('style', base.style),
+              conditional_entry('fill', base.color, false),
+              ')'
+            }))
+        end
+        local headings = _quarto.modules.brand.get_typography('headings')
+        if headings and (headings.weight or headings.style or headings.color) then
+            quarto.doc.include_text('in-header', table.concat({
+              '#show heading: set text(',
+              conditional_entry('font', headings.family),
+              conditional_entry('weight', headings.weight),
+              conditional_entry('style', headings.style),
+              conditional_entry('fill', headings.color, false),
+              ')'
+            }))
+        end
         local monospaceInline = _quarto.modules.brand.get_typography('monospace-inline')
         if monospaceInline and monospaceInline.family then
             quarto.doc.include_text('in-header', table.concat({
@@ -172,21 +193,14 @@ function render_typst_brand_yaml()
       end
     end,
     Meta = function(meta)
-      local base = _quarto.modules.brand.get_typography('base')
       meta.brand = meta.brand or {typography = {}}
-      if base and base.family then
-        meta.brand.typography.base = {
-          family = base.family,
-          weight = base.weight,
-          style = base.style
-        }
-      end
       local headings = _quarto.modules.brand.get_typography('headings')
       if headings and headings.family then
         meta.brand.typography.headings = {
           family = headings.family,
           weight = headings.weight,
-          style = headings.style
+          style = headings.style,
+          -- color gets mangled by pandoc template system because of hashes and quotes
         }
       end
       return meta

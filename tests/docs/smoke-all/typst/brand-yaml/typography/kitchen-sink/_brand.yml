@@ -32,8 +32,10 @@ typography:
     family: Montserrat
     weight: 900
     color: "#010702"
+    style: normal
   monospace:
     family: Inconsolata
+    style: normal # because base is italic
   monospace-inline:
     weight: 600
     color: rgb(8, 111, 15)
@@ -44,5 +46,4 @@ typography:
   link:
     family: "Roboto Slab"
     color: maroon
-    style: normal # because base is italic
     decoration: underline
