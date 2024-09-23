@@ -31,12 +31,12 @@ typography:
     line-height: 1.5
   headings:
     family: Montserrat
-    weight: 900
+    weight: 800
     color: "#0b8005"
-    style: normal
+    style: normal # because base is italic
   monospace:
     family: Inconsolata
-    style: normal # because base is italic
+    style: normal
   monospace-inline:
     weight: 600
     color: rgb(8, 111, 15)

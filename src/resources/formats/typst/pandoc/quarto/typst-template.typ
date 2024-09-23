@@ -17,6 +17,7 @@
   heading-family: none,
   heading-weight: "bold",
   heading-style: "normal",
+  heading-color: black,
   sectionnumbering: none,
   toc: false,
   toc_title: none,
@@ -43,7 +44,7 @@
   if title != none {
     align(center)[#block(inset: 2em)[
       #if heading-family != none or heading-weight != "bold" or heading-style != "normal" {
-        text(font: heading-family, size: title-size, weight: heading-weight, style: heading-style)[#title]
+        text(font: heading-family, size: title-size, weight: heading-weight, style: heading-style, fill: heading-color)[#title]
       } else {
         text(weight: "bold", size: 1.5em)[#title]
       }

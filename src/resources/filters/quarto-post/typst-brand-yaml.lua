@@ -228,6 +228,7 @@ function render_typst_brand_yaml()
           family = headings.family,
           weight = headings.weight,
           style = headings.style,
+          color = headings.color
           -- color gets mangled by pandoc template system because of hashes and quotes
         }
       end
