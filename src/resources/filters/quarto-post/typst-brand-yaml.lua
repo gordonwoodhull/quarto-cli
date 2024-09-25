@@ -100,7 +100,7 @@ function render_typst_brand_yaml()
           if type(lineHeight) == 'number' then
             return (lineHeight - 0.75) .. 'em'
           else
-            quarto.log.warn("don't know how to use line-height " .. lineHeight .. ", only numeric supported atm")
+            quarto.log.warning("don't know how to use line-height " .. lineHeight .. ", only numeric supported atm")
           end
         end
         -- typography
