@@ -237,13 +237,13 @@ function render_typst_brand_yaml()
           '    inset: 8pt,',
           '    radius: 2pt',
           '  )'
-        }))
+        }, '\n'))
       end
     end,
     Meta = function(meta)
       meta.brand = meta.brand or {typography = {}}
       local base = _quarto.modules.brand.get_typography('base')
-      if base and base.family then
+      if base and next(base) then
         meta.brand.typography.base = {
           family = base.family,
           size = base.size,
@@ -251,7 +251,7 @@ function render_typst_brand_yaml()
       end
 
       local headings = _quarto.modules.brand.get_typography('headings')
-      if headings and headings.family then
+      if headings and next(headings) then
         meta.brand.typography.headings = {
           family = headings.family,
           weight = headings.weight,
