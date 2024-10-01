@@ -10,7 +10,7 @@ color:
 typography:
   fonts:
     - source: google
-      family: Baskerville
+      family: Aguafina Script
       weight: [200, 400]
       style: [normal, italic]
     - source: google
@@ -25,9 +25,9 @@ typography:
       family: Roboto Slab
       weight: [400]
   base:
-    family: Baskerville
+    family: Aguafina Script
     style: italic
-    size: 12pt
+    size: 14pt
     weight: 200
     color: "#080180"
     line-height: 1.5
