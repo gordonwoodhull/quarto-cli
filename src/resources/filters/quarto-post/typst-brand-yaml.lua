@@ -114,6 +114,16 @@ function render_typst_brand_yaml()
               ')'
             }))
         end
+        if base and base.decoration == 'underline' then
+          quarto.doc.include_text('in-header', '#show text: content => underline(content)')
+        end
+        if base and base['background-color'] then
+          quarto.doc.include_text('in-header', table.concat({
+            '#show text: content => highlight(fill: ',
+            base['background-color'],
+            ', content)'
+          }))
+        end
         if base and base['line-height'] then
           local lineHeight = base['line-height']
           local leading = line_height_to_leading(lineHeight)
@@ -167,7 +177,7 @@ function render_typst_brand_yaml()
               ')'
             }))
         end
-        if monospaceInline and monospaceInline.decoration and monospaceInline.decoration == 'underline' then
+        if monospaceInline and monospaceInline.decoration == 'underline' then
           quarto.doc.include_text('in-header', '#show raw.where(block: false): content => underline(content)')
         end
         if monospaceInline and monospaceInline['background-color'] then

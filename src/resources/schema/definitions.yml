@@ -2796,6 +2796,7 @@
           anyOf: [path, string]
         description: >
           Resolved local paths.
+      decoration: string
 
 - id: brand-named-font
   description: Names of customizeable fonts
