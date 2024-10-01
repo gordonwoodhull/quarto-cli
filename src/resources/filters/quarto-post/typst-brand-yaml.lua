@@ -143,6 +143,7 @@ function render_typst_brand_yaml()
             }))
           end
         end
+
         local monospaceInline = _quarto.modules.brand.get_typography('monospace-inline')
         if monospaceInline and monospaceInline.family then
             quarto.doc.include_text('in-header', table.concat({
@@ -161,6 +162,9 @@ function render_typst_brand_yaml()
             monospaceInline['background-color'],
             ', content)'
           }))
+        end
+        if monospaceInline and monospaceInline.decoration and monospaceInline.decoration == 'underline' then
+          quarto.doc.include_text('in-header', '#show raw.where(block: false): content => underline(content)')
         end
     
         local monospaceBlock = _quarto.modules.brand.get_typography('monospace-block')
@@ -192,6 +196,10 @@ function render_typst_brand_yaml()
             }))
           end
         end
+        if monospaceBlock and monospaceBlock.decoration and monospaceBlock.decoration == 'underline' then
+          quarto.doc.include_text('in-header', '#show raw.where(block: true): content => underline(content)')
+        end
+
         local link = _quarto.modules.brand.get_typography('link')
         if link and link.family then
           quarto.doc.include_text('in-header', table.concat({
