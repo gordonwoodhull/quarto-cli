@@ -49,9 +49,7 @@ function render_typst_brand_yaml()
     local _, ndash = location:gsub('-', '')
     if ndash ~= 1 then return nil end
     local horz, vert = location:match '(%a+)--(%a+)'
-    quarto.log.output('lota', horz, vert)
     if not horz_to_typst[horz] or not vert_to_typst[vert] then return nil end
-    quarto.log.output('lota3', horz, vert)
     return horz_to_typst[horz] .. '+' .. vert_to_typst[vert]
   end  
 
