@@ -155,6 +155,14 @@ function render_typst_brand_yaml()
               ')'
             }))
         end
+        if monospaceInline and monospaceInline['background-color'] then
+          quarto.doc.include_text('in-header', table.concat({
+            '#show raw.where(block: false): content => highlight(fill: ',
+            monospaceInline['background-color'],
+            ', content)'
+          }))
+        end
+    
         local monospaceBlock = _quarto.modules.brand.get_typography('monospace-block')
         if monospaceBlock and monospaceBlock.family then
           quarto.doc.include_text('in-header', table.concat({
@@ -277,16 +285,6 @@ function render_typst_brand_yaml()
         }
       end
       return meta
-    end,
-    Code = function(code)
-      local monospaceInline = _quarto.modules.brand.get_typography('monospace-inline')
-      if monospaceInline and monospaceInline['background-color'] then
-        return pandoc.Inlines({
-          pandoc.RawInline('typst', '#highlight(fill: ' .. monospaceInline['background-color'] .. ')['),
-          code,
-          pandoc.RawInline('typst', ']')
-        })
-      end
     end,
   }
 end
