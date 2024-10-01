@@ -55,3 +55,4 @@ typography:
     size: 10pt
     color: maroon
     decoration: underline
+    background-color: "#adf8"

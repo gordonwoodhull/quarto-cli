@@ -179,6 +179,9 @@ function render_typst_brand_yaml()
             ')'
           }))
         end
+        if monospaceBlock and monospaceBlock.decoration == 'underline' then
+          quarto.doc.include_text('in-header', '#show raw.where(block: true): content => underline(content)')
+        end
         if monospaceBlock and monospaceBlock['background-color'] then
           raw_block_shown = true
           quarto.doc.include_text('in-header', table.concat({
@@ -196,9 +199,6 @@ function render_typst_brand_yaml()
             }))
           end
         end
-        if monospaceBlock and monospaceBlock.decoration and monospaceBlock.decoration == 'underline' then
-          quarto.doc.include_text('in-header', '#show raw.where(block: true): content => underline(content)')
-        end
 
         local link = _quarto.modules.brand.get_typography('link')
         if link and link.family then
@@ -212,8 +212,15 @@ function render_typst_brand_yaml()
             ')'
           }))
         end
-        if link and link.decoration == "underline" then
+        if link and link.decoration == 'underline' then
           quarto.doc.include_text('in-header', '#show link: content => underline(content)')
+        end
+        if link and link['background-color'] then
+          quarto.doc.include_text('in-header', table.concat({
+            '#show link: content => highlight(fill: ',
+            link['background-color'],
+            ', content)'
+          }))
         end
   
         -- logo
