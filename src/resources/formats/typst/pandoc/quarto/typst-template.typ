@@ -2,6 +2,7 @@
 
 #let article(
   title: none,
+  subtitle: none,
   authors: none,
   date: none,
   abstract: none,
@@ -14,6 +15,7 @@
   font: "linux libertine",
   fontsize: 11pt,
   title-size: 1.5em,
+  subtitle-size: 1.25em,
   heading-family: none,
   heading-weight: "bold",
   heading-style: "normal",
@@ -47,8 +49,16 @@
       #set par(leading: heading-line-height)
       #if heading-family != none or heading-weight != "bold" or heading-style != "normal" {
         text(font: heading-family, size: title-size, weight: heading-weight, style: heading-style, fill: heading-color)[#title]
+        if subtitle != none {
+          parbreak()
+          text(font: heading-family, size: subtitle-size, weight: heading-weight, style: heading-style, fill: heading-color)[#subtitle]
+        }
       } else {
-        text(weight: "bold", size: 1.5em)[#title]
+        text(weight: "bold", size: title-size)[#title]
+        if subtitle != none {
+          parbreak()
+          text(weight: "bold", size: subtitle-size)[#subtitle]
+        }
       }
     ]]
   }

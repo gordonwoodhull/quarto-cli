@@ -35,7 +35,6 @@ typography:
     family: Montserrat
     weight: 800
     color: "#0b8005"
-    style: normal # because base is italic
     line-height: 1
   monospace:
     family: Inconsolata

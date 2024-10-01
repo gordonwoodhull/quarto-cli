@@ -1,5 +1,6 @@
 ---
 title: title is `#context text.fill`{=typst} `#context text.font`{=typst} `#context text.weight`{=typst} `#context text.style`{=typst} `#context text.size`{=typst}
+subtitle: subtitle is the same except `#context text.size`{=typst}
 format: typst
 include-in-header:
   text: |
