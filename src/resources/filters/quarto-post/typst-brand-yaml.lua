@@ -143,6 +143,9 @@ function render_typst_brand_yaml()
             }))
           end
         end
+        if headings and headings.decoration and headings.decoration == 'underline' then
+          quarto.doc.include_text('in-header', '#show heading: content => underline(content)')
+        end
 
         local monospaceInline = _quarto.modules.brand.get_typography('monospace-inline')
         if monospaceInline and monospaceInline.family then

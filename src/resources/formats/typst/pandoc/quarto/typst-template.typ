@@ -55,7 +55,6 @@
     heading-family = font
   }
   set heading(numbering: sectionnumbering)
-  show heading: content => maybe_underline(content)
   if title != none {
     align(center)[#block(inset: 2em)[
       #set par(leading: heading-line-height)
