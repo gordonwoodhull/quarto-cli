@@ -58,6 +58,9 @@ $endif$
 $if(brand.typography.headings.color)$
   heading-color: unescape-eval("$brand.typography.headings.color$"),
 $endif$
+$if(brand.typography.headings.line-height)$
+  heading-line-height: $brand.typography.headings.line-height$,
+$endif$
 $endif$
 $if(section-numbering)$
   sectionnumbering: "$section-numbering$",

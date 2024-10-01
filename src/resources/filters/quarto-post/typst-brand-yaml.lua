@@ -53,6 +53,16 @@ function render_typst_brand_yaml()
     return horz_to_typst[horz] .. '+' .. vert_to_typst[vert]
   end  
 
+  -- an approximation found here
+  -- https://github.com/typst/typst/issues/159
+  local function line_height_to_leading(lineHeight)
+    if type(lineHeight) == 'number' then
+      return (lineHeight - 0.75) .. 'em'
+    else
+      quarto.log.warning("don't know how to use line-height " .. lineHeight .. ", only numeric supported atm")
+    end
+  end
+
   return {
     Pandoc = function(pandoc)
       local brand = param('brand')
@@ -92,15 +102,6 @@ function render_typst_brand_yaml()
           if quote_strings then value = quote_string(value) end
           return key .. ': ' .. value .. ', '
         end
-        -- an approximation found here
-        -- https://github.com/typst/typst/issues/159
-        local function line_height_to_leading(lineHeight)
-          if type(lineHeight) == 'number' then
-            return (lineHeight - 0.75) .. 'em'
-          else
-            quarto.log.warning("don't know how to use line-height " .. lineHeight .. ", only numeric supported atm")
-          end
-        end
         -- typography
         local base = _quarto.modules.brand.get_typography('base')
         if base and (base.weight or base.style or base.color) then
@@ -132,6 +133,15 @@ function render_typst_brand_yaml()
               conditional_entry('fill', headings.color, false),
               ')'
             }))
+        end
+        if headings and headings['line-height'] then
+          local lineHeight = headings['line-height']
+          local leading = line_height_to_leading(lineHeight)
+          if leading then
+            quarto.doc.include_text('in-header', table.concat({
+              '#show heading: set par(leading: ', leading, ')'
+            }))
+          end
         end
         local monospaceInline = _quarto.modules.brand.get_typography('monospace-inline')
         if monospaceInline and monospaceInline.family then
@@ -256,7 +266,8 @@ function render_typst_brand_yaml()
           family = headings.family,
           weight = headings.weight,
           style = headings.style,
-          color = headings.color
+          color = headings.color,
+          ['line-height'] = line_height_to_leading(headings['line-height']),
           -- color gets mangled by pandoc template system because of hashes and quotes
         }
       end
