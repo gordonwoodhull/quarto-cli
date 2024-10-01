@@ -37,6 +37,7 @@ typography:
     color: "#0b8005"
     line-height: 1
     decoration: underline
+    background-color: "#fff"
   monospace:
     family: Inconsolata
   monospace-inline:

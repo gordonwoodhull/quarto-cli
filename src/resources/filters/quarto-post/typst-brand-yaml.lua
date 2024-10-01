@@ -123,6 +123,7 @@ function render_typst_brand_yaml()
             }))
           end
         end
+
         local headings = _quarto.modules.brand.get_typography('headings')
         if headings and (headings.weight or headings.style or headings.color) then
             quarto.doc.include_text('in-header', table.concat({
@@ -134,6 +135,16 @@ function render_typst_brand_yaml()
               ')'
             }))
         end
+        if headings and headings.decoration and headings.decoration == 'underline' then
+          quarto.doc.include_text('in-header', '#show heading: content => underline(content)')
+        end
+        if headings and headings['background-color'] then
+          quarto.doc.include_text('in-header', table.concat({
+            '#show heading: content => highlight(fill: ',
+            headings['background-color'],
+            ', content)'
+          }))
+        end
         if headings and headings['line-height'] then
           local lineHeight = headings['line-height']
           local leading = line_height_to_leading(lineHeight)
@@ -142,9 +153,6 @@ function render_typst_brand_yaml()
               '#show heading: set par(leading: ', leading, ')'
             }))
           end
-        end
-        if headings and headings.decoration and headings.decoration == 'underline' then
-          quarto.doc.include_text('in-header', '#show heading: content => underline(content)')
         end
 
         local monospaceInline = _quarto.modules.brand.get_typography('monospace-inline')
@@ -159,15 +167,15 @@ function render_typst_brand_yaml()
               ')'
             }))
         end
+        if monospaceInline and monospaceInline.decoration and monospaceInline.decoration == 'underline' then
+          quarto.doc.include_text('in-header', '#show raw.where(block: false): content => underline(content)')
+        end
         if monospaceInline and monospaceInline['background-color'] then
           quarto.doc.include_text('in-header', table.concat({
             '#show raw.where(block: false): content => highlight(fill: ',
             monospaceInline['background-color'],
             ', content)'
           }))
-        end
-        if monospaceInline and monospaceInline.decoration and monospaceInline.decoration == 'underline' then
-          quarto.doc.include_text('in-header', '#show raw.where(block: false): content => underline(content)')
         end
     
         local monospaceBlock = _quarto.modules.brand.get_typography('monospace-block')
@@ -296,8 +304,9 @@ function render_typst_brand_yaml()
           family = headings.family,
           weight = headings.weight,
           style = headings.style,
-          color = headings.color,
           decoration = headings.decoration,
+          color = headings.color,
+          ['background-color'] = headings['background-color'],
           ['line-height'] = line_height_to_leading(headings['line-height']),
           -- color gets mangled by pandoc template system because of hashes and quotes
         }
