@@ -140,6 +140,7 @@ function render_typst_brand_yaml()
               conditional_entry('font', monospaceInline.family),
               conditional_entry('weight', monospaceInline.weight),
               conditional_entry('style', monospaceInline.style),
+              conditional_entry('size', monospaceInline.size, false),
               conditional_entry('fill', monospaceInline.color, false),
               ')'
             }))
@@ -151,6 +152,7 @@ function render_typst_brand_yaml()
             conditional_entry('font', monospaceBlock.family),
             conditional_entry('weight', monospaceBlock.weight),
             conditional_entry('style', monospaceBlock.style),
+            conditional_entry('size', monospaceBlock.size, false),
             conditional_entry('fill', monospaceBlock.color, false),
             ')'
           }))

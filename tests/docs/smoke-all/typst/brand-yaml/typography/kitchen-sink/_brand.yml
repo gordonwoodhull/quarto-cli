@@ -40,12 +40,14 @@ typography:
     family: Inconsolata
   monospace-inline:
     weight: 600
+    size: 8pt
     color: rgb(8, 111, 15)
     background-color: rgb(255, 250, 224)
   monospace-block:
     color: mintcream
+    size: 18pt
     background-color: "#77aae1"
-    line-height: 2.5
+    line-height: 2
   link:
     family: "Roboto Slab"
     size: 10pt
