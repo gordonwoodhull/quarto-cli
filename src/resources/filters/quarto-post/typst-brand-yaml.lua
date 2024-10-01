@@ -267,6 +267,7 @@ function render_typst_brand_yaml()
           weight = headings.weight,
           style = headings.style,
           color = headings.color,
+          decoration = headings.decoration,
           ['line-height'] = line_height_to_leading(headings['line-height']),
           -- color gets mangled by pandoc template system because of hashes and quotes
         }

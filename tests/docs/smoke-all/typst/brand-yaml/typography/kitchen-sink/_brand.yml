@@ -36,6 +36,7 @@ typography:
     weight: 800
     color: "#0b8005"
     line-height: 1
+    decoration: underline
   monospace:
     family: Inconsolata
   monospace-inline:

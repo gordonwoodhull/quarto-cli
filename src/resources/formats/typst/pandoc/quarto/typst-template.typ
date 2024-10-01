@@ -19,6 +19,7 @@
   heading-family: none,
   heading-weight: "bold",
   heading-style: "normal",
+  heading-decoration: none,
   heading-color: black,
   heading-line-height: 0.65em,
   sectionnumbering: none,
@@ -40,18 +41,30 @@
     font: font,
     size: fontsize,
   )
+  let maybe_wrap = (whether, wrap, content) => {
+    if whether {
+      wrap(content)
+    } else {
+      content
+    }
+  }
+  let maybe_underline = content => maybe_wrap(
+    heading-decoration == "underline", underline, content
+  )
   if heading-family == none {
     heading-family = font
   }
   set heading(numbering: sectionnumbering)
+  show heading: content => maybe_underline(content)
   if title != none {
     align(center)[#block(inset: 2em)[
       #set par(leading: heading-line-height)
-      #if heading-family != none or heading-weight != "bold" or heading-style != "normal" {
-        text(font: heading-family, size: title-size, weight: heading-weight, style: heading-style, fill: heading-color)[#title]
+      #if heading-family != none or heading-weight != "bold" or heading-style != "normal" or heading-color != black or heading-decoration == "underline" {
+        set text(font: heading-family, weight: heading-weight, style: heading-style, fill: heading-color)
+        maybe_underline(text(size: title-size)[#title])
         if subtitle != none {
           parbreak()
-          text(font: heading-family, size: subtitle-size, weight: heading-weight, style: heading-style, fill: heading-color)[#subtitle]
+          maybe_underline(text(size: subtitle-size)[#subtitle])
         }
       } else {
         text(weight: "bold", size: title-size)[#title]

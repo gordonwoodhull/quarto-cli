@@ -55,6 +55,9 @@ $endif$
 $if(brand.typography.headings.style)$
   heading-style: "$brand.typography.headings.style$",
 $endif$
+$if(brand.typography.headings.decoration)$
+  heading-decoration: "$brand.typography.headings.decoration$",
+$endif$
 $if(brand.typography.headings.color)$
   heading-color: unescape-eval("$brand.typography.headings.color$"),
 $endif$
