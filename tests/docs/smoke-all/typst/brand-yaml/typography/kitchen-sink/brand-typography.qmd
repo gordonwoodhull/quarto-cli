@@ -10,10 +10,12 @@ _quarto:
     typst:
       ensurePdfRegexMatches:
       -
-        - 'title is roboto slab bold normal 16.5pt'
-        - 'heading-2 is roboto slab bold normal 15.4pt'
-        - 'paragraph is open sans thin normal 11pt'
-        - 'fib = num => num < 2'
+        - 'title is\s*rgb\("#0b8005"\)\s*montserrat extrabold(\r\n?|\n)normal 21pt'
+        - 'subtitle is the same except 17\.5pt'
+        - 'heading-2 is rgb\("#0b8005"\) montserrat extrabold(\r\n?|\n)normal 19\.6pt'
+        - 'Paragraph is rgb\("#080180"\) aguafina script extralight italic 14pt'
+        - 'fib = num => num < 2' # unable to reflect raw
+        - 'a link in roboto slab extralight italic\s*10pt'
       - []
 ---
 
