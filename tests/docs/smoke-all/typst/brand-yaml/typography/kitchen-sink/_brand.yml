@@ -43,7 +43,7 @@ typography:
     family: Inconsolata
   monospace-inline:
     weight: 600
-    size: 8pt
+    size: 0.57rem
     color: rgb(8, 111, 15)
     background-color: rgb(255, 250, 224)
     decoration: underline
@@ -54,7 +54,7 @@ typography:
     line-height: 2
   link:
     family: "Roboto Slab"
-    size: 10pt
+    size: 14px
     color: maroon
     decoration: underline
     background-color: "#adf8"

@@ -455,10 +455,15 @@ parse_css_color, parse_css_opacity, output_typst_color, parse_css_length_unit, t
     return has_any_suffix(s, length_units)
   end
 
-  local function passthrough(_, csslen) return csslen end
+  local function passthrough(_, _, csslen) return csslen end
+  local function replace_suffix(dest)
+    return function(val, _, _) 
+      return val .. dest
+    end
+  end
 
   local css_lengths = {
-    px = function(val, _)
+    px = function(val, _, _)
       local points = val * PIXELS_TO_POINTS
       return format_typst_float(points) .. 'pt'
     end,
@@ -466,7 +471,9 @@ parse_css_color, parse_css_opacity, output_typst_color, parse_css_length_unit, t
     ['in'] = passthrough,
     cm = passthrough,
     mm = passthrough,
-    ['%'] = function(val, _)
+    em = passthrough,
+    rem = replace_suffix('em'),
+    ['%'] = function(val, _, _)
       return tostring(val / 100) .. 'em'
     end,
   }
@@ -503,7 +510,7 @@ parse_css_color, parse_css_opacity, output_typst_color, parse_css_length_unit, t
       output_warning(warnings, 'unit ' .. unit .. ' is not supported in ' .. csslen )
       return nil
     end
-    return csf(val, csslen)
+    return csf(val, unit, csslen)
   end
 
 

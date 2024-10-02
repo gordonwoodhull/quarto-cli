@@ -15,7 +15,7 @@ _quarto:
         - 'heading-2 is rgb\("#0b8005"\) montserrat extrabold(\r\n?|\n)normal 19\.6pt'
         - 'Paragraph is rgb\("#080180"\) aguafina script extralight italic 14pt'
         - 'fib = num => num < 2' # unable to reflect raw
-        - 'a link in roboto slab extralight italic\s*10pt'
+        - 'a link in roboto slab extralight italic\s*10\.5pt'
       - []
 ---
 
