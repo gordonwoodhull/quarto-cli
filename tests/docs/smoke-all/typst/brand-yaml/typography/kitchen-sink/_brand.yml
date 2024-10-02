@@ -34,6 +34,7 @@ typography:
   headings:
     family: Montserrat
     weight: 800
+    style: normal
     color: "#0b8005"
     line-height: 1
     decoration: underline

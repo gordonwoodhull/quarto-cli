@@ -56,7 +56,9 @@ function render_typst_brand_yaml()
   -- an approximation found here
   -- https://github.com/typst/typst/issues/159
   local function line_height_to_leading(lineHeight)
-    if type(lineHeight) == 'number' then
+    if not lineHeight then
+      return nil
+    elseif type(lineHeight) == 'number' then
       return (lineHeight - 0.75) .. 'em'
     else
       quarto.log.warning("don't know how to use line-height " .. lineHeight .. ", only numeric supported atm")
@@ -310,15 +312,15 @@ function render_typst_brand_yaml()
 
       local headings = _quarto.modules.brand.get_typography('headings')
       if headings and next(headings) then
+        base = base or {}
         meta.brand.typography.headings = {
-          family = headings.family,
-          weight = headings.weight,
-          style = headings.style,
-          decoration = headings.decoration,
-          color = headings.color,
-          ['background-color'] = headings['background-color'],
-          ['line-height'] = line_height_to_leading(headings['line-height']),
-          -- color gets mangled by pandoc template system because of hashes and quotes
+          family = headings.family or base.family,
+          weight = headings.weight or base.weight,
+          style = headings.style or base.style,
+          decoration = headings.decoration or base.decoration,
+          color = headings.color or base.color,
+          ['background-color'] = headings['background-color'] or base['background-color'],
+          ['line-height'] = line_height_to_leading(headings['line-height'] or base['line-height']),
         }
       end
       return meta
