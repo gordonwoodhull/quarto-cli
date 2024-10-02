@@ -150,9 +150,9 @@ function render_typst_brand_yaml()
         end
         if headings and headings['background-color'] then
           quarto.doc.include_text('in-header', table.concat({
-            '#show heading: content => highlight(fill: ',
+            '#show heading: set block(fill: ',
             headings['background-color'],
-            ', content)'
+            ')'
           }))
         end
         if headings and headings['line-height'] then
