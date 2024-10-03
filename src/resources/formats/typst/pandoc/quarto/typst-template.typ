@@ -40,16 +40,6 @@
            region: region,
            font: font,
            size: fontsize)
-  let maybe_wrap = (whether, wrap, content) => {
-    if whether {
-      wrap(content)
-    } else {
-      content
-    }
-  }
-  let maybe_underline = content => maybe_wrap(
-    heading-decoration == "underline", underline, content
-  )
   if heading-family == none {
     heading-family = font
   }
@@ -61,11 +51,18 @@
       #if (heading-family != none or heading-weight != "bold" or heading-style != "normal"
            or heading-color != black or heading-decoration == "underline"
            or heading-background-color != none) {
+        show block: content => {
+          if heading-decoration == "underline" {
+            underline(content)
+          } else {
+            content
+          }
+        }
         set text(font: heading-family, weight: heading-weight, style: heading-style, fill: heading-color)
-        block(maybe_underline(text(size: title-size)[#title]))
+        block(text(size: title-size)[#title])
         if subtitle != none {
           parbreak()
-          block(maybe_underline(text(size: subtitle-size)[#subtitle]))
+          block(text(size: subtitle-size)[#subtitle])
         }
       } else {
         text(weight: "bold", size: title-size)[#title]
