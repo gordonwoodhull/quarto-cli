@@ -208,9 +208,9 @@ function render_typst_brand_yaml()
         if monospaceBlock and monospaceBlock['background-color'] then
           raw_block_shown = true
           quarto.doc.include_text('in-header', table.concat({
-            '#show raw.where(block: true): content => block(',
-            conditional_entry('fill', monospaceBlock['background-color'], false),
-            'width: 100%, inset: 8pt, radius: 2pt)[#content]'
+            '#show raw.where(block: true): set block(fill: ',
+            monospaceBlock['background-color'],
+            ')'
           }))
         end
         if monospaceBlock and monospaceBlock['line-height'] then
@@ -288,16 +288,6 @@ function render_typst_brand_yaml()
           quarto.doc.include_text('in-header',
             '#set page(background: align(' .. logoOptions.location .. ', box(inset: ' .. logoOptions.padding .. ', image("' .. logoOptions.src .. '", width: ' .. logoOptions.width .. '))))')
         end  
-      end
-      if not raw_block_shown then
-        quarto.doc.include_text('in-header', table.concat({
-          '#show raw.where(block: true): block.with(',
-          '    fill: luma(230),',
-          '    width: 100%,',
-          '    inset: 8pt,',
-          '    radius: 2pt',
-          '  )'
-        }, '\n'))
       end
     end,
     Meta = function(meta)
