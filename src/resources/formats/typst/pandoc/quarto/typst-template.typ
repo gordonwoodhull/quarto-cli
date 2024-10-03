@@ -16,7 +16,7 @@
   fontsize: 11pt,
   title-size: 1.5em,
   subtitle-size: 1.25em,
-  heading-family: none,
+  heading-family: "linux libertine",
   heading-weight: "bold",
   heading-style: "normal",
   heading-decoration: none,
@@ -40,9 +40,6 @@
            region: region,
            font: font,
            size: fontsize)
-  if heading-family == none {
-    heading-family = font
-  }
   set heading(numbering: sectionnumbering)
   if title != none {
     align(center)[#block(inset: 2em)[
