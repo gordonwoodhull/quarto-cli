@@ -36,12 +36,10 @@
     numbering: "1",
   )
   set par(justify: true)
-  set text(
-    lang: lang,
-    region: region,
-    font: font,
-    size: fontsize,
-  )
+  set text(lang: lang,
+           region: region,
+           font: font,
+           size: fontsize)
   let maybe_wrap = (whether, wrap, content) => {
     if whether {
       wrap(content)

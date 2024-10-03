@@ -439,7 +439,7 @@ parse_css_color, parse_css_opacity, output_typst_color, parse_css_length_unit, t
   -- sort longest to shortest to find most specific
   table.sort(length_units, function(a, b) return #a > #b end)
 
-  PIXELS_TO_POINTS = 0.75
+  local PIXELS_TO_POINTS = 0.75
 
   local function has_any_suffix(s, suffixes)
     for _, suff in ipairs(suffixes) do
