@@ -1,7 +1,9 @@
 ---
 title: title is `#context text.fill`{=typst} `#context text.font`{=typst} `#context text.weight`{=typst} `#context text.style`{=typst} `#context text.size`{=typst}
 subtitle: subtitle is the same except `#context text.size`{=typst}
-format: typst
+format:
+  typst:
+    keep-typ: true
 include-in-header:
   text: |
     #set text(fallback: false, weight: 100)
@@ -10,12 +12,28 @@ _quarto:
     typst:
       ensurePdfRegexMatches:
       -
-        - 'title is\s*rgb\("#0b8005"\)\s*montserrat extrabold(\r\n?|\n)normal 21pt'
+        - 'title is\s*rgb\("#0b8005"\)\s*montserrat extra-?bold\s*normal 21pt'
         - 'subtitle is the same except 17\.5pt'
-        - 'heading-2 is rgb\("#0b8005"\) montserrat extrabold(\r\n?|\n)normal 19\.6pt'
+        - 'heading-2 is rgb\("#0b8005"\) montserrat extrabold\s*normal 19\.6pt'
         - 'Paragraph is rgb\("#080180"\) aguafina script extralight italic 14pt'
         - 'fib = num => num < 2' # unable to reflect raw
         - 'a link in roboto slab extralight italic\s*10\.5pt'
+      - []
+      ensureTypstFileRegexMatches:
+      -
+        - 'font: \("Aguafina Script",\),$'
+        - 'heading-family: \("Montserrat",\),$'
+        - 'heading-weight: 800,$'
+        - 'heading-style: "normal",$'
+        - 'heading-decoration: "underline",$'
+        - 'heading-color: unescape-eval\("rgb\(\\"\\#0b8005\\"\)"\),$'
+        - 'heading-background-color: unescape-eval\("rgb\(\\"\\#fff\\"\)"\),$'
+        - 'heading-line-height: 0\.25em,$'
+        - '^#show heading: set text\(font: "Montserrat", weight: 800, style: "normal", fill: rgb\("#0b8005"\), \)$'
+        - '^#set text\(weight: 200, style: "italic", fill: rgb\("#080180"\), \)$'
+        - '^#show heading: content => underline\(content\)$'
+        - '^#show heading: set block\(fill: rgb\("#fff"\), inset: 0.25em\)$'
+        - '^#show heading: set par\(leading: 0.25em\)$'
       - []
 ---
 
