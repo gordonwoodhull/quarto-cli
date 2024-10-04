@@ -154,7 +154,7 @@ function render_typst_brand_yaml()
           quarto.doc.include_text('in-header', table.concat({
             '#show heading: set block(fill: ',
             headings['background-color'],
-            ')'
+            ', inset: 0.25em)'
           }))
         end
         if headings and headings['line-height'] then

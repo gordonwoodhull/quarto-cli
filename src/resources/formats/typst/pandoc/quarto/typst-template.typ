@@ -44,7 +44,7 @@
   if title != none {
     align(center)[#block(inset: 2em)[
       #set par(leading: heading-line-height)
-      #set block(fill: heading-background-color)
+      #set block(fill: heading-background-color, inset: 0.25em)
       #if (heading-family != none or heading-weight != "bold" or heading-style != "normal"
            or heading-color != black or heading-decoration == "underline"
            or heading-background-color != none) {

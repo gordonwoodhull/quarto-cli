@@ -19,7 +19,7 @@ typography:
       style: [normal, italic]
     - source: google
       family: Inconsolata
-      style: [normal, italic]
+      style: [normal, italic] # there is no italic
       weight: [400, 600]
     - source: google
       family: Roboto Slab
