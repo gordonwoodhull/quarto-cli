@@ -37,7 +37,12 @@ local function get_typography(fontName)
     if k == 'color' or k == 'background-color' then
       typsted[k] = get_color(v) or _quarto.format.typst.css.output_color(_quarto.format.typst.css.parse_color(v))
     elseif k == 'size' then
-      typsted[k] = _quarto.format.typst.css.translate_length(v)
+      local unit = _quarto.format.typst.css.parse_length_unit(v)
+      if fontName == 'base' and unit == 'rem' then
+        typsted[k] = v:sub(1, -4) .. 'em'
+      else
+        typsted[k] = _quarto.format.typst.css.translate_length(v)
+      end
     else
       typsted[k] = v
     end
