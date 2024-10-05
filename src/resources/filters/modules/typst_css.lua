@@ -449,11 +449,6 @@ local function parse_length_unit(s)
 end
 
 local function passthrough(_, _, csslen) return csslen end
-local function replace_suffix(dest)
-  return function(val, _, _) 
-    return val .. dest
-  end
-end
 
 local css_lengths = {
   px = function(val, _, _)
@@ -465,7 +460,20 @@ local css_lengths = {
   cm = passthrough,
   mm = passthrough,
   em = passthrough,
-  rem = replace_suffix('em'),
+  rem = function(val, _, _, warnings)
+    local base = _quarto.modules.brand.get_typography('base')
+    if base and base.size then
+      local blu = parse_length_unit(base.size)
+      if not blu then
+        output_warning(warnings, 'could not parse base size ' .. base.size .. ', defaulting rem to em')
+        return val .. 'em'
+      end
+      return val .. '*' .. base.size
+    else
+      output_warning(warnings, 'no brand.typography.base.size, defaulting rem to em')
+      return val .. 'em'
+    end
+  end,
   ['%'] = function(val, _, _)
     return tostring(val / 100) .. 'em'
   end,
@@ -503,7 +511,7 @@ local function translate_length(csslen, warnings)
     output_warning(warnings, 'unit ' .. unit .. ' is not supported in ' .. csslen )
     return nil
   end
-  return csf(val, unit, csslen)
+  return csf(val, unit, csslen, warnings)
 end
 
 
