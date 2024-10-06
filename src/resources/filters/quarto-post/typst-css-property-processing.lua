@@ -6,7 +6,7 @@ function format_typst_float(x)
   return f:gsub('%.00', ''):gsub('%.(%d)0', '.%1')
 end
 
-function render_typst_css_to_props()
+function render_typst_css_property_processing()
   if not _quarto.format.isTypstOutput() or
     param(constants.kCssPropertyProcessing, 'translate') ~= 'translate' then
     return {}
