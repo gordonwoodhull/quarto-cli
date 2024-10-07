@@ -484,7 +484,8 @@ export const ensurePdfRegexMatches = (
       const output = await cmd.output();
       assert(output.success, `Failed to extract text from ${file}.`)
       const text = new TextDecoder().decode(output.stdout);
-
+      console.log('pdftottext:');
+      console.log(text);
       matches.forEach((regex) => {
         assert(
           regex.test(text),
