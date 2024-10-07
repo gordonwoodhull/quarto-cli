@@ -450,6 +450,8 @@ end
 
 local function passthrough(_, _, csslen) return csslen end
 
+local parse_length
+
 local css_lengths = {
   px = function(val, _, _)
     local points = val * PIXELS_TO_POINTS
@@ -463,8 +465,8 @@ local css_lengths = {
   rem = function(val, _, _, warnings)
     local base = _quarto.modules.brand.get_typography('base')
     if base and base.size then
-      local blu = parse_length_unit(base.size)
-      if not blu then
+      local base_size = parse_length(base.size)
+      if not base_size then
         output_warning(warnings, 'could not parse base size ' .. base.size .. ', defaulting rem to em')
         return val .. 'em'
       end
@@ -479,7 +481,7 @@ local css_lengths = {
   end,
 }
 
-local function translate_length(csslen, warnings)
+parse_length = function(csslen, warnings)
   local unit = parse_length_unit(csslen)
   if not unit then
     if csslen == '0' then
@@ -506,19 +508,32 @@ local function translate_length(csslen, warnings)
     output_warning(warnings, 'not a number ' .. nums .. ' for unit ' .. unit .. ' in ' .. csslen)
     return nil
     end
-  local csf = css_lengths[unit]
-  if not csf then
-    output_warning(warnings, 'unit ' .. unit .. ' is not supported in ' .. csslen )
-    return nil
-  end
-  return csf(val, unit, csslen, warnings)
+  return {
+    value = val,
+    unit = unit,
+    csslen = csslen
+  }
 end
 
+local function output_length(length, warnings)
+  local csf = css_lengths[length.unit]
+  if not csf then
+    output_warning(warnings, 'unit ' .. length.unit .. ' is not supported in ' .. length.csslen )
+    return nil
+  end 
+  return csf(length.value, length.unit, length.csslen, warnings)
+end
+
+local function translate_length(csslen, warnings)
+  return output_length(parse_length(csslen, warnings), warnings)
+end
 
 return {
   parse_color = parse_color,
   parse_opacity = parse_opacity,
   output_color = output_color,
   parse_length_unit = parse_length_unit,
+  parse_length = parse_length,
+  output_length = output_length,
   translate_length = translate_length
 }
