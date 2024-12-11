@@ -92,9 +92,7 @@ function widthsToPercent(layout, cols)
       widths[#widths+1] = 0
       local width = attribute(fig, "width", nil)
       if width then
-        if not _quarto.format.isTypstOutput() then
-          width = tonumber(string.match(width, "^(-?[%d%.]+)"))
-        end
+        width = tonumber(string.match(width, "^(-?[%d%.]+)"))
         if width then
           widths[#widths] = width
         end
@@ -102,33 +100,57 @@ function widthsToPercent(layout, cols)
     end
     
     -- create virtual fig widths as needed and note the total width
-    local defaultWidth
-    if _quarto.format.isTypstOutput() then
-      defaultWidth = "1fr"
-    else 
-      defaultWidth = widths:find_if(function(width) return width > 0 end)
-      if defaultWidth == nil then
-        defaultWidth = 42 -- this value is arbitrary
-      end
+    local defaultWidth = widths:find_if(function(width) return width > 0 end)
+    if defaultWidth == nil then
+      defaultWidth = 42 -- this value is arbitrary
     end
     local totalWidth = 0
     for i=1,cols do
       if (i > #widths) or widths[i] == 0 then
         widths[i] = defaultWidth
       end
-      if not _quarto.format.isTypstOutput() then
-        totalWidth = totalWidth + widths[i]
+      totalWidth = totalWidth + widths[i]
+    end
+    -- allocate widths
+    for i,fig in ipairs(row) do
+      local width = round((widths[i]/totalWidth) * 100, 1)
+      fig.attr.attributes["width"] = 
+         tostring(width) .. "%"
+      fig.attr.attributes["height"] = nil
+    end
+    
+  end
+end
+
+
+-- convert widths to typst fractions
+function widthsToFraction(layout, cols)
+  
+  -- for each row
+  for _,row in ipairs(layout) do
+    
+    -- initialize widths with 0 or length string
+    -- currently we assume the width unit is appropriate for the output format
+    local widths = pandoc.List()
+    for _,fig in ipairs(row) do
+      widths[#widths+1] = 0
+      local width = attribute(fig, "width", nil)
+      if width then
+        widths[#widths] = width
+      end
+    end
+    
+    -- create virtual fig widths as needed and note the total width
+    local defaultWidth = "1fr"
+    for i=1,cols do
+      if (i > #widths) or widths[i] == 0 then
+        widths[i] = defaultWidth
       end
     end
     -- allocate widths
     for i,fig in ipairs(row) do
       local width = widths[i];
-      if not _quarto.format.isTypstOutput() then
-        width = round((width/totalWidth) * 100, 1)
-        width = tostring(width) .. "%"
-      end
-      fig.attr.attributes["width"] = width
-         
+      fig.attr.attributes["width"] = width         
       fig.attr.attributes["height"] = nil
     end
     
