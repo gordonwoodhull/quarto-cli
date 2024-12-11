@@ -40,12 +40,16 @@ function parseLayoutWidths(figLayout, figureCount)
     return cols:map(function(width)
       figureLayoutCount = figureLayoutCount + 1
       if type(width) == "number" then
-        if numericTotal ~= 0 then
-          width = round((width / numericTotal) * 100, 2)
-        elseif width <= 1 then
-          width = round(width * 100, 2)
+        if _quarto.format.isTypstOutput() then
+          width = tostring(width) .. "fr"
+        else
+          if numericTotal ~= 0 then
+            width = round((width / numericTotal) * 100, 2)
+          elseif width <= 1 then
+            width = round(width * 100, 2)
+          end
+          width = tostring(width) .. "%"
         end
-        width = tostring(width) .. "%"
       end
       -- negative widths are "spacers" so we need to bump our total fig count
       if isSpacerWidth(width) then
@@ -88,7 +92,9 @@ function widthsToPercent(layout, cols)
       widths[#widths+1] = 0
       local width = attribute(fig, "width", nil)
       if width then
-        width = tonumber(string.match(width, "^(-?[%d%.]+)"))
+        if not _quarto.format.isTypstOutput() then
+          width = tonumber(string.match(width, "^(-?[%d%.]+)"))
+        end
         if width then
           widths[#widths] = width
         end
@@ -96,22 +102,33 @@ function widthsToPercent(layout, cols)
     end
     
     -- create virtual fig widths as needed and note the total width
-    local defaultWidth = widths:find_if(function(width) return width > 0 end)
-    if defaultWidth == nil then
-      defaultWidth = 42 -- this value is arbitrary
+    local defaultWidth
+    if _quarto.format.isTypstOutput() then
+      defaultWidth = "1fr"
+    else 
+      defaultWidth = widths:find_if(function(width) return width > 0 end)
+      if defaultWidth == nil then
+        defaultWidth = 42 -- this value is arbitrary
+      end
     end
     local totalWidth = 0
     for i=1,cols do
       if (i > #widths) or widths[i] == 0 then
         widths[i] = defaultWidth
       end
-      totalWidth = totalWidth + widths[i]
+      if not _quarto.format.isTypstOutput() then
+        totalWidth = totalWidth + widths[i]
+      end
     end
     -- allocate widths
     for i,fig in ipairs(row) do
-      local width = round((widths[i]/totalWidth) * 100, 1)
-      fig.attr.attributes["width"] = 
-         tostring(width) .. "%"
+      local width = widths[i];
+      if not _quarto.format.isTypstOutput() then
+        width = round((width/totalWidth) * 100, 1)
+        width = tostring(width) .. "%"
+      end
+      fig.attr.attributes["width"] = width
+         
       fig.attr.attributes["height"] = nil
     end
     
