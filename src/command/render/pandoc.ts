@@ -1513,6 +1513,7 @@ async function resolveExtras(
       }
       fontdirs.add(font_cache);
     }
+    fontdirs.add('/Users/gordon/src/quarto-cli/src/resources/fonts') // FIXME
     let fontPaths = format.metadata[kFontPaths] as Array<string> || [];
     if (typeof fontPaths === "string") {
       fontPaths = [fontPaths];
