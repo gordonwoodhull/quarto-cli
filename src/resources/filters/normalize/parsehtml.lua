@@ -45,7 +45,27 @@ end
 
 function parse_html_tables()
   local function juice(htmltext)
+    -- return htmltext
     return pandoc.system.with_temporary_directory('juice', function(tmpdir)
+      -- replace any long data uris with uuids
+      local data_uri_uuid = '273dae7e-3633-4385-9b0c-203d2d7a2d37'
+      local data_uris = {}
+      local parts = {}
+      local data_uri_regex = 'data:image/.+;base64,[a-zA-Z0-9+/]+=*'
+      local dstart, dend = htmltext:find(data_uri_regex)
+      local prev = 1
+      while dstart do
+        -- juice truncates around 15k
+        if dend - dstart > 2000 then
+          table.insert(data_uris, htmltext:sub(dstart, dend))
+          table.insert(parts, htmltext:sub(prev, dstart-1))
+          table.insert(parts, data_uri_uuid)
+          prev = dend + 1
+        end
+        dstart, dend = htmltext:find(data_uri_regex, dend)
+      end
+      table.insert(parts, htmltext:sub(prev, #htmltext))
+      htmltext = table.concat(parts, '')
       local juice_in = pandoc.path.join({tmpdir, 'juice-in.html'})
       local jin = assert(io.open(juice_in, 'w'))
       jin:write(htmltext)
@@ -65,6 +85,19 @@ function parse_html_tables()
         quarto.log.error("Running juice failed with exit code: " .. (exitCode or "unknown exit code"))
         return htmltext
       else
+        parts = {}
+        dstart, dend = content:find(data_uri_uuid:gsub('-', '--'))
+        prev = 1
+        local index = 1
+        while dstart do
+          table.insert(parts, content:sub(prev, dstart-1))
+          table.insert(parts, data_uris[index])
+          index = index + 1
+          prev = dend + 1
+          dstart, dend = content:find(data_uri_uuid, dend)
+        end
+        table.insert(parts, content:sub(prev, #content))
+        content = table.concat(parts, '')
         return content
       end
     end)
