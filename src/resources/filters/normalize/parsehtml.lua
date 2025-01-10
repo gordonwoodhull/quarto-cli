@@ -57,19 +57,24 @@ function parse_html_tables()
       while dstart do
         -- juice truncates around 15k
         if dend - dstart > 2000 then
+          quarto.log.output('fooblid', dend - dstart)
           table.insert(data_uris, htmltext:sub(dstart, dend))
           table.insert(parts, htmltext:sub(prev, dstart-1))
           table.insert(parts, data_uri_uuid)
           prev = dend + 1
+        else
+          quarto.log.output('but, but!', dend - dstart)
         end
         dstart, dend = htmltext:find(data_uri_regex, dend)
       end
       table.insert(parts, htmltext:sub(prev, #htmltext))
       htmltext = table.concat(parts, '')
       local juice_in = pandoc.path.join({tmpdir, 'juice-in.html'})
+      quarto.log.output('juice-in', juice_in)
       local jin = assert(io.open(juice_in, 'w'))
       jin:write(htmltext)
       jin:flush()
+      os.exit()
       local quarto_path = pandoc.path.join({os.getenv('QUARTO_BIN_PATH'), 'quarto'})
       local jout, jerr = io.popen(quarto_path .. ' run ' ..
           pandoc.path.join({os.getenv('QUARTO_SHARE_PATH'), 'scripts', 'juice.ts'}) .. ' ' ..
@@ -78,6 +83,7 @@ function parse_html_tables()
         quarto.log.error('Running juice failed with message: ' .. (jerr or "Unknown error"))
         return htmltext
       end
+      quarto.log.output('#duris', #data_uris)
       local content = jout:read('a')
       local success, _, exitCode = jout:close()
       -- Check the exit status
