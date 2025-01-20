@@ -52,8 +52,13 @@ function parse_html_tables()
       local data_uris = {}
       local data_uri_regex = 'data:image/[a-z]+;base64,[a-zA-Z0-9+/]+=*'
       htmltext = htmltext:gsub(data_uri_regex, function(data_uri)
-        table.insert(data_uris, data_uri)
-        return data_uri_uuid
+        -- juice truncates around 15k characters; let's guard any over 2000 characters
+        if #data_uri > 2000 then
+          table.insert(data_uris, data_uri)
+          return data_uri_uuid
+        else
+          return data_uri
+        end
       end)
       local juice_in = pandoc.path.join({tmpdir, 'juice-in.html'})
       local jin = assert(io.open(juice_in, 'w'))
