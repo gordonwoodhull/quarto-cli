@@ -50,31 +50,15 @@ function parse_html_tables()
       -- replace any long data uris with uuids
       local data_uri_uuid = '273dae7e-3633-4385-9b0c-203d2d7a2d37'
       local data_uris = {}
-      local parts = {}
-      local data_uri_regex = 'data:image/.+;base64,[a-zA-Z0-9+/]+=*'
-      local dstart, dend = htmltext:find(data_uri_regex)
-      local prev = 1
-      while dstart do
-        -- juice truncates around 15k
-        if dend - dstart > 2000 then
-          quarto.log.output('fooblid', dend - dstart)
-          table.insert(data_uris, htmltext:sub(dstart, dend))
-          table.insert(parts, htmltext:sub(prev, dstart-1))
-          table.insert(parts, data_uri_uuid)
-          prev = dend + 1
-        else
-          quarto.log.output('but, but!', dend - dstart)
-        end
-        dstart, dend = htmltext:find(data_uri_regex, dend)
-      end
-      table.insert(parts, htmltext:sub(prev, #htmltext))
-      htmltext = table.concat(parts, '')
+      local data_uri_regex = 'data:image/[a-z]+;base64,[a-zA-Z0-9+/]+=*'
+      htmltext = htmltext:gsub(data_uri_regex, function(data_uri)
+        table.insert(data_uris, data_uri)
+        return data_uri_uuid
+      end)
       local juice_in = pandoc.path.join({tmpdir, 'juice-in.html'})
-      quarto.log.output('juice-in', juice_in)
       local jin = assert(io.open(juice_in, 'w'))
       jin:write(htmltext)
       jin:flush()
-      os.exit()
       local quarto_path = pandoc.path.join({os.getenv('QUARTO_BIN_PATH'), 'quarto'})
       local jout, jerr = io.popen(quarto_path .. ' run ' ..
           pandoc.path.join({os.getenv('QUARTO_SHARE_PATH'), 'scripts', 'juice.ts'}) .. ' ' ..
@@ -83,7 +67,6 @@ function parse_html_tables()
         quarto.log.error('Running juice failed with message: ' .. (jerr or "Unknown error"))
         return htmltext
       end
-      quarto.log.output('#duris', #data_uris)
       local content = jout:read('a')
       local success, _, exitCode = jout:close()
       -- Check the exit status
@@ -91,19 +74,12 @@ function parse_html_tables()
         quarto.log.error("Running juice failed with exit code: " .. (exitCode or "unknown exit code"))
         return htmltext
       else
-        parts = {}
-        dstart, dend = content:find(data_uri_uuid:gsub('-', '--'))
-        prev = 1
         local index = 1
-        while dstart do
-          table.insert(parts, content:sub(prev, dstart-1))
-          table.insert(parts, data_uris[index])
+        content = content:gsub(data_uri_uuid:gsub('-', '--'), function(_)
+          local data_uri = data_uris[index]
           index = index + 1
-          prev = dend + 1
-          dstart, dend = content:find(data_uri_uuid, dend)
-        end
-        table.insert(parts, content:sub(prev, #content))
-        content = table.concat(parts, '')
+          return data_uri
+        end)
         return content
       end
     end)
