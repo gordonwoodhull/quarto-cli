@@ -640,7 +640,7 @@ end
 
 local generic_font_families = {
   ['sans-serif'] = 'Roboto',
-  serif = 'Libertinus Serif',
+  serif = 'Linux Libertine', -- would be Libertinus Serif in Typst 0.12 but we also need to choose our own
   math = 'New Computer Modern Math',
   monospace = 'DejaVu Sans Mono',
 }
