@@ -70,7 +70,6 @@
     const disableStylesheet = (stylesheets) => {
       for (let i=0; i < stylesheets.length; i++) {
         const stylesheet = stylesheets[i];
-        //stylesheet.disabled = "true";
         stylesheet.rel = 'disabled-stylesheet';
       }
     }
@@ -78,9 +77,9 @@
     const enableStylesheet = (stylesheets) => {
       for (let i=0; i < stylesheets.length; i++) {
         const stylesheet = stylesheets[i];
-        //stylesheet.removeAttribute('disabled');
-        stylesheet.rel = 'stylesheet';
-  
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
       }
     }
   
