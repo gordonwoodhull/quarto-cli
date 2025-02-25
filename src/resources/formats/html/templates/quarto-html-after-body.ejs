@@ -6,6 +6,22 @@
   
   
     <% if (darkMode !== undefined) { %> 
+
+    
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+  
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+  
+      window.document.body.appendChild(a);
+    }
   
     const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
       const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
