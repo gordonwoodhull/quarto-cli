@@ -395,7 +395,8 @@ local quarto_post_filters = {
     traverser = 'jog',
   },
   { name = "post-choose-cell_renderings",
-    filter = choose_cell_renderings()
+    filter = choose_cell_renderings(),
+    flags = { "has_renderings" },
   },
   { name = "post-landscape-div",
     filter = landscape_div(),
