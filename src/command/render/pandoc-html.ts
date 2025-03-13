@@ -144,7 +144,7 @@ export async function resolveSassBundles(
         bundle.key = bundle.key + "-dark";
         return bundle;
       });
-      targets.push({
+      targets.unshift({
         name: `${dependency}-dark.min.css`,
         bundles: darkBundles as any,
         attribs: {
