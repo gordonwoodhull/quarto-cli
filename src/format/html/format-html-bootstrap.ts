@@ -1060,6 +1060,9 @@ function bootstrapHtmlFinalizer(format: Format, flags: PandocFlags) {
       }
     }
 
+    // start body with .quarto-light for proper display when JS is disabled
+    doc.body.classList.add("quarto-light");
+
     // If there is no margin content and no toc in the right margin
     // then lower the z-order so everything else can get on top
     // of the sidebar
