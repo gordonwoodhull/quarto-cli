@@ -4,15 +4,15 @@ engine: jupyter
 format:
   html:
     theme:
-      light: united
       dark: slate
+      light: united
 keep-md: true
 _quarto:
   tests:
     html:
       ensureHtmlElements:
         -
-          - 'body.quarto-light'
+          - 'body.quarto-dark'
           - 'div.cell div.light-content'
           - 'div.cell div.dark-content'
         - []

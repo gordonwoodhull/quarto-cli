@@ -1060,8 +1060,17 @@ function bootstrapHtmlFinalizer(format: Format, flags: PandocFlags) {
       }
     }
 
-    // start body with .quarto-light for proper display when JS is disabled
-    doc.body.classList.add("quarto-light");
+    // start body with light or dark class for proper display when JS is disabled
+    let initialLightDarkClass = "quarto-light";
+    // some logic duplicated from resolveThemeLayer
+    const theme = format.metadata.theme;
+    if (theme && !Array.isArray(theme) && typeof theme === "object") {
+      const keys = Object.keys(theme);
+      if(keys.length > 1 && keys[0] === "dark") {
+        initialLightDarkClass = "quarto-dark";
+      }
+    }
+    doc.body.classList.add(initialLightDarkClass);
 
     // If there is no margin content and no toc in the right margin
     // then lower the z-order so everything else can get on top
