@@ -261,6 +261,18 @@ export async function resolveSassBundles(
   }
 
   // Resolve generated quarto css variables
+  if (hasDarkStyles && defaultStyle !== "dark") {
+    // Put dark stylesheet first if light is default (for NoJS)
+    extras = await resolveQuartoSyntaxHighlighting(
+      inputDir,
+      extras,
+      format,
+      project,
+      "dark",
+      defaultStyle,
+    );
+  }
+
   extras = await resolveQuartoSyntaxHighlighting(
     inputDir,
     extras,
@@ -270,8 +282,8 @@ export async function resolveSassBundles(
     defaultStyle,
   );
 
-  if (hasDarkStyles) {
-    // Provide dark variables for this
+  if (hasDarkStyles && defaultStyle === "dark") {
+    // Put dark stylesheet second if dark is default (for NoJS)
     extras = await resolveQuartoSyntaxHighlighting(
       inputDir,
       extras,
