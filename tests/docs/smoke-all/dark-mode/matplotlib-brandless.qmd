@@ -15,6 +15,7 @@ _quarto:
           - 'body.quarto-light'
           - 'div.cell div.light-content'
           - 'div.cell div.dark-content'
+          - 'div.cell div.cell-code pre.code-with-copy'
         - []
 ---
 
@@ -88,9 +89,11 @@ plt.show()
 
 ### With crossref but no caption
 
+And `echo: true`
+
 ::: {#fig-matplotlib-line}
 ```{python}
-#| echo: false
+#| echo: true
 #| renderings: [light, dark]
 import matplotlib.pyplot as plt
 

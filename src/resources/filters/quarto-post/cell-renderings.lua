@@ -22,8 +22,12 @@ function choose_cell_renderings()
         return nil
       end
       local cods = {}
+      local firstCODIndex = nil
       for i, cellOutput in ipairs(div.content) do
         if cellOutput.classes:includes("cell-output-display") then
+          if not firstCODIndex then
+            firstCODIndex = i
+          end
           table.insert(cods, cellOutput)
         end
       end
@@ -39,15 +43,14 @@ function choose_cell_renderings()
       end
       local lightDiv = outputs['light']
       local darkDiv = outputs['dark']
-    
+      local blocks = pandoc.Blocks({table.unpack(div.content, 1, firstCODIndex - 1)})
       if quarto.format.isHtmlOutput() then
-        div.content = pandoc.Blocks({
-          pandoc.Div(lightDiv.content, pandoc.Attr("", {'light-content'}, {})),
-          pandoc.Div(darkDiv.content, pandoc.Attr("", {'dark-content'}, {}))
-        })
+        blocks:insert(pandoc.Div(lightDiv.content, pandoc.Attr("", {'light-content'}, {})))
+        blocks:insert(pandoc.Div(darkDiv.content, pandoc.Attr("", {'dark-content'}, {})))
       else
-        div.content = pandoc.Blocks({lightDiv})
+        blocks:insert(lightDiv)
       end
+      div.content = blocks
       return div
     end
   }
