@@ -4,11 +4,6 @@ engine: jupyter
 brand:
   light: united-brand.yml
   dark: slate-brand.yml
-format:
-  html:
-    theme:
-      light: united
-      dark: slate
 keep-md: true
 _quarto:
   tests:
@@ -46,11 +41,15 @@ def apply_mpl_colors(bgcolor, fgcolor, primarycolor):
     plt.style.use(name)
     os.unlink(name)
 
-def united_colors():
-    apply_mpl_colors("#ffffff", "#333333", "red")
+def apply_brand_colors(filename):
+  with open(filename) as brand_file:
+    brand = yaml.safe_load(brand_file.read())
+  def apply():
+    apply_mpl_colors(brand["color"]["background"], brand["color"]["foreground"], brand["color"]["primary"])
+  return apply
 
-def slate_colors():
-    apply_mpl_colors("#282B30", "#aaaaaa", "white")
+united_colors = apply_brand_colors("united-brand.yml")
+slate_colors = apply_brand_colors("slate-brand.yml")
 ```
 
 ### No crossref or caption

@@ -48,7 +48,7 @@ import { DirectiveCell } from "../core/lib/break-quarto-md-types.ts";
 import { QuartoJSONSchema, readYamlFromMarkdown } from "../core/yaml.ts";
 import { refSchema } from "../core/lib/yaml-schema/common.ts";
 import { Brand as BrandJson } from "../resources/types/schema-types.ts";
-import { Brand } from "../core/brand/brand.ts";
+import { Brand, LightDarkBrand } from "../core/brand/brand.ts";
 import { warnOnce } from "../core/log.ts";
 import { assert } from "testing/asserts";
 
@@ -512,8 +512,8 @@ export const ensureFileInformationCache = (
 export async function projectResolveBrand(
   project: ProjectContext,
   fileName?: string,
-) {
-  async function loadBrand(brandPath: string) : BrandJson {
+) : Promise<{light?: Brand, dark?: Brand} | undefined> {
+  async function loadBrand(brandPath: string) : Promise<Brand> {
     const brand = await readAndValidateYamlFromFile(
       brandPath,
       refSchema("brand", "Format-independent brand configuration."),
@@ -521,14 +521,14 @@ export async function projectResolveBrand(
     ) as BrandJson;
     return new Brand(brand, dirname(brandPath), project.dir);
   }
-  async function loadLocalBrand(brandPath: string) : BrandJson {
-    let brandPath: string = "";
+  async function loadLocalBrand(brandPath: string) : Promise<Brand> {
+    let resolved: string = "";
     if (brandPath.startsWith("/")) {
-      brandPath = join(project.dir, metadata.brand);
+      resolved = join(project.dir, brandPath);
     } else {
-      brandPath = join(dirname(fileName), metadata.brand);
+      resolved = join(dirname(fileName!), brandPath);
     }
-    return await loadBrand(brandPath);
+    return await loadBrand(resolved);
   }
   if (fileName === undefined) {
     if (project.brandCache) {
@@ -555,11 +555,11 @@ export async function projectResolveBrand(
         refSchema("brand", "Format-independent brand configuration."),
         "Brand validation failed for " + brandPath + ".",
       ) as BrandJson;
-      project.brandCache.brand = new Brand(
+      project.brandCache.brand = {light: new Brand(
         brand,
         dirname(brandPath),
         project.dir,
-      );
+      )};
     }
     return project.brandCache.brand;
   } else {
@@ -567,7 +567,7 @@ export async function projectResolveBrand(
     if (metadata.brand === false) {
       return undefined;
     }
-    if (metadata.brand === true || metadata.brand === undefined) {
+    if (metadata.brand === true || metadata.brand === undefined || metadata.brand === null) {
       return project.resolveBrand();
     }
     const fileInformation = ensureFileInformationCache(project, fileName);
@@ -579,23 +579,24 @@ export async function projectResolveBrand(
       return fileInformation.brand;
     } else {
       assert(typeof metadata.brand === "object");
-      if (metadata.brand.light || metadata.brand.dark) {
+      if ((metadata.brand as LightDarkBrand).light || (metadata.brand as LightDarkBrand).dark) {
         let light;
-        if (typeof metadata.brand.light === "string") {
-          light = await loadLocalBrand(metadata.brand.light)
+        let ldb = metadata.brand as LightDarkBrand;
+        if (typeof ldb.light === "string") {
+          light = await loadLocalBrand(ldb.light)
         } else {
           light = new Brand(
-            metadata.brand.light as BrandJson,
+            ldb.light as BrandJson,
             dirname(fileName),
             project.dir
           );
         }
         let dark;
-        if (typeof metadata.brand.dark === "string") {
-          dark = await loadLocalBrand(metadata.brand.dark)
+        if (typeof ldb.dark === "string") {
+          dark = await loadLocalBrand(ldb.dark)
         } else {
           dark = new Brand(
-            metadata.brand.dark as BrandJson,
+            ldb.dark as BrandJson,
             dirname(fileName),
             project.dir
           );

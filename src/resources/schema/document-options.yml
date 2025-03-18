@@ -11,6 +11,7 @@
     anyOf:
       - string # a file path
       - boolean # if false, don't use branding on this document
+      - ref: brand
       - object:
           closed: true
           properties:

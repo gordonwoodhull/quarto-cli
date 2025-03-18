@@ -8,3 +8,5 @@ typography:
       source: google
   base:
     family: "Montserrat"
+  monospace-block:
+    background-color: "#435"
