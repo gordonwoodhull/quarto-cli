@@ -22,6 +22,10 @@ import {
   BrandFontWeight,
 } from "../../resources/types/schema-types.ts";
 import { Brand } from "../brand/brand.ts";
+import {
+  darkModeDefault,
+} from "../../format/html/format-html-info.ts";
+
 
 const defaultColorNameMap: Record<string, string> = {
   "link-color": "link",
@@ -639,7 +643,7 @@ export async function brandRevealSassLayers(
 
 export async function brandSassFormatExtras(
   input: string | undefined,
-  _format: Format,
+  format: Format,
   project: ProjectContext,
 ): Promise<FormatExtras> {
   const htmlSassBundleLayers = await brandBootstrapSassLayers(
@@ -655,7 +659,8 @@ export async function brandSassFormatExtras(
           dependency: "bootstrap",
           user: htmlSassBundleLayers.light,
           dark: {
-            user: htmlSassBundleLayers.dark
+            user: htmlSassBundleLayers.dark,
+            default: darkModeDefault(format.metadata)
           }
         },
       ],

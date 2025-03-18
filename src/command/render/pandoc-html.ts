@@ -116,7 +116,7 @@ export async function resolveSassBundles(
     // See if any bundles are providing dark specific css
     const hasDark = bundlesWithBrand.some((bundle) => bundle.dark !== undefined);
     defaultStyle =
-      bundles.some((bundle) => bundle.dark !== undefined /* && bundle.dark.default */)
+      bundlesWithBrand.some((bundle) => bundle.dark !== undefined && bundle.dark.default)
         ? "dark"
         : "light";
     const targets: SassTarget[] = [{
