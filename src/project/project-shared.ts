@@ -513,6 +513,23 @@ export async function projectResolveBrand(
   project: ProjectContext,
   fileName?: string,
 ) {
+  async function loadBrand(brandPath: string) : BrandJson {
+    const brand = await readAndValidateYamlFromFile(
+      brandPath,
+      refSchema("brand", "Format-independent brand configuration."),
+      "Brand validation failed for " + brandPath + ".",
+    ) as BrandJson;
+    return new Brand(brand, dirname(brandPath), project.dir);
+  }
+  async function loadLocalBrand(brandPath: string) : BrandJson {
+    let brandPath: string = "";
+    if (brandPath.startsWith("/")) {
+      brandPath = join(project.dir, metadata.brand);
+    } else {
+      brandPath = join(dirname(fileName), metadata.brand);
+    }
+    return await loadBrand(brandPath);
+  }
   if (fileName === undefined) {
     if (project.brandCache) {
       return project.brandCache.brand;
@@ -558,26 +575,39 @@ export async function projectResolveBrand(
       return fileInformation.brand;
     }
     if (typeof metadata.brand === "string") {
-      let brandPath: string = "";
-      if (brandPath.startsWith("/")) {
-        brandPath = join(project.dir, metadata.brand);
-      } else {
-        brandPath = join(dirname(fileName), metadata.brand);
-      }
-      const brand = await readAndValidateYamlFromFile(
-        brandPath,
-        refSchema("brand", "Format-independent brand configuration."),
-        "Brand validation failed for " + brandPath + ".",
-      ) as BrandJson;
-      fileInformation.brand = new Brand(brand, dirname(brandPath), project.dir);
+      fileInformation.brand = {light: await loadLocalBrand(metadata.brand)};
       return fileInformation.brand;
     } else {
       assert(typeof metadata.brand === "object");
-      fileInformation.brand = new Brand(
-        metadata.brand as BrandJson,
-        dirname(fileName),
-        project.dir,
-      );
+      if (metadata.brand.light || metadata.brand.dark) {
+        let light;
+        if (typeof metadata.brand.light === "string") {
+          light = await loadLocalBrand(metadata.brand.light)
+        } else {
+          light = new Brand(
+            metadata.brand.light as BrandJson,
+            dirname(fileName),
+            project.dir
+          );
+        }
+        let dark;
+        if (typeof metadata.brand.dark === "string") {
+          dark = await loadLocalBrand(metadata.brand.dark)
+        } else {
+          dark = new Brand(
+            metadata.brand.dark as BrandJson,
+            dirname(fileName),
+            project.dir
+          );
+        }
+        fileInformation.brand = {light, dark};
+      } else {
+        fileInformation.brand = {light: new Brand(
+          metadata.brand as BrandJson,
+          dirname(fileName),
+          project.dir,
+        )};
+      }
       return fileInformation.brand;
     }
   }

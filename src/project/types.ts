@@ -71,7 +71,7 @@ export interface ProjectContext {
 
   // This is a cache of _brand.yml for a project
   brandCache?: { brand?: Brand };
-  resolveBrand: (fileName?: string) => Promise<Brand | undefined>;
+  resolveBrand: (fileName?: string) => Promise<Record<string, Brand | undefined>>;
 
   // expands markdown for a file
   // input file doesn't have to be markdown; it can be, for example, a knitr spin file
