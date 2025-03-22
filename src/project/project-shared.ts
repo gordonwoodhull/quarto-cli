@@ -47,8 +47,8 @@ import { normalizeNewlines } from "../core/lib/text.ts";
 import { DirectiveCell } from "../core/lib/break-quarto-md-types.ts";
 import { QuartoJSONSchema, readYamlFromMarkdown } from "../core/yaml.ts";
 import { refSchema } from "../core/lib/yaml-schema/common.ts";
-import { Brand as BrandJson } from "../resources/types/schema-types.ts";
-import { Brand, LightDarkBrand } from "../core/brand/brand.ts";
+import { Brand as BrandJson, BrandPathBoolLightDark } from "../resources/types/schema-types.ts";
+import { Brand } from "../core/brand/brand.ts";
 import { warnOnce } from "../core/log.ts";
 import { assert } from "testing/asserts";
 
@@ -564,39 +564,38 @@ export async function projectResolveBrand(
     return project.brandCache.brand;
   } else {
     const metadata = await project.fileMetadata(fileName);
-    if (metadata.brand === false) {
+    const brand = metadata.brand as BrandPathBoolLightDark;
+    if (brand === false) {
       return undefined;
     }
-    if (metadata.brand === true || metadata.brand === undefined || metadata.brand === null) {
+    if (brand === true || brand === undefined) {
       return project.resolveBrand();
     }
     const fileInformation = ensureFileInformationCache(project, fileName);
     if (fileInformation.brand) {
       return fileInformation.brand;
     }
-    if (typeof metadata.brand === "string") {
-      fileInformation.brand = {light: await loadLocalBrand(metadata.brand)};
+    if (typeof brand === "string") {
+      fileInformation.brand = {light: await loadLocalBrand(brand)};
       return fileInformation.brand;
     } else {
-      assert(typeof metadata.brand === "object");
-      if ((metadata.brand as LightDarkBrand).light || (metadata.brand as LightDarkBrand).dark) {
-        let light;
-        let ldb = metadata.brand as LightDarkBrand;
-        if (typeof ldb.light === "string") {
-          light = await loadLocalBrand(ldb.light)
+      assert(typeof brand === "object");
+      if ("light" in brand || "dark" in brand) {
+        let light, dark;
+        if (typeof brand.light === "string") {
+          light = await loadLocalBrand(brand.light)
         } else {
           light = new Brand(
-            ldb.light as BrandJson,
+            brand.light!,
             dirname(fileName),
             project.dir
           );
         }
-        let dark;
-        if (typeof ldb.dark === "string") {
-          dark = await loadLocalBrand(ldb.dark)
+        if (typeof brand.dark === "string") {
+          dark = await loadLocalBrand(brand.dark)
         } else {
           dark = new Brand(
-            ldb.dark as BrandJson,
+            brand.dark!,
             dirname(fileName),
             project.dir
           );
@@ -604,7 +603,7 @@ export async function projectResolveBrand(
         fileInformation.brand = {light, dark};
       } else {
         fileInformation.brand = {light: new Brand(
-          metadata.brand as BrandJson,
+          brand as BrandJson,
           dirname(fileName),
           project.dir,
         )};

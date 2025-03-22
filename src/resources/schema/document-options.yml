@@ -8,25 +8,7 @@
 
 - name: brand
   schema:
-    anyOf:
-      - string # a file path
-      - boolean # if false, don't use branding on this document
-      - ref: brand
-      - object:
-          closed: true
-          properties:
-            light:
-              anyOf:
-                - string
-                - ref: brand
-              description: >
-                The path to a light brand file or an inline light brand definition.
-            dark:
-              anyOf:
-                - string
-                - ref: brand
-              description: >
-                The path to a dark brand file or an inline dark brand definition.
+    ref: brand-path-bool-light-dark
   description: |
     Branding information to use for this document. If a string, the path to a brand file.
     If false, don't use branding on this document. If an object, an inline brand
