@@ -568,7 +568,6 @@ export async function projectResolveBrand(
     if (brand === false) {
       return undefined;
     }
-    console.log('resolve brand', fileName)
     if (brand === true || brand === undefined) {
       return project.resolveBrand();
     }
