@@ -43,3 +43,13 @@ test('Project brand before user themes', async ({ page }) => {
   await page.goto('./html/dark-brand/project-light-dark/brand-under-theme.html');
   await check_theme_overrides(page);
 });
+
+test('Brand false remove project brand', async ({ page }) => {
+  // theme will override brand
+  await page.goto('./html/dark-brand/project-light-dark/brand-false.html');
+  const locatr = await page.locator('body').first();
+  await expect(locatr).toHaveClass('fullcontent quarto-light');
+  await expect(locatr).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  // no toggle
+  expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(0);
+});
