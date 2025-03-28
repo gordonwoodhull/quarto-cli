@@ -639,8 +639,8 @@ local function translate_font_weight(w, warnings)
 end
 
 local generic_font_families = {
-  ['sans-serif'] = 'Roboto',
-  serif = 'Linux Libertine', -- would be Libertinus Serif in Typst 0.12 but we also need to choose our own
+  ['sans-serif'] = 'Noto Sans',
+  serif = 'Libertinus Serif',
   math = 'New Computer Modern Math',
   monospace = 'DejaVu Sans Mono',
 }

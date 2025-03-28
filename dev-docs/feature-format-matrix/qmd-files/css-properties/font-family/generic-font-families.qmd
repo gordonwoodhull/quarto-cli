@@ -22,14 +22,14 @@ _quarto:
     typst:
       ensureTypstFileRegexMatches:
         -
-          - '#set text\(font: \("Linux Libertine"\)\); #table\('
-          - '#show heading: set text\(font: "Roboto", \)'
+          - '#{set text\(font: \("Libertinus Serif"\)\); table\('
+          - '#show heading: set text\(font: "Noto Sans", \)'
           - '#show raw.where\(block: true\): set text\(font: "DejaVu Sans Mono", \)'
         - []
       ensurePdfRegexMatches:
         -
-          - 'heading is roboto'
-          - 'linux libertine'
+          - 'heading is noto sans'
+          - 'base is libertinus serif'
           - 'code should appear in a monospace font'
         - []
 brand:
