@@ -48,14 +48,14 @@
   description: |
     The paper size for the document.
 
-- name: choose-brand
+- name: brand-mode
   schema:
     enum: [light, dark]
   default: light
   tags:
     formats: [typst]
   description: |
-    The type of brand to use for rendering the Typst document, `light` or `dark`.
+    The brand mode to use for rendering the Typst document, `light` or `dark`.
 
 - name: layout
   schema:
