@@ -26,13 +26,24 @@ test('Dark and light brand after user themes', async ({ page }) => {
 
 // project tests
 
+test('Project specifies light and dark brands', async ({ page }) => {
+  await page.goto('./html/dark-brand/project-light/simple.html');
+  await check_backgrounds(page, 'quarto-light', blue, red);
+});
+
+
 test('Project specifies dark and light brands', async ({ page }) => {
-  await page.goto('./html/dark-brand/project-light-dark/simple.html');
+  await page.goto('./html/dark-brand/project-dark/simple.html');
   await check_backgrounds(page, 'quarto-dark', red, blue);
 });
 
 
+test('Project specifies light and dark brands and respect-user-color-scheme', async ({ page }) => {
+  await page.goto('./html/dark-brand/project-light/simple-respect-color-scheme.html');
+  await check_backgrounds(page, 'quarto-light', blue, red);
+});
+
 test('Project specifies dark and light brands and respect-user-color-scheme', async ({ page }) => {
-  await page.goto('./html/dark-brand/project-light-dark/simple-respect-color-scheme.html');
+  await page.goto('./html/dark-brand/project-dark/simple-respect-color-scheme.html');
   await check_backgrounds(page, 'quarto-light', blue, red);
 });
