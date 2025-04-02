@@ -27,3 +27,9 @@ test('Project specifies dark and light brands', async ({ page }) => {
   await page.goto('./html/dark-brand/project-light-dark/simple.html');
   await check_red_blue(page);
 });
+
+
+test('Project specifies dark and light brands and respect-user-color-scheme', async ({ page }) => {
+  await page.goto('./html/dark-brand/project-light-dark/simple-respect-color-scheme.html');
+  await check_red_blue(page);
+});

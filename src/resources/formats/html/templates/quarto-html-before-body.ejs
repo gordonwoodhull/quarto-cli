@@ -128,7 +128,11 @@
         return localAlternateSentinel;
       }
     }
-    const darkModeDefault = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    console.log('rucs', <%= respectUserColorScheme %>);
+    
+    const darkModeDefault = <%= respectUserColorScheme %> ?
+      window.matchMedia('(prefers-color-scheme: dark)').matches :
+      <%= darkModeDefault %>;
     let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
 
     // Dark / light mode switch
