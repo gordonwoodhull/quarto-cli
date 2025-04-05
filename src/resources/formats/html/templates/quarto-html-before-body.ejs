@@ -21,9 +21,6 @@
       }
     }
 
-    toggleBodyColorPrimary();
-
-
     const toggleColorMode = (alternate) => {
       // Switch the stylesheets
       const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
@@ -186,7 +183,7 @@
         const alternate = e.matches
         toggleColorMode(alternate);
         toggleGiscusIfUsed(alternate, darkModeDefault);
-      })
+      });
     <% } %>
 
     // Switch to dark mode if need be
