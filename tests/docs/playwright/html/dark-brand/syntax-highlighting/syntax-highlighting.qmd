@@ -1,5 +1,5 @@
 ---
-title: "author prefers light theme - syntax highlighting"
+title: "author prefers light theme - a11y syntax highlighting"
 execute:
   echo: false
   warning: false
@@ -10,19 +10,12 @@ highlight-style: a11y
 ---
 
 
+```markdown
+![asdf](asd.png)
+```
 
-```` markdown
----
-title: "matplotlib demo"
-format:
-  html:
-    code-fold: true
-jupyter: python3
----
 
-For a demonstration of a line plot on a polar axis, see @fig-polar.
-
-```{{python}}
+```python
 #| label: fig-polar
 #| fig-cap: "A line plot on a polar axis"
 
@@ -39,4 +32,16 @@ ax.set_rticks([0.5, 1, 1.5, 2])
 ax.grid(True)
 plt.show()
 ```
-````
+
+```r
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(sched_dep_time)) + 
+    geom_freqpoly(mapping = aes(colour = cancelled), binwidth = 1/4) +
+    labs (x = "Scheduled Departure Time")
+```
