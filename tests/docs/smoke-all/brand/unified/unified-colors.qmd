@@ -12,9 +12,7 @@ brand:
     monospace:
       background-color:
         dark: '#321'
-
 ---
-
 
 # brand in unified light and dark syntax
 

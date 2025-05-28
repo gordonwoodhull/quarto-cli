@@ -307,6 +307,11 @@ export type LightDarkBrand = {
   dark?: Brand;
 };
 
+export type LightDarkColor = {
+  light?: string;
+  dark?: string;
+};
+
 export const getFavicon = (brand: Brand): string | undefined => {
   const logoInfo = brand.getLogo("small");
   if (!logoInfo) {
