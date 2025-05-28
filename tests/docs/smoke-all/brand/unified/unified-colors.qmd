@@ -8,6 +8,10 @@ brand:
     background:
       light: '#eee'
       dark: '#222'
+  typography:
+    monospace:
+      background-color:
+        dark: '#321'
 
 ---
 

@@ -42,6 +42,7 @@ export function formatDarkMode(format: Format): boolean | undefined {
 export function darkModeDefault(metadata?: Metadata): boolean | undefined {
   if (metadata !== undefined) {
     if (metadata[kBrand] && brandIsUnified(metadata[kBrand])) {
+      // unified brand: dark mode enabled but currently no way to make it default
       return false;
     }
     for (const darkable of [metadata[kTheme], metadata[kBrand]]) {

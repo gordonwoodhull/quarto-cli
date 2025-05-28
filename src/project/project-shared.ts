@@ -50,12 +50,14 @@ import { refSchema } from "../core/lib/yaml-schema/common.ts";
 import {
   BrandColorLightDark,
   BrandSingle,
+  BrandTypographySingle,
+  BrandTypographyUnified,
   BrandUnified,
   Zod,
 } from "../resources/types/zod/schema-types.ts";
 import { Brand, LightDarkBrand } from "../core/brand/brand.ts";
 import { assert } from "testing/asserts";
-import { Cloneable } from "../core/safe-clone-deep.ts";
+import { Cloneable, safeCloneDeep } from "../core/safe-clone-deep.ts";
 
 export function projectExcludeDirs(context: ProjectContext): string[] {
   const outputDir = projectOutputDir(context);
@@ -536,22 +538,46 @@ export function brandIsUnified(brand: BrandUnified): boolean {
     },
   );
 }
+function sharedTypography(
+  unified: BrandTypographyUnified,
+): BrandTypographySingle {
+  const ret: BrandTypographySingle = {
+    fonts: unified.fonts,
+  };
+  Array.from(Zod.BrandNamedTypographyElements.options).forEach(
+    (element) => {
+      if (!unified[element]) {
+        return;
+      }
+      ret[element] = Object.fromEntries(
+        Object.entries(unified[element]).filter(
+          ([key, _]) => !["color", "background-color"].includes(key),
+        ),
+      );
+    },
+  );
+  return ret;
+}
 function splitUnifiedBrand(
   unified: unknown,
   brandDir: string,
   projectDir: string,
 ): LightDarkBrand {
   const unifiedBrand: BrandUnified = Zod.BrandUnified.parse(unified);
+  let typography;
+  if (unifiedBrand.typography) {
+    typography = sharedTypography(unifiedBrand.typography);
+  }
   const lightBrand: BrandSingle = {
     meta: unifiedBrand.meta,
     color: {},
-    typography: unifiedBrand.typography,
+    typography: typography,
     logo: {},
   };
   const darkBrand: BrandSingle = {
     meta: unifiedBrand.meta,
     color: {},
-    typography: unifiedBrand.typography,
+    typography: safeCloneDeep(typography),
     logo: {},
   };
   if (unifiedBrand.color) {
@@ -566,6 +592,75 @@ function splitUnifiedBrand(
         } = splitColorLightDark(unifiedBrand.color![colorName]));
       },
     );
+  }
+  if (unifiedBrand.typography) {
+    if (
+      unifiedBrand.typography.headings &&
+      typeof unifiedBrand.typography.headings !== "string" &&
+      unifiedBrand.typography.headings.color
+    ) {
+      assert(
+        lightBrand.typography && lightBrand.typography.headings &&
+          typeof lightBrand.typography.headings !== "string",
+      );
+      assert(
+        darkBrand.typography && darkBrand.typography.headings &&
+          typeof darkBrand.typography.headings !== "string",
+      );
+      ({
+        light: lightBrand.typography.headings.color,
+        dark: darkBrand.typography.headings.color,
+      } = splitColorLightDark(unifiedBrand.typography.headings.color));
+    }
+    if (
+      unifiedBrand.typography.monospace &&
+      typeof unifiedBrand.typography.monospace !== "string" &&
+      unifiedBrand.typography.monospace.color
+    ) {
+      assert(
+        lightBrand.typography && lightBrand.typography.monospace &&
+          typeof lightBrand.typography.monospace !== "string",
+      );
+      assert(
+        darkBrand.typography && darkBrand.typography.monospace &&
+          typeof darkBrand.typography.monospace !== "string",
+      );
+      ({
+        light: lightBrand.typography.monospace.color,
+        dark: darkBrand.typography.monospace.color,
+      } = splitColorLightDark(unifiedBrand.typography.monospace.color));
+    }
+    if (
+      unifiedBrand.typography.monospace &&
+      typeof unifiedBrand.typography.monospace !== "string" &&
+      unifiedBrand.typography.monospace["background-color"]
+    ) {
+      assert(
+        lightBrand.typography && lightBrand.typography.monospace &&
+          typeof lightBrand.typography.monospace !== "string",
+      );
+      assert(
+        darkBrand.typography && darkBrand.typography.monospace &&
+          typeof darkBrand.typography.monospace !== "string",
+      );
+      ({
+        light: lightBrand.typography.monospace["background-color"],
+        dark: darkBrand.typography.monospace["background-color"],
+      } = splitColorLightDark(
+        unifiedBrand.typography.monospace["background-color"],
+      ));
+    }
+    // Array.from(Zod.BrandNamedTypographyElements.options).forEach(
+    //   (element) => {
+    //     if (!unifiedBrand.typography![element] || typeof(unifiedBrand.typography![element]) === 'string') {
+    //       return;
+    //     }
+    //     if ('background-color' in unifiedBrand.typography![element]) {
+    //       ({
+    //         light: lightBrand.typography[element]['background-color'],
+    //         dark: darkBrand.typography[element]['background-color'],
+    //       } = splitColorLightDark(unifiedBrand.typography![element]['background-color'])
+    //     }
   }
   return {
     light: new Brand(lightBrand, brandDir, projectDir),

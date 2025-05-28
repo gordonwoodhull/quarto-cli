@@ -2776,6 +2776,23 @@
     - ref: brand-named-theme-color
     - schema: string
 
+- id: brand-maybe-named-color-light-dark
+  anyOf:
+    - ref: brand-maybe-named-color
+    - object:
+        closed: true
+        properties:
+          light:
+            schema:
+              ref: brand-maybe-named-color
+            description: >
+              A link or path to the brand's light-colored logo or icon.
+          dark:
+            schema:
+              ref: brand-maybe-named-color
+            description: >
+              A link or path to the brand's dark-colored logo or icon.
+
 - id: brand-named-theme-color
   description: >
     A named brand color, taken either from `color.theme` or `color.palette` (in that order).
@@ -2795,7 +2812,7 @@
       link,
     ]
 
-- id: brand-typography
+- id: brand-typography-single
   description: Typography definitions for the brand.
   object:
     closed: true
@@ -2811,19 +2828,49 @@
         ref: brand-typography-options-base
       headings:
         description: Settings for headings, or a string specifying the font family only.
-        ref: brand-typography-options-headings
+        ref: brand-typography-options-headings-single
       monospace:
         description: Settings for monospace text, or a string specifying the font family only.
-        ref: brand-typography-options-monospace
+        ref: brand-typography-options-monospace-single
       monospace-inline:
         description: Settings for inline code, or a string specifying the font family only.
-        ref: brand-typography-options-monospace-inline
+        ref: brand-typography-options-monospace-inline-single
       monospace-block:
         description: Settings for code blocks, or a string specifying the font family only.
-        ref: brand-typography-options-monospace-block
+        ref: brand-typography-options-monospace-block-single
       link:
         description: Settings for links.
-        ref: brand-typography-options-link
+        ref: brand-typography-options-link-single
+
+- id: brand-typography-unified
+  description: Typography definitions for the brand.
+  object:
+    closed: true
+    properties:
+      fonts:
+        description: Font files and definitions for the brand.
+        arrayOf:
+          ref: brand-font
+      base:
+        description: >
+          The base font settings for the brand. These are used as the default for
+          all text.
+        ref: brand-typography-options-base
+      headings:
+        description: Settings for headings, or a string specifying the font family only.
+        ref: brand-typography-options-headings-unified
+      monospace:
+        description: Settings for monospace text, or a string specifying the font family only.
+        ref: brand-typography-options-monospace-unified
+      monospace-inline:
+        description: Settings for inline code, or a string specifying the font family only.
+        ref: brand-typography-options-monospace-inline-unified
+      monospace-block:
+        description: Settings for code blocks, or a string specifying the font family only.
+        ref: brand-typography-options-monospace-block-unified
+      link:
+        description: Settings for links.
+        ref: brand-typography-options-link-unified
 
 - id: brand-typography-options-base
   description: Base typographic options.
@@ -2839,7 +2886,7 @@
           line-height:
             ref: line-height-number-string
 
-- id: brand-typography-options-headings
+- id: brand-typography-options-headings-single
   description: Typographic options for headings.
   anyOf:
     - string
@@ -2856,7 +2903,24 @@
           line-height:
             ref: line-height-number-string
 
-- id: brand-typography-options-monospace
+- id: brand-typography-options-headings-unified
+  description: Typographic options for headings.
+  anyOf:
+    - string
+    - object:
+        closed: true
+        properties:
+          family: string
+          weight:
+            ref: brand-font-weight
+          style:
+            ref: brand-font-style
+          color:
+            ref: brand-maybe-named-color-light-dark
+          line-height:
+            ref: line-height-number-string
+
+- id: brand-typography-options-monospace-single
   description: Typographic options for monospace elements.
   anyOf:
     - string
@@ -2872,7 +2936,23 @@
           background-color:
             ref: brand-maybe-named-color
 
-- id: brand-typography-options-monospace-inline
+- id: brand-typography-options-monospace-unified
+  description: Typographic options for monospace elements.
+  anyOf:
+    - string
+    - object:
+        closed: true
+        properties:
+          family: string
+          size: string
+          weight:
+            ref: brand-font-weight
+          color:
+            ref: brand-maybe-named-color-light-dark
+          background-color:
+            ref: brand-maybe-named-color-light-dark
+
+- id: brand-typography-options-monospace-inline-single
   description: Typographic options for inline monospace elements.
   anyOf:
     - string
@@ -2888,11 +2968,27 @@
           background-color:
             ref: brand-maybe-named-color
 
+- id: brand-typography-options-monospace-inline-unified
+  description: Typographic options for inline monospace elements.
+  anyOf:
+    - string
+    - object:
+        closed: true
+        properties:
+          family: string
+          size: string
+          weight:
+            ref: brand-font-weight
+          color:
+            ref: brand-maybe-named-color-light-dark
+          background-color:
+            ref: brand-maybe-named-color-light-dark
+
 - id: line-height-number-string
   description: Line height
   anyOf: [number, string]
 
-- id: brand-typography-options-monospace-block
+- id: brand-typography-options-monospace-block-single
   description: Typographic options for block monospace elements.
   anyOf:
     - string
@@ -2910,7 +3006,25 @@
           line-height:
             ref: line-height-number-string
 
-- id: brand-typography-options-link
+- id: brand-typography-options-monospace-block-unified
+  description: Typographic options for block monospace elements.
+  anyOf:
+    - string
+    - object:
+        closed: true
+        properties:
+          family: string
+          size: string
+          weight:
+            ref: brand-font-weight
+          color:
+            ref: brand-maybe-named-color-light-dark
+          background-color:
+            ref: brand-maybe-named-color-light-dark
+          line-height:
+            ref: line-height-number-string
+
+- id: brand-typography-options-link-single
   description: Typographic options for inline monospace elements.
   anyOf:
     - string
@@ -2925,9 +3039,24 @@
             ref: brand-maybe-named-color
           decoration: string
 
-- id: brand-named-font
-  description: Names of customizeable fonts
-  enum: [base, headings, monospace]
+- id: brand-typography-options-link-unified
+  description: Typographic options for inline monospace elements.
+  anyOf:
+    - string
+    - object:
+        closed: true
+        properties:
+          weight:
+            ref: brand-font-weight
+          color:
+            ref: brand-maybe-named-color-light-dark
+          background-color:
+            ref: brand-maybe-named-color-light-dark
+          decoration: string
+
+- id: brand-named-typography-elements
+  description: Names of customizeable typography elements
+  enum: [base, headings, monospace, monospace-inline, monospace-block, link]
 
 - id: brand-font
   description: Font files and definitions for the brand.
@@ -3097,7 +3226,7 @@
       color:
         ref: brand-color-single
       typography:
-        ref: brand-typography #-single
+        ref: brand-typography-single
       defaults:
         ref: brand-defaults
 
@@ -3112,7 +3241,7 @@
       color:
         ref: brand-color-unified
       typography:
-        ref: brand-typography #-unified
+        ref: brand-typography-unified
       defaults:
         ref: brand-defaults
 

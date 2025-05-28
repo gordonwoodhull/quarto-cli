@@ -11,9 +11,9 @@ import {
   BrandLogoExplicitResource,
   BrandNamedThemeColor,
   BrandSingle,
-  BrandTypography,
   BrandTypographyOptionsBase,
-  BrandTypographyOptionsHeadings,
+  BrandTypographyOptionsHeadingsSingle,
+  BrandTypographySingle,
   Zod,
 } from "../../resources/types/zod/schema-types.ts";
 import { InternalError } from "../lib/error.ts";
@@ -53,7 +53,7 @@ type CanonicalLogoInfo = {
 
 type ProcessedBrandData = {
   color: Record<string, string>;
-  typography: BrandTypography;
+  typography: BrandTypographySingle;
   logo: {
     small?: CanonicalLogoInfo;
     medium?: CanonicalLogoInfo;
@@ -91,7 +91,7 @@ export class Brand {
       color[colorName] = this.getColor(colorName);
     }
 
-    const typography: BrandTypography = {};
+    const typography: BrandTypographySingle = {};
     const base = this.getFont("base");
     if (base) {
       typography.base = base;
@@ -221,7 +221,10 @@ export class Brand {
 
   getFont(
     name: string,
-  ): BrandTypographyOptionsBase | BrandTypographyOptionsHeadings | undefined {
+  ):
+    | BrandTypographyOptionsBase
+    | BrandTypographyOptionsHeadingsSingle
+    | undefined {
     if (!this.data.typography) {
       return undefined;
     }
