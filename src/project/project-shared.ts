@@ -47,8 +47,13 @@ import { normalizeNewlines } from "../core/lib/text.ts";
 import { DirectiveCell } from "../core/lib/break-quarto-md-types.ts";
 import { QuartoJSONSchema, readYamlFromMarkdown } from "../core/yaml.ts";
 import { refSchema } from "../core/lib/yaml-schema/common.ts";
-import { Zod } from "../resources/types/zod/schema-types.ts";
-import { Brand } from "../core/brand/brand.ts";
+import {
+  BrandColorLightDark,
+  BrandSingle,
+  BrandUnified,
+  Zod,
+} from "../resources/types/zod/schema-types.ts";
+import { Brand, LightDarkBrand } from "../core/brand/brand.ts";
 import { assert } from "testing/asserts";
 import { Cloneable } from "../core/safe-clone-deep.ts";
 
@@ -513,29 +518,94 @@ export const ensureFileInformationCache = (
   return project.fileInformationCache.get(file)!;
 };
 
+function splitColorLightDark(
+  bcld: BrandColorLightDark,
+): { light?: string | undefined; dark?: string | undefined } {
+  if (typeof bcld === "string") {
+    return { light: bcld, dark: bcld };
+  }
+  return bcld;
+}
+export function brandIsUnified(brand: BrandUnified): boolean {
+  return Array.from(Zod.BrandNamedThemeColor.options).some(
+    (colorName) => {
+      if (!brand.color![colorName]) {
+        return false;
+      }
+      return typeof brand.color![colorName] !== "string";
+    },
+  );
+}
+function splitUnifiedBrand(
+  unified: unknown,
+  brandDir: string,
+  projectDir: string,
+): LightDarkBrand {
+  const unifiedBrand: BrandUnified = Zod.BrandUnified.parse(unified);
+  const lightBrand: BrandSingle = {
+    meta: unifiedBrand.meta,
+    color: {},
+    typography: unifiedBrand.typography,
+    logo: {},
+  };
+  const darkBrand: BrandSingle = {
+    meta: unifiedBrand.meta,
+    color: {},
+    typography: unifiedBrand.typography,
+    logo: {},
+  };
+  if (unifiedBrand.color) {
+    Array.from(Zod.BrandNamedThemeColor.options).forEach(
+      (colorName) => {
+        if (!unifiedBrand.color![colorName]) {
+          return;
+        }
+        ({
+          light: lightBrand.color![colorName],
+          dark: darkBrand.color![colorName],
+        } = splitColorLightDark(unifiedBrand.color![colorName]));
+      },
+    );
+  }
+  return {
+    light: new Brand(lightBrand, brandDir, projectDir),
+    dark: brandIsUnified(unifiedBrand)
+      ? new Brand(darkBrand, brandDir, projectDir)
+      : undefined,
+  };
+}
+
 export async function projectResolveBrand(
   project: ProjectContext,
   fileName?: string,
 ): Promise<{ light?: Brand; dark?: Brand } | undefined> {
-  async function loadBrand(brandPath: string): Promise<Brand> {
+  async function loadSingleBrand(brandPath: string): Promise<Brand> {
     const brand = await readAndValidateYamlFromFile(
       brandPath,
-      refSchema("brand", "Format-independent brand configuration."),
+      refSchema("brand-single", "Format-independent brand configuration."),
       "Brand validation failed for " + brandPath + ".",
     );
     return new Brand(brand, dirname(brandPath), project.dir);
   }
-  async function loadRelativeBrand(
+  async function loadUnifiedBrand(brandPath: string): Promise<LightDarkBrand> {
+    const brand = await readAndValidateYamlFromFile(
+      brandPath,
+      refSchema("brand-unified", "Format-independent brand configuration."),
+      "Brand validation failed for " + brandPath + ".",
+    );
+    return splitUnifiedBrand(brand, dirname(brandPath), project.dir);
+  }
+  function resolveBrandPath(
     brandPath: string,
     dir: string = dirname(fileName!),
-  ): Promise<Brand> {
+  ): string {
     let resolved: string = "";
     if (brandPath.startsWith("/")) {
       resolved = join(project.dir, brandPath);
     } else {
       resolved = join(dir, brandPath);
     }
-    return await loadBrand(resolved);
+    return resolved;
   }
   if (fileName === undefined) {
     if (project.brandCache) {
@@ -559,10 +629,10 @@ export async function projectResolveBrand(
     ) {
       project.brandCache.brand = {
         light: brand.light
-          ? await loadRelativeBrand(brand.light, project.dir)
+          ? await loadSingleBrand(resolveBrandPath(brand.light, project.dir))
           : undefined,
         dark: brand.dark
-          ? await loadRelativeBrand(brand.dark, project.dir)
+          ? await loadSingleBrand(resolveBrandPath(brand.dark, project.dir))
           : undefined,
       };
       return project.brandCache.brand;
@@ -575,7 +645,7 @@ export async function projectResolveBrand(
       if (!existsSync(brandPath)) {
         continue;
       }
-      project.brandCache.brand = { light: await loadBrand(brandPath) };
+      project.brandCache.brand = await loadUnifiedBrand(brandPath);
     }
     return project.brandCache.brand;
   } else {
@@ -595,14 +665,14 @@ export async function projectResolveBrand(
       return fileInformation.brand;
     }
     if (typeof brand === "string") {
-      fileInformation.brand = { light: await loadRelativeBrand(brand) };
+      fileInformation.brand = await loadUnifiedBrand(resolveBrandPath(brand));
       return fileInformation.brand;
     } else {
       assert(typeof brand === "object");
       if ("light" in brand || "dark" in brand) {
         let light, dark;
         if (typeof brand.light === "string") {
-          light = await loadRelativeBrand(brand.light);
+          light = await loadSingleBrand(resolveBrandPath(brand.light));
         } else if (brand.light) {
           light = new Brand(
             brand.light,
@@ -611,7 +681,7 @@ export async function projectResolveBrand(
           );
         }
         if (typeof brand.dark === "string") {
-          dark = await loadRelativeBrand(brand.dark);
+          dark = await loadSingleBrand(resolveBrandPath(brand.dark));
         } else if (brand.dark) {
           dark = new Brand(
             brand.dark,
@@ -621,13 +691,11 @@ export async function projectResolveBrand(
         }
         fileInformation.brand = { light, dark };
       } else {
-        fileInformation.brand = {
-          light: new Brand(
-            brand,
-            dirname(fileName),
-            project.dir,
-          ),
-        };
+        fileInformation.brand = splitUnifiedBrand(
+          brand,
+          dirname(fileName),
+          project.dir,
+        );
       }
       return fileInformation.brand;
     }

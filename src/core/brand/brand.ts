@@ -7,10 +7,10 @@
  */
 
 import {
-  Brand as BrandJson,
   BrandFont,
   BrandLogoExplicitResource,
   BrandNamedThemeColor,
+  BrandSingle,
   BrandTypography,
   BrandTypographyOptionsBase,
   BrandTypographyOptionsHeadings,
@@ -63,7 +63,7 @@ type ProcessedBrandData = {
 };
 
 export class Brand {
-  data: BrandJson;
+  data: BrandSingle;
   brandDir: string;
   projectDir: string;
   processedData: ProcessedBrandData;
@@ -73,13 +73,13 @@ export class Brand {
     brandDir: string,
     projectDir: string,
   ) {
-    this.data = Zod.Brand.parse(brand);
+    this.data = Zod.BrandSingle.parse(brand);
     this.brandDir = brandDir;
     this.projectDir = projectDir;
     this.processedData = this.processData(this.data);
   }
 
-  processData(data: BrandJson): ProcessedBrandData {
+  processData(data: BrandSingle): ProcessedBrandData {
     const color: Record<string, string> = {};
     for (const colorName of Object.keys(data.color?.palette ?? {})) {
       color[colorName] = this.getColor(colorName);

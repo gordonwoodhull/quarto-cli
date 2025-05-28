@@ -6,9 +6,10 @@
  * Copyright (C) 2020-2022 Posit Software, PBC
  */
 
-import { kTheme, kBrand } from "../../config/constants.ts";
+import { kBrand, kTheme } from "../../config/constants.ts";
 import { isHtmlDashboardOutput, isHtmlOutput } from "../../config/format.ts";
 import { Format, Metadata } from "../../config/types.ts";
+import { brandIsUnified } from "../../project/project-shared.ts";
 
 export function formatHasBootstrap(format: Format) {
   if (
@@ -40,8 +41,11 @@ export function formatDarkMode(format: Format): boolean | undefined {
 
 export function darkModeDefault(metadata?: Metadata): boolean | undefined {
   if (metadata !== undefined) {
+    if (metadata[kBrand] && brandIsUnified(metadata[kBrand])) {
+      return false;
+    }
     for (const darkable of [metadata[kTheme], metadata[kBrand]]) {
-      if (darkable && typeof (darkable) === "object") {
+      if (darkable && typeof darkable === "object") {
         const keys = Object.keys(darkable);
         if (keys.includes("dark")) {
           if (keys[0] === "dark") {
