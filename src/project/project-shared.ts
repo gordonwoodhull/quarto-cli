@@ -532,6 +532,7 @@ function splitColorLightDark(
 export function brandIsUnified(brand: BrandUnified): boolean {
   return Array.from(Zod.BrandNamedThemeColor.options).some(
     (colorName) => {
+      console.log("the problem, about to die");
       if (!brand.color![colorName]) {
         return false;
       }
@@ -573,6 +574,12 @@ function splitUnifiedBrand(
   let headingsColor: LightDarkColor | undefined = undefined;
   let monospaceColor: LightDarkColor | undefined = undefined;
   let monospaceBackgroundColor: LightDarkColor | undefined = undefined;
+  let monospaceInlineColor: LightDarkColor | undefined = undefined;
+  let monospaceInlineBackgroundColor: LightDarkColor | undefined = undefined;
+  let monospaceBlockColor: LightDarkColor | undefined = undefined;
+  let monospaceBlockBackgroundColor: LightDarkColor | undefined = undefined;
+  let linkColor: LightDarkColor | undefined = undefined;
+  let linkBackgroundColor: LightDarkColor | undefined = undefined;
   if (unifiedBrand.typography) {
     typography = sharedTypography(unifiedBrand.typography);
     if (
@@ -599,6 +606,51 @@ function splitUnifiedBrand(
         );
       }
     }
+    if (
+      unifiedBrand.typography["monospace-inline"] &&
+      typeof unifiedBrand.typography["monospace-inline"] !== "string"
+    ) {
+      if (unifiedBrand.typography["monospace-inline"].color) {
+        monospaceInlineColor = splitColorLightDark(
+          unifiedBrand.typography["monospace-inline"].color,
+        );
+      }
+      if (unifiedBrand.typography["monospace-inline"]["background-color"]) {
+        monospaceInlineBackgroundColor = splitColorLightDark(
+          unifiedBrand.typography["monospace-inline"]["background-color"],
+        );
+      }
+    }
+    if (
+      unifiedBrand.typography["monospace-block"] &&
+      typeof unifiedBrand.typography["monospace-block"] !== "string"
+    ) {
+      if (unifiedBrand.typography["monospace-block"].color) {
+        monospaceBlockColor = splitColorLightDark(
+          unifiedBrand.typography["monospace-block"].color,
+        );
+      }
+      if (unifiedBrand.typography["monospace-block"]["background-color"]) {
+        monospaceBlockBackgroundColor = splitColorLightDark(
+          unifiedBrand.typography["monospace-block"]["background-color"],
+        );
+      }
+    }
+    if (
+      unifiedBrand.typography.link &&
+      typeof unifiedBrand.typography.link !== "string"
+    ) {
+      if (unifiedBrand.typography.link.color) {
+        linkColor = splitColorLightDark(
+          unifiedBrand.typography.link.color,
+        );
+      }
+      if (unifiedBrand.typography.link["background-color"]) {
+        linkBackgroundColor = splitColorLightDark(
+          unifiedBrand.typography.link["background-color"],
+        );
+      }
+    }
   }
   const specializeTypography = (
     typography: BrandTypographySingle,
@@ -621,6 +673,32 @@ function splitUnifiedBrand(
             "background-color": monospaceBackgroundColor &&
               monospaceBackgroundColor[mode],
           },
+      "monospace-inline": !typography["monospace-inline"] ||
+          typeof typography["monospace-inline"] === "string"
+        ? typography["monospace-inline"]
+        : {
+          ...typography["monospace-inline"],
+          color: monospaceInlineColor && monospaceInlineColor[mode],
+          "background-color": monospaceInlineBackgroundColor &&
+            monospaceInlineBackgroundColor[mode],
+        },
+      "monospace-block": !typography["monospace-block"] ||
+          typeof typography["monospace-block"] === "string"
+        ? typography["monospace-block"]
+        : {
+          ...typography["monospace-block"],
+          color: monospaceBlockColor && monospaceBlockColor[mode],
+          "background-color": monospaceBlockBackgroundColor &&
+            monospaceBlockBackgroundColor[mode],
+        },
+      link: !typography.link || typeof typography.link === "string"
+        ? typography.link
+        : {
+          ...typography.link,
+          color: linkColor && linkColor[mode],
+          "background-color": linkBackgroundColor &&
+            linkBackgroundColor[mode],
+        },
     };
   const lightBrand: BrandSingle = {
     meta: unifiedBrand.meta,
@@ -746,6 +824,7 @@ export async function projectResolveBrand(
     }
     if (typeof brand === "string") {
       fileInformation.brand = await loadUnifiedBrand(resolveBrandPath(brand));
+      console.log("the solution file");
       return fileInformation.brand;
     } else {
       assert(typeof brand === "object");
@@ -776,6 +855,7 @@ export async function projectResolveBrand(
           dirname(fileName),
           project.dir,
         );
+        console.log("the solution");
       }
       return fileInformation.brand;
     }
