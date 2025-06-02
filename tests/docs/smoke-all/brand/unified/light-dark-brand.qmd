@@ -5,14 +5,30 @@ brand:
     color:
       foreground: '#222'
       background: '#eee'
+    typography:
+      link:
+        background-color: '#efe'
   dark:
     color:
       foreground: '#eee'
       background: '#222'
+    typography:
+      monospace:
+        background-color: '#321'
+      link:
+        background-color: '#421'
+        color: '#c3a'
+_quarto:
+  tests:
+    html:
+      ensureHtmlElements:
+        -
+          - "a.quarto-color-scheme-toggle"
+        - []
 ---
 
 
-# brand in unified light and dark syntax
+# light and dark brand syntax
 
 
 ```{r}
@@ -23,6 +39,7 @@ fib <- function(x) {
 }
 ```
 
+Here is [a link](https://example.com).
 
 {{< lipsum 2 >}}
 

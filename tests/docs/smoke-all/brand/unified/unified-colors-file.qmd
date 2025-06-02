@@ -1,6 +1,13 @@
 ---
 format: html
 brand: brand-unified.yml
+_quarto:
+  tests:
+    html:
+      ensureHtmlElements:
+        -
+          - "a.quarto-color-scheme-toggle"
+        - []
 ---
 
 # brand in unified light and dark syntax

@@ -4,6 +4,13 @@ brand:
   color:
     foreground: '#222'
     background: '#eee'
+_quarto:
+  tests:
+    html:
+      ensureHtmlElements:
+        - []
+        -
+          - "a.quarto-color-scheme-toggle"
 ---
 
 
