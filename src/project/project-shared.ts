@@ -59,6 +59,7 @@ import {
 import { Brand, LightDarkBrand, LightDarkColor } from "../core/brand/brand.ts";
 import { assert } from "testing/asserts";
 import { Cloneable, safeCloneDeep } from "../core/safe-clone-deep.ts";
+import { getStack } from "../core/deno/debug.ts";
 
 export function projectExcludeDirs(context: ProjectContext): string[] {
   const outputDir = projectOutputDir(context);
@@ -530,9 +531,10 @@ function splitColorLightDark(
   return bcld;
 }
 export function brandIsUnified(brand: BrandUnified): boolean {
+  // if(!brand.color) return false;
   return Array.from(Zod.BrandNamedThemeColor.options).some(
     (colorName) => {
-      console.log("the problem, about to die");
+      //console.log("brandIsUnified", getStack("ansi"));
       if (!brand.color![colorName]) {
         return false;
       }
@@ -746,6 +748,7 @@ export async function projectResolveBrand(
     return new Brand(brand, dirname(brandPath), project.dir);
   }
   async function loadUnifiedBrand(brandPath: string): Promise<LightDarkBrand> {
+    //console.log("loadUnifiedBrand file", getStack("ansi"));
     const brand = await readAndValidateYamlFromFile(
       brandPath,
       refSchema("brand-unified", "Format-independent brand configuration."),
@@ -824,7 +827,7 @@ export async function projectResolveBrand(
     }
     if (typeof brand === "string") {
       fileInformation.brand = await loadUnifiedBrand(resolveBrandPath(brand));
-      console.log("the solution file");
+      //console.log("the solution file");
       return fileInformation.brand;
     } else {
       assert(typeof brand === "object");
@@ -850,12 +853,12 @@ export async function projectResolveBrand(
         }
         fileInformation.brand = { light, dark };
       } else {
+        //console.log("splitUnifiedBrand inline", fileName, getStack("ansi"));
         fileInformation.brand = splitUnifiedBrand(
           brand,
           dirname(fileName),
           project.dir,
         );
-        console.log("the solution");
       }
       return fileInformation.brand;
     }
