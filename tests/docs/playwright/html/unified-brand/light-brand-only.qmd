@@ -1,21 +1,11 @@
 ---
 format: html
+title: light brand inline
 brand:
   color:
     foreground: '#222'
     background: '#eee'
-_quarto:
-  tests:
-    html:
-      ensureHtmlElements:
-        - []
-        -
-          - "a.quarto-color-scheme-toggle"
 ---
-
-
-# brand in unified light and dark syntax
-
 
 ```{r}
 #| lst-label: lst-fibonacci
@@ -25,6 +15,7 @@ fib <- function(x) {
 }
 ```
 
+Here is [a link](https://example.com).
 
 {{< lipsum 2 >}}
 

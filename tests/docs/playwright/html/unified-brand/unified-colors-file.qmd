@@ -1,18 +1,8 @@
 ---
 format: html
+title: unified light and dark brand file
 brand: brand-unified.yml
-_quarto:
-  tests:
-    html:
-      ensureHtmlElements:
-        -
-          - "a.quarto-color-scheme-toggle"
-        - []
 ---
-
-# brand in unified light and dark syntax
-
-
 
 ```{r}
 #| lst-label: lst-fibonacci

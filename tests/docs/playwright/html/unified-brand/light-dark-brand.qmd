@@ -1,5 +1,6 @@
 ---
 format: html
+title: light and dark brands inline
 brand:
   light:
     color:
@@ -18,18 +19,7 @@ brand:
       link:
         background-color: '#421'
         color: '#c3a'
-_quarto:
-  tests:
-    html:
-      ensureHtmlElements:
-        -
-          - "a.quarto-color-scheme-toggle"
-        - []
 ---
-
-
-# light and dark brand syntax
-
 
 ```{r}
 #| lst-label: lst-fibonacci

@@ -1,5 +1,6 @@
 ---
 format: html
+title: unified light and dark brand inline
 brand:
   color:
     foreground: 
@@ -18,17 +19,7 @@ brand:
         dark: '#421'
       color:
         dark: '#c3a'
-_quarto:
-  tests:
-    html:
-      ensureHtmlElements:
-        -
-          - "a.quarto-color-scheme-toggle"
-        - []
 ---
-
-# brand in unified light and dark syntax
-
 
 
 ```{r}
