@@ -59,6 +59,21 @@ test('Light and dark brands inline', async ({ page }) => {
   check_link_colors(page, 'quarto-light');
 });
 
+test('Dark and light brand files', async ({ page }) => {
+  await page.goto('./html/unified-brand/dark-light-brand-file.html');
+  expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
+
+  check_link_colors(page, 'quarto-dark');
+});
+
+test('Dark and light brands inline', async ({ page }) => {
+  await page.goto('./html/unified-brand/dark-light-brand.html');
+  expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
+
+  check_link_colors(page, 'quarto-dark');
+});
+
+
 test('Unified light and dark brand file', async ({ page }) => {
   await page.goto('./html/unified-brand/unified-colors-file.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
