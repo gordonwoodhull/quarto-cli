@@ -537,43 +537,33 @@ function colorIsUnified(blcd: BrandColorLightDark) {
 }
 export function brandIsUnified(brand: BrandUnified): boolean {
   if (brand.color) {
-    if (
-      Array.from(Zod.BrandNamedThemeColor.options).some(
-        (colorName) => {
-          if (!brand.color![colorName]) {
-            return false;
-          }
-          return colorIsUnified(brand.color![colorName]);
-        },
-      )
-    ) {
-      return true;
+    for (const colorName of Zod.BrandNamedThemeColor.options) {
+      if (!brand.color[colorName]) {
+        continue;
+      }
+      if (colorIsUnified(brand.color![colorName])) {
+        return true;
+      }
     }
   }
   if (brand.typography) {
-    if (
-      Array.from(Zod.BrandNamedTypographyElements.options).some(
-        (elementName) => {
-          const element = brand.typography![elementName];
-          if (!element || typeof element === "string") {
-            return false;
-          }
-          if (
-            "background-color" in element && element["background-color"] &&
-            colorIsUnified(element["background-color"])
-          ) {
-            return true;
-          }
-          if (
-            "color" in element && element["color"] &&
-            colorIsUnified(element["color"])
-          ) {
-            return true;
-          }
-        },
-      )
-    ) {
-      return true;
+    for (const elementName of Zod.BrandNamedTypographyElements.options) {
+      const element = brand.typography![elementName];
+      if (!element || typeof element === "string") {
+        continue;
+      }
+      if (
+        "background-color" in element && element["background-color"] &&
+        colorIsUnified(element["background-color"])
+      ) {
+        return true;
+      }
+      if (
+        "color" in element && element["color"] &&
+        colorIsUnified(element["color"])
+      ) {
+        return true;
+      }
     }
   }
   return false;
@@ -584,22 +574,20 @@ function sharedTypography(
   const ret: BrandTypographySingle = {
     fonts: unified.fonts,
   };
-  Array.from(Zod.BrandNamedTypographyElements.options).forEach(
-    (element) => {
-      if (!unified[element]) {
-        return;
-      }
-      if (typeof unified[element] === "string") {
-        ret[element] = unified[element];
-        return;
-      }
-      ret[element] = Object.fromEntries(
-        Object.entries(unified[element]).filter(
-          ([key, _]) => !["color", "background-color"].includes(key),
-        ),
-      );
-    },
-  );
+  for (const elementName of Zod.BrandNamedTypographyElements.options) {
+    if (!unified[elementName]) {
+      continue;
+    }
+    if (typeof unified[elementName] === "string") {
+      ret[elementName] = unified[elementName];
+      continue;
+    }
+    ret[elementName] = Object.fromEntries(
+      Object.entries(unified[elementName]).filter(
+        ([key, _]) => !["color", "background-color"].includes(key),
+      ),
+    );
+  }
   return ret;
 }
 function splitUnifiedBrand(
@@ -756,17 +744,15 @@ function splitUnifiedBrand(
     defaults: unifiedBrand.defaults,
   };
   if (unifiedBrand.color) {
-    Array.from(Zod.BrandNamedThemeColor.options).forEach(
-      (colorName) => {
-        if (!unifiedBrand.color![colorName]) {
-          return;
-        }
-        ({
-          light: lightBrand.color![colorName],
-          dark: darkBrand.color![colorName],
-        } = splitColorLightDark(unifiedBrand.color![colorName]));
-      },
-    );
+    for (const colorName of Zod.BrandNamedThemeColor.options) {
+      if (!unifiedBrand.color[colorName]) {
+        continue;
+      }
+      ({
+        light: lightBrand.color![colorName],
+        dark: darkBrand.color![colorName],
+      } = splitColorLightDark(unifiedBrand.color![colorName]));
+    }
   }
   return {
     light: new Brand(lightBrand, brandDir, projectDir),
