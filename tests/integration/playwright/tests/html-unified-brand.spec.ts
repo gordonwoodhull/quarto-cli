@@ -31,7 +31,7 @@ test('Light brand in file', async ({ page }) => {
 });
 
 test('Light brand inline', async ({ page }) => {
-  await page.goto('./html/unified-brand/light-brand-only-inline.html');
+  await page.goto('./html/unified-brand/light-brand-only.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(0);
 });
 
@@ -83,6 +83,13 @@ test('Unified light and dark brand file', async ({ page }) => {
 
 test('Unified light and dark brand inline', async ({ page }) => {
   await page.goto('./html/unified-brand/unified-colors.html');
+  expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
+
+  check_link_colors(page, 'quarto-light');
+});
+
+test('Unified light and dark typography inline', async ({ page }) => {
+  await page.goto('./html/unified-brand/unified-typography.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
 
   check_link_colors(page, 'quarto-light');

@@ -1,14 +1,19 @@
 ---
 format: html
-title: light brand inline
+title: unified light and dark brand inline
 brand:
-  color:
-    foreground: '#222'
-    background: '#eee'
   typography:
+    monospace:
+      background-color:
+        dark: '#321'
     link:
-      background-color: '#efe'
+      background-color:
+        light: '#efe'
+        dark: '#421'
+      color:
+        dark: '#c3a'
 ---
+
 
 ```{r}
 #| lst-label: lst-fibonacci

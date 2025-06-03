@@ -530,17 +530,53 @@ function splitColorLightDark(
   }
   return bcld;
 }
+function colorIsUnified(blcd: BrandColorLightDark) {
+  // could i supposed check that it's an object whose only keys
+  // are light and dark and that bcld.light !== bcld.dark
+  return typeof blcd !== "string";
+}
 export function brandIsUnified(brand: BrandUnified): boolean {
-  // if(!brand.color) return false;
-  return Array.from(Zod.BrandNamedThemeColor.options).some(
-    (colorName) => {
-      //console.log("brandIsUnified", getStack("ansi"));
-      if (!brand.color![colorName]) {
-        return false;
-      }
-      return typeof brand.color![colorName] !== "string";
-    },
-  );
+  if (brand.color) {
+    if (
+      Array.from(Zod.BrandNamedThemeColor.options).some(
+        (colorName) => {
+          if (!brand.color![colorName]) {
+            return false;
+          }
+          return colorIsUnified(brand.color![colorName]);
+        },
+      )
+    ) {
+      return true;
+    }
+  }
+  if (brand.typography) {
+    if (
+      Array.from(Zod.BrandNamedTypographyElements.options).some(
+        (elementName) => {
+          const element = brand.typography![elementName];
+          if (!element || typeof element === "string") {
+            return false;
+          }
+          if (
+            "background-color" in element && element["background-color"] &&
+            colorIsUnified(element["background-color"])
+          ) {
+            return true;
+          }
+          if (
+            "color" in element && element["color"] &&
+            colorIsUnified(element["color"])
+          ) {
+            return true;
+          }
+        },
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 function sharedTypography(
   unified: BrandTypographyUnified,
