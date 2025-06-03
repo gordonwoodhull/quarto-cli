@@ -743,12 +743,14 @@ function splitUnifiedBrand(
     color: {},
     typography: typography && specializeTypography(typography, "light"),
     logo: {},
+    defaults: unifiedBrand.defaults,
   };
   const darkBrand: BrandSingle = {
     meta: unifiedBrand.meta,
     color: {},
     typography: typography && specializeTypography(typography, "dark"),
     logo: {},
+    defaults: unifiedBrand.defaults,
   };
   if (unifiedBrand.color) {
     Array.from(Zod.BrandNamedThemeColor.options).forEach(
