@@ -49,28 +49,28 @@ test('Light and dark brand files', async ({ page }) => {
   await page.goto('./html/unified-brand/light-dark-brand-file.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
 
-  check_link_colors(page, 'quarto-light');
+  await check_link_colors(page, 'quarto-light');
 });
 
 test('Light and dark brands inline', async ({ page }) => {
   await page.goto('./html/unified-brand/light-dark-brand.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
 
-  check_link_colors(page, 'quarto-light');
+  await check_link_colors(page, 'quarto-light');
 });
 
 test('Dark and light brand files', async ({ page }) => {
   await page.goto('./html/unified-brand/dark-light-brand-file.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
 
-  check_link_colors(page, 'quarto-dark');
+  await check_link_colors(page, 'quarto-dark');
 });
 
 test('Dark and light brands inline', async ({ page }) => {
   await page.goto('./html/unified-brand/dark-light-brand.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
 
-  check_link_colors(page, 'quarto-dark');
+  await check_link_colors(page, 'quarto-dark');
 });
 
 
@@ -78,19 +78,19 @@ test('Unified light and dark brand file', async ({ page }) => {
   await page.goto('./html/unified-brand/unified-colors-file.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
 
-  check_link_colors(page, 'quarto-light');
+  await check_link_colors(page, 'quarto-light');
 });
 
 test('Unified light and dark brand inline', async ({ page }) => {
   await page.goto('./html/unified-brand/unified-colors.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
 
-  check_link_colors(page, 'quarto-light');
+  await check_link_colors(page, 'quarto-light');
 });
 
 test('Unified light and dark typography inline', async ({ page }) => {
   await page.goto('./html/unified-brand/unified-typography.html');
   expect(await page.locator('a.quarto-color-scheme-toggle').count()).toEqual(1);
 
-  check_link_colors(page, 'quarto-light');
+  await check_link_colors(page, 'quarto-light');
 });
