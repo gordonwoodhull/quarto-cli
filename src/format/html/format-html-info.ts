@@ -9,7 +9,6 @@
 import { kBrand, kTheme } from "../../config/constants.ts";
 import { isHtmlDashboardOutput, isHtmlOutput } from "../../config/format.ts";
 import { Format, Metadata } from "../../config/types.ts";
-import { brandIsUnified } from "../../project/project-shared.ts";
 
 export function formatHasBootstrap(format: Format) {
   if (
