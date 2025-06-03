@@ -696,6 +696,9 @@ function splitUnifiedBrand(
   ) =>
     typography && {
       fonts: typography.fonts && [...typography.fonts],
+      base: !typography.base || typeof typography.base === "string"
+        ? typography.base
+        : { ...typography.base },
       headings: !typography.headings || typeof typography.headings === "string"
         ? typography.headings
         : {
@@ -740,16 +743,16 @@ function splitUnifiedBrand(
     };
   const lightBrand: BrandSingle = {
     meta: unifiedBrand.meta,
-    color: {},
+    color: { palette: unifiedBrand.color && { ...unifiedBrand.color.palette } },
     typography: typography && specializeTypography(typography, "light"),
-    logo: {},
+    logo: unifiedBrand.logo,
     defaults: unifiedBrand.defaults,
   };
   const darkBrand: BrandSingle = {
     meta: unifiedBrand.meta,
-    color: {},
+    color: { palette: unifiedBrand.color && { ...unifiedBrand.color.palette } },
     typography: typography && specializeTypography(typography, "dark"),
-    logo: {},
+    logo: unifiedBrand.logo,
     defaults: unifiedBrand.defaults,
   };
   if (unifiedBrand.color) {
@@ -786,7 +789,6 @@ export async function projectResolveBrand(
     return new Brand(brand, dirname(brandPath), project.dir);
   }
   async function loadUnifiedBrand(brandPath: string): Promise<LightDarkBrand> {
-    //console.log("loadUnifiedBrand file", getStack("ansi"));
     const brand = await readAndValidateYamlFromFile(
       brandPath,
       refSchema("brand-unified", "Format-independent brand configuration."),
@@ -865,7 +867,6 @@ export async function projectResolveBrand(
     }
     if (typeof brand === "string") {
       fileInformation.brand = await loadUnifiedBrand(resolveBrandPath(brand));
-      //console.log("the solution file");
       return fileInformation.brand;
     } else {
       assert(typeof brand === "object");
@@ -891,7 +892,6 @@ export async function projectResolveBrand(
         }
         fileInformation.brand = { light, dark };
       } else {
-        //console.log("splitUnifiedBrand inline", fileName, getStack("ansi"));
         fileInformation.brand = splitUnifiedBrand(
           brand,
           dirname(fileName),
