@@ -5,10 +5,6 @@ format:
     logo:
       light: dashboard-light.png
       dark: dashboard-dark.png
-  revealjs:
-    logo:
-      light: revealjs-light.png
-      dark: revealjs-dark.png
 brand:
   logo:
     images:
