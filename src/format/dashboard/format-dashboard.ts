@@ -28,6 +28,7 @@ import {
   kSassBundles,
   Metadata,
 } from "../../config/types.ts";
+import { LogoLightDarkSpecifier } from "../../resources/types/zod/schema-types.ts";
 import { PandocFlags } from "../../config/types.ts";
 import { mergeConfigs } from "../../core/config.ts";
 import { Document, Element } from "../../core/deno-dom.ts";
@@ -65,7 +66,7 @@ import { processToolbars } from "./format-dashboard-toolbar.ts";
 import { processDatatables } from "./format-dashboard-tables.ts";
 import { assert } from "testing/asserts";
 import { brandBootstrapSassBundles } from "../../core/sass/brand.ts";
-import { findLogo, normalizeLogoSpec } from "../../core/brand/brand.ts";
+import { resolveLogo } from "../../core/brand/brand.ts";
 
 const kDashboardClz = "quarto-dashboard";
 
@@ -122,17 +123,19 @@ export function dashboardFormat() {
         }
 
         const brand = await project.resolveBrand(input);
-        if (format.metadata[kLogo]) {
-          format.metadata[kLogo] = await normalizeLogoSpec(
-            brand,
-            format.metadata[kLogo],
-          );
-          console.log("logo", format.metadata[kLogo]);
-        } else if (brand) {
-          const light = findLogo(brand, "light", ["small", "medium", "large"]);
-          const dark = findLogo(brand, "dark", ["small", "medium", "large"]);
-          format.metadata[kLogo] = { light, dark };
+        let logoSpec = format.metadata[kLogo] as LogoLightDarkSpecifier;
+        if (typeof logoSpec === "string" && format.metadata[kLogoAlt]) {
+          logoSpec = {
+            path: logoSpec,
+            alt: format.metadata[kLogoAlt] as string,
+          };
         }
+        format.metadata[kLogo] = resolveLogo(brand, logoSpec, [
+          "small",
+          "medium",
+          "large",
+        ]);
+        console.log("dash logo", format.metadata[kLogo]);
 
         const extras: FormatExtras = await baseHtmlFormat.formatExtras(
           input,
