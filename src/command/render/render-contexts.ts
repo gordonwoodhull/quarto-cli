@@ -86,6 +86,7 @@ import {
 import { ExtensionContext } from "../../extension/types.ts";
 import { NotebookContext } from "../../render/notebook/notebook-types.ts";
 import { safeCloneDeep } from "../../core/safe-clone-deep.ts";
+import { darkModeDefaultMetadata } from "../../format/html/format-html-info.ts";
 
 export async function resolveFormatsFromMetadata(
   metadata: Metadata,
@@ -570,6 +571,19 @@ async function resolveFormats(
     // resolve brand in project and forward it to format
     const brand = await project.resolveBrand(target.source);
     mergedFormats[format].render.brand = brand;
+    if (
+      mergedFormats[format].render.brand &&
+      !mergedFormats[format].render.brand.dark &&
+      darkModeDefaultMetadata(mergedFormats[format].metadata) !== undefined
+    ) {
+      // there is no dark brand specified but the theme enables dark mode
+      // so we need to copy the light brand to the dark brand
+      // https://github.com/quarto-dev/quarto-cli/issues/12981
+
+      mergedFormats[format].render.brand.dark = ld.cloneDeep(
+        mergedFormats[format].render.brand.light,
+      );
+    }
 
     // apply defaults from brand yaml under the metadata of the current format
     const brandFormatDefaults: Metadata =
