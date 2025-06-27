@@ -87,6 +87,7 @@ import { ExtensionContext } from "../../extension/types.ts";
 import { NotebookContext } from "../../render/notebook/notebook-types.ts";
 import { safeCloneDeep } from "../../core/safe-clone-deep.ts";
 import { darkModeDefaultMetadata } from "../../format/html/format-html-info.ts";
+import { getStack } from "../../core/deno/debug.ts";
 
 export async function resolveFormatsFromMetadata(
   metadata: Metadata,
@@ -570,21 +571,17 @@ async function resolveFormats(
 
     // resolve brand in project and forward it to format
     const brand = await project.resolveBrand(target.source);
-    mergedFormats[format].render.brand = brand;
-    if (
-      mergedFormats[format].render.brand &&
-      !mergedFormats[format].render.brand.dark &&
-      darkModeDefaultMetadata(mergedFormats[format].metadata) !== undefined
-    ) {
-      // there is no dark brand specified but the theme enables dark mode
-      // so we need to copy the light brand to the dark brand
-      // https://github.com/quarto-dev/quarto-cli/issues/12981
-
-      mergedFormats[format].render.brand.dark = ld.cloneDeep(
-        mergedFormats[format].render.brand.light,
-      );
+    console.log("render brand", getStack("ansi"));
+    if (brand) {
+      mergedFormats[format].render.brand = {
+        light: brand.light,
+        dark: (brand.enablesDarkMode ||
+            darkModeDefaultMetadata(mergedFormats[format].metadata) !==
+              undefined)
+          ? brand.dark
+          : undefined,
+      };
     }
-
     // apply defaults from brand yaml under the metadata of the current format
     const brandFormatDefaults: Metadata =
       (brand?.light?.data?.defaults?.quarto as unknown as Record<

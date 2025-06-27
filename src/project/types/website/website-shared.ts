@@ -48,6 +48,7 @@ import { kPageTitle, kTitle, kTitlePrefix } from "../../../config/constants.ts";
 import { md5HashAsync } from "../../../core/hash.ts";
 export { type NavigationFooter } from "../../types.ts";
 import { resolveLogo } from "../../../core/brand/brand.ts";
+import { getStack } from "../../../core/deno/debug.ts";
 
 export interface Navigation {
   navbar?: Navbar;
@@ -130,6 +131,11 @@ export async function websiteNavigationConfig(project: ProjectContext) {
 
   // note no document-level customization of brand logo #11309
   const projectBrand = await project.resolveBrand();
+  console.log(
+    "wnc",
+    projectBrand, // && Object.keys(projectBrand),
+    getStack("ansi"),
+  );
   if (navbar) {
     let navLogo = navbar.logo;
     if (navbar[kLogoAlt]) {
@@ -199,6 +205,7 @@ export async function websiteNavigationConfig(project: ProjectContext) {
       "small",
       "large",
     ]);
+    console.log("sidebar logo", sideLogo, sidebars[0].logo);
 
     // convert contents: auto into items
     for (const sb of sidebars) {
