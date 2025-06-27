@@ -51,7 +51,7 @@ import { Zod } from "../resources/types/zod/schema-types.ts";
 import {
   Brand,
   LightDarkBrand,
-  LightDarkBrandEnables,
+  LightDarkBrandDarkFlag,
   splitUnifiedBrand,
 } from "../core/brand/brand.ts";
 import { assert } from "testing/asserts";
@@ -521,7 +521,7 @@ export const ensureFileInformationCache = (
 export async function projectResolveBrand(
   project: ProjectContext,
   fileName?: string,
-): Promise<LightDarkBrandEnables | undefined> {
+): Promise<LightDarkBrandDarkFlag | undefined> {
   async function loadSingleBrand(brandPath: string): Promise<Brand> {
     const brand = await readAndValidateYamlFromFile(
       brandPath,
@@ -532,7 +532,7 @@ export async function projectResolveBrand(
   }
   async function loadUnifiedBrand(
     brandPath: string,
-  ): Promise<LightDarkBrandEnables> {
+  ): Promise<LightDarkBrandDarkFlag> {
     const brand = await readAndValidateYamlFromFile(
       brandPath,
       refSchema("brand-unified", "Format-independent brand configuration."),

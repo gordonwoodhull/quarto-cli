@@ -269,7 +269,7 @@ export type LightDarkBrand = {
   dark?: Brand;
 };
 
-export type LightDarkBrandEnables = {
+export type LightDarkBrandDarkFlag = {
   light?: Brand;
   dark?: Brand;
   enablesDarkMode: boolean;
@@ -481,7 +481,7 @@ export function splitUnifiedBrand(
   unified: unknown,
   brandDir: string,
   projectDir: string,
-): LightDarkBrandEnables {
+): LightDarkBrandDarkFlag {
   const unifiedBrand: BrandUnified = Zod.BrandUnified.parse(unified);
   let typography: BrandTypographySingle | undefined = undefined;
   let headingsColor: LightDarkColor | undefined = undefined;

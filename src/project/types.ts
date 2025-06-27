@@ -10,7 +10,7 @@ import { Format, FormatExtras } from "../config/types.ts";
 import {
   Brand,
   LightDarkBrand,
-  LightDarkBrandEnables,
+  LightDarkBrandDarkFlag,
 } from "../core/brand/brand.ts";
 import { MappedString } from "../core/mapped-text.ts";
 import { PartitionedMarkdown } from "../core/pandoc/types.ts";
@@ -61,7 +61,7 @@ export type FileInformation = {
   engine?: ExecutionEngine;
   target?: ExecutionTarget;
   metadata?: Metadata;
-  brand?: LightDarkBrandEnables;
+  brand?: LightDarkBrandDarkFlag;
 };
 
 export interface ProjectContext extends Cloneable<ProjectContext> {
@@ -75,11 +75,11 @@ export interface ProjectContext extends Cloneable<ProjectContext> {
   fileInformationCache: Map<string, FileInformation>;
 
   // This is a cache of _brand.yml for a project
-  brandCache?: { brand?: LightDarkBrandEnables };
+  brandCache?: { brand?: LightDarkBrandDarkFlag };
   resolveBrand: (
     fileName?: string,
   ) => Promise<
-    undefined | LightDarkBrandEnables
+    undefined | LightDarkBrandDarkFlag
   >;
 
   // expands markdown for a file
