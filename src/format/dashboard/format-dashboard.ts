@@ -135,7 +135,6 @@ export function dashboardFormat() {
           "medium",
           "large",
         ]);
-        console.log("resolvelogo", logoSpec, brand, format.metadata[kLogo]);
 
         const extras: FormatExtras = await baseHtmlFormat.formatExtras(
           input,

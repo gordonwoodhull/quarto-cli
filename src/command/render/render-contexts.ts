@@ -87,7 +87,6 @@ import { ExtensionContext } from "../../extension/types.ts";
 import { NotebookContext } from "../../render/notebook/notebook-types.ts";
 import { safeCloneDeep } from "../../core/safe-clone-deep.ts";
 import { darkModeDefaultMetadata } from "../../format/html/format-html-info.ts";
-import { getStack } from "../../core/deno/debug.ts";
 
 export async function resolveFormatsFromMetadata(
   metadata: Metadata,
@@ -571,7 +570,6 @@ async function resolveFormats(
 
     // resolve brand in project and forward it to format
     const brand = await project.resolveBrand(target.source);
-    console.log("render brand", getStack("ansi"));
     if (brand) {
       mergedFormats[format].render.brand = {
         light: brand.light,

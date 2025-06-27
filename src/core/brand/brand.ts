@@ -371,7 +371,6 @@ export function resolveLogo(
   // dark logo default to light logo if no dark logo specified
   // and dark mode is enabled
   if (!dark && light && brand && brand.dark) {
-    console.log("dark logo dupes light logo");
     dark = { ...light };
   }
   return {
