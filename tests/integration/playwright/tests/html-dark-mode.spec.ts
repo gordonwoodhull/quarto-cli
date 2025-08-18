@@ -69,7 +69,7 @@ test('Syntax highlighting, arrow, with JS', async ({ page }) => {
   await expect(locatr).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   // light inline code
   const pythonCode = await page.locator('li code.sourceCode.python');
-  await expect(pythonCode).toHaveCSS('background-color', 'rgb(248, 249, 250)');
+  await expect(pythonCode).toHaveCSS('background-color', 'rgba(233, 236, 239, 0.65)');
   await expect(pythonCode).toHaveCSS('color', 'rgb(125, 18, 186)');
   // alert
   const link = await page.locator('span.al').first();
@@ -77,6 +77,6 @@ test('Syntax highlighting, arrow, with JS', async ({ page }) => {
 
   await page.locator("a.quarto-color-scheme-toggle").click();
   // dark inline code
-  await expect(pythonCode).toHaveCSS('background-color', 'rgb(248, 249, 250)');
-  await expect(pythonCode).toHaveCSS('color', 'rgb(125, 18, 186)');
+  await expect(pythonCode).toHaveCSS('background-color', 'rgba(37, 41, 46, 0.65)');
+  await expect(pythonCode).toHaveCSS('color', 'rgb(122, 130, 136)');
 });
