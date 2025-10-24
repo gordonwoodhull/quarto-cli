@@ -5,7 +5,6 @@
  */
 
 import { extname, join } from "../deno_ral/path.ts";
-import { debug } from "../deno_ral/log.ts";
 
 import * as ld from "../core/lodash.ts";
 
@@ -175,28 +174,22 @@ async function reorderEngines(project: ProjectContext) {
     | (string | ExternalEngine)[]
     | undefined;
 
-  debug(`reorderEngines - project ${project.dir} has engines: ${!!projectEngines}`);
-  debug(`reorderEngines - projectEngines: ${JSON.stringify(projectEngines || [])}`);
-  debug(`reorderEngines - registered engines: ${Array.from(kEngines.keys()).join(", ")}`);
 
   for (const engine of projectEngines ?? []) {
     if (typeof engine === "object") {
-      debug(`reorderEngines - importing external engine from path: ${engine.path}`);
       try {
         const extEngine = (await import(engine.path)).default as ExecutionEngine;
-        debug(`reorderEngines - external engine loaded with name: ${extEngine.name}`);
         userSpecifiedOrder.push(extEngine.name);
         kEngines.set(extEngine.name, extEngine);
-      } catch (error: any) {
-        debug(`reorderEngines - error importing engine: ${error.message || 'Unknown error'}`);
+      } catch (err: any) {
+        // Throw error for engine import failures as this is a serious configuration issue
+        throw new Error(`Failed to import engine from ${engine.path}: ${err.message || 'Unknown error'}`);
       }
     } else {
-      debug(`reorderEngines - adding existing engine to order: ${engine}`);
       userSpecifiedOrder.push(engine);
     }
   }
 
-  debug(`reorderEngines - final userSpecifiedOrder: ${userSpecifiedOrder.join(", ")}`);
 
   for (const key of userSpecifiedOrder) {
     if (!kEngines.has(key)) {

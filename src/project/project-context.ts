@@ -96,7 +96,6 @@ import { ConcreteSchema } from "../core/lib/yaml-schema/types.ts";
 import { ExtensionContext } from "../extension/types.ts";
 import { asArray } from "../core/array.ts";
 import { renderFormats } from "../command/render/render-contexts.ts";
-import { debug } from "../deno_ral/log.ts";
 import { computeProjectEnvironment } from "./project-environment.ts";
 import { ProjectEnvironment } from "./project-environment-types.ts";
 import { NotebookContext } from "../render/notebook/notebook-types.ts";
@@ -114,7 +113,6 @@ const mergeExtensionMetadata = async (
   context: ProjectContext,
   pOptions: RenderOptions,
 ) => {
-  debug(`mergeExtensionMetadata - starting for context dir: ${context.dir}`);
   // this will mutate context.config.project to merge
   // in any project metadata from extensions
   if (context.config) {
@@ -124,8 +122,6 @@ const mergeExtensionMetadata = async (
       context.isSingleFile ? undefined : context.dir,
       { builtIn: false },
     );
-    debug(`mergeExtensionMetadata - extensions count: ${extensions.length}`);
-
     // Handle project metadata extensions
     const projectMetadata = extensions.filter((extension) =>
       extension.contributes.metadata?.project
@@ -136,35 +132,6 @@ const mergeExtensionMetadata = async (
       context.config.project,
       ...projectMetadata,
     );
-
-    // Handle engine extensions
-    const engineExtensions = extensions.filter((extension) =>
-      extension.contributes.engines !== undefined &&
-      extension.contributes.engines.length > 0
-    );
-
-    debug(`mergeExtensionMetadata - engine extensions count: ${engineExtensions.length}`);
-    if (engineExtensions.length > 0) {
-      engineExtensions.forEach(ext => {
-        debug(`mergeExtensionMetadata - extension ${ext.id.name} contributes engines: ${JSON.stringify(ext.contributes.engines)}`);
-      });
-
-      if (!context.config.engines) {
-        context.config.engines = [];
-      }
-
-      const existingEngines = context.config
-        .engines as (string | ExternalEngine)[];
-      debug(`mergeExtensionMetadata - before merge, engines: ${JSON.stringify(existingEngines || [])}`);
-
-      const extensionEngines = engineExtensions
-        .map((extension) => extension.contributes.engines)
-        .flat();
-      debug(`mergeExtensionMetadata - engines from extensions: ${JSON.stringify(extensionEngines)}`);
-
-      context.config.engines = [...existingEngines, ...extensionEngines];
-      debug(`mergeExtensionMetadata - after merge, engines: ${JSON.stringify(context.config.engines)}`);
-    }
   }
 };
 
@@ -174,7 +141,6 @@ export async function projectContext(
   renderOptions?: RenderOptions,
   force = false,
 ): Promise<ProjectContext | undefined> {
-  debug(`projectContext called for path ${path} with renderOptions: ${!!renderOptions}`);
   const flags = renderOptions?.flags;
   let dir = normalizePath(
     Deno.statSync(path).isDirectory ? path : dirname(path),
@@ -211,17 +177,6 @@ export async function projectContext(
   ) => {
     if (renderOptions) {
       await mergeExtensionMetadata(context, renderOptions);
-    } else if (extensionContext) {
-      // Create minimal RenderOptions for extension processing when not provided
-      const minimalRenderOptions: RenderOptions = {
-        services: {
-          extension: extensionContext,
-          temp: context.temp,
-          notebook: notebookContext,
-        },
-        flags: {},
-      };
-      await mergeExtensionMetadata(context, minimalRenderOptions);
     }
     onCleanup(context.cleanup);
     return context;
@@ -257,6 +212,15 @@ export async function projectContext(
         );
         const metadata = includedMeta.metadata;
         projectConfig = mergeProjectMetadata(projectConfig, metadata);
+      }
+
+      // Process engine extensions
+      if (extensionContext) {
+        projectConfig = await resolveEngineExtensions(
+          extensionContext,
+          projectConfig,
+          dir
+        );
       }
 
       // collect then merge configuration profiles
@@ -427,7 +391,6 @@ export async function projectContext(
           return undefined;
         }
 
-        debug(`projectContext: Found Quarto project in ${dir}`);
 
         if (type.formatExtras) {
           result.formatExtras = async (
@@ -446,7 +409,6 @@ export async function projectContext(
         };
         return await returnResult(result);
       } else {
-        debug(`projectContext: Found Quarto project in ${dir}`);
         const temp = createTempContext({
           dir: join(dir, ".quarto"),
           prefix: "quarto-session-temp",
@@ -590,7 +552,6 @@ export async function projectContext(
             context.engines = [engine?.name ?? kMarkdownEngine];
             context.files.input = [input];
           }
-          debug(`projectContext: Found Quarto project in ${originalDir}`);
           return await returnResult(context);
         } else {
           return undefined;
@@ -763,6 +724,44 @@ async function resolveProjectExtension(
       );
     }
   }
+  return projectConfig;
+}
+
+async function resolveEngineExtensions(
+  context: ExtensionContext,
+  projectConfig: ProjectConfig,
+  dir: string,
+) {
+  // Find all extensions that contribute engines
+  const extensions = await context.extensions(
+    undefined,
+    projectConfig,
+    dir,
+    { builtIn: false },
+  );
+
+  // Filter to only those with engines
+  const engineExtensions = extensions.filter((extension) =>
+    extension.contributes.engines !== undefined &&
+    extension.contributes.engines.length > 0
+  );
+
+  if (engineExtensions.length > 0) {
+    // Initialize engines array if needed
+    if (!projectConfig.engines) {
+      projectConfig.engines = [];
+    }
+
+    const existingEngines = projectConfig.engines as (string | ExternalEngine)[];
+
+    // Extract and merge engines
+    const extensionEngines = engineExtensions
+      .map((extension) => extension.contributes.engines)
+      .flat();
+
+    projectConfig.engines = [...existingEngines, ...extensionEngines];
+  }
+
   return projectConfig;
 }
 

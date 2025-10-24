@@ -81,7 +81,8 @@ export interface ExtensionContext {
       | "formats"
       | "project"
       | "revealjs-plugins"
-      | "metadata",
+      | "metadata"
+      | "engines",
     config?: ProjectConfig,
     projectDir?: string,
     options?: ExtensionOptions,

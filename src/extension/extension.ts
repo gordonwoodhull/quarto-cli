@@ -358,6 +358,8 @@ function findExtensions(
       contributes === kRevealJSPlugins && ext.contributes[kRevealJSPlugins]
     ) {
       return true;
+    } else if (contributes === "engines" && ext.contributes.engines) {
+      return true;
     } else {
       return contributes === undefined;
     }
