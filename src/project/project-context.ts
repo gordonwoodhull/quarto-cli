@@ -108,11 +108,13 @@ import { createTempContext } from "../core/temp.ts";
 import { onCleanup } from "../core/cleanup.ts";
 import { once } from "../core/once.ts";
 import { Zod } from "../resources/types/zod/schema-types.ts";
+import { ExternalEngine } from "../resources/types/schema-types.ts";
 
 const mergeExtensionMetadata = async (
   context: ProjectContext,
   pOptions: RenderOptions,
 ) => {
+  debug(`mergeExtensionMetadata - starting for context dir: ${context.dir}`);
   // this will mutate context.config.project to merge
   // in any project metadata from extensions
   if (context.config) {
@@ -122,6 +124,9 @@ const mergeExtensionMetadata = async (
       context.isSingleFile ? undefined : context.dir,
       { builtIn: false },
     );
+    debug(`mergeExtensionMetadata - extensions count: ${extensions.length}`);
+
+    // Handle project metadata extensions
     const projectMetadata = extensions.filter((extension) =>
       extension.contributes.metadata?.project
     ).map((extension) => {
@@ -131,6 +136,35 @@ const mergeExtensionMetadata = async (
       context.config.project,
       ...projectMetadata,
     );
+
+    // Handle engine extensions
+    const engineExtensions = extensions.filter((extension) =>
+      extension.contributes.engines !== undefined &&
+      extension.contributes.engines.length > 0
+    );
+
+    debug(`mergeExtensionMetadata - engine extensions count: ${engineExtensions.length}`);
+    if (engineExtensions.length > 0) {
+      engineExtensions.forEach(ext => {
+        debug(`mergeExtensionMetadata - extension ${ext.id.name} contributes engines: ${JSON.stringify(ext.contributes.engines)}`);
+      });
+
+      if (!context.config.engines) {
+        context.config.engines = [];
+      }
+
+      const existingEngines = context.config
+        .engines as (string | ExternalEngine)[];
+      debug(`mergeExtensionMetadata - before merge, engines: ${JSON.stringify(existingEngines || [])}`);
+
+      const extensionEngines = engineExtensions
+        .map((extension) => extension.contributes.engines)
+        .flat();
+      debug(`mergeExtensionMetadata - engines from extensions: ${JSON.stringify(extensionEngines)}`);
+
+      context.config.engines = [...existingEngines, ...extensionEngines];
+      debug(`mergeExtensionMetadata - after merge, engines: ${JSON.stringify(context.config.engines)}`);
+    }
   }
 };
 
@@ -140,6 +174,7 @@ export async function projectContext(
   renderOptions?: RenderOptions,
   force = false,
 ): Promise<ProjectContext | undefined> {
+  debug(`projectContext called for path ${path} with renderOptions: ${!!renderOptions}`);
   const flags = renderOptions?.flags;
   let dir = normalizePath(
     Deno.statSync(path).isDirectory ? path : dirname(path),
@@ -176,6 +211,17 @@ export async function projectContext(
   ) => {
     if (renderOptions) {
       await mergeExtensionMetadata(context, renderOptions);
+    } else if (extensionContext) {
+      // Create minimal RenderOptions for extension processing when not provided
+      const minimalRenderOptions: RenderOptions = {
+        services: {
+          extension: extensionContext,
+          temp: context.temp,
+          notebook: notebookContext,
+        },
+        flags: {},
+      };
+      await mergeExtensionMetadata(context, minimalRenderOptions);
     }
     onCleanup(context.cleanup);
     return context;

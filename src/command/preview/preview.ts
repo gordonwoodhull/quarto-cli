@@ -4,7 +4,7 @@
  * Copyright (C) 2020-2022 Posit Software, PBC
  */
 
-import { info, warning } from "../../deno_ral/log.ts";
+import { debug, info, warning } from "../../deno_ral/log.ts";
 import {
   basename,
   dirname,
@@ -418,6 +418,13 @@ export async function renderForPreview(
   pandocArgs: string[],
   project?: ProjectContext,
 ): Promise<RenderForPreviewResult> {
+  debug(`renderForPreview - file: ${file}`);
+  debug(`renderForPreview - project defined: ${!!project}, project dir: ${project?.dir || 'N/A'}`);
+  debug(`renderForPreview - project has engines: ${!!project?.config?.engines}, count: ${project?.config?.engines ? (project.config.engines as any[]).length : 0}`);
+  if (project?.config?.engines) {
+    debug(`renderForPreview - project engines: ${JSON.stringify(project.config.engines)}`);
+  }
+
   // render
   const renderResult = await render(file, {
     services,
