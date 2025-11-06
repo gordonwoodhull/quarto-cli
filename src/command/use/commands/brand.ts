@@ -36,22 +36,31 @@ export const useBrandCommand = new Command()
     "--no-prompt",
     "Do not prompt to confirm actions",
   )
+  .option(
+    "--allow-write",
+    "Allow creating _brand directory and overwriting files",
+  )
   .example(
     "Use a brand from Github",
     "quarto use brand <gh-org>/<gh-repo>",
   )
-  .action(async (options: { prompt?: boolean }, target: string) => {
-    await initYamlIntelligenceResourcesFromFilesystem();
-    const temp = createTempContext();
-    try {
-      await useBrand(options, target, temp);
-    } finally {
-      temp.cleanup();
-    }
-  });
+  .action(
+    async (
+      options: { prompt?: boolean; allowWrite?: boolean },
+      target: string,
+    ) => {
+      await initYamlIntelligenceResourcesFromFilesystem();
+      const temp = createTempContext();
+      try {
+        await useBrand(options, target, temp);
+      } finally {
+        temp.cleanup();
+      }
+    },
+  );
 
 async function useBrand(
-  options: { prompt?: boolean },
+  options: { prompt?: boolean; allowWrite?: boolean },
   target: string,
   tempContext: TempContext,
 ) {
@@ -70,7 +79,10 @@ async function useBrand(
   }
 
   // Resolve brand directory
-  const brandDir = await ensureBrandDirectory(options.prompt !== false);
+  const brandDir = await ensureBrandDirectory(
+    options.prompt !== false,
+    options.allowWrite === true,
+  );
 
   // Extract and move the template into place
   const stagedDir = await stageBrand(source, tempContext);
@@ -121,7 +133,15 @@ async function useBrand(
     };
 
     if (existsSync(target)) {
-      if (options.prompt) {
+      // File exists - check if we can proceed
+      if (!options.allowWrite && options.prompt === false) {
+        throw new Error(
+          `The file ${displayName} already exists and would be overwritten. Use --allow-write to overwrite existing files.`,
+        );
+      }
+
+      // If we can prompt, ask for confirmation (regardless of allowWrite)
+      if (options.prompt !== false) {
         const proceed = await Confirm.prompt({
           message: `Overwrite file ${displayName}?`,
           default: true,
@@ -133,6 +153,9 @@ async function useBrand(
             `The file ${displayName} already exists and would be overwritten by this action.`,
           );
         }
+      } else {
+        // No prompt and we have allowWrite, so proceed with overwrite
+        copyActions.push(copyAction);
       }
     } else {
       copyActions.push(copyAction);
@@ -263,15 +286,23 @@ async function isTrusted(
   }
 }
 
-async function ensureBrandDirectory(allowPrompt: boolean) {
+async function ensureBrandDirectory(allowPrompt: boolean, allowWrite: boolean) {
   const currentDir = Deno.cwd();
   const nbContext = notebookContext();
   const project = await projectContext(currentDir, nbContext);
   if (!project) {
     throw new Error(`Could not find project dir for ${currentDir}`);
   }
-  const brandDir = join(project.dir, "brand");
+  const brandDir = join(project.dir, "_brand");
   if (!existsSync(brandDir)) {
+    // If we can't write and can't prompt, throw error
+    if (!allowWrite && !allowPrompt) {
+      throw new Error(
+        `Brand directory ${brandDir} does not exist. Use --allow-write to create it.`,
+      );
+    }
+
+    // If we can prompt, ask for confirmation (regardless of allowWrite)
     if (allowPrompt) {
       if (
         !await Confirm.prompt({
@@ -282,6 +313,8 @@ async function ensureBrandDirectory(allowPrompt: boolean) {
         throw new Error(`Could not create brand directory ${brandDir}`);
       }
     }
+
+    // Create the directory (either allowWrite is true, or user confirmed via prompt)
     ensureDirSync(brandDir);
   }
   return brandDir;
