@@ -11,6 +11,7 @@
 // single-file path look closer to a project.
 
 import { dirname } from "../../../deno_ral/path.ts";
+import { warning } from "../../../deno_ral/log.ts";
 import { normalizePath } from "../../../core/path.ts";
 import { NotebookContext } from "../../../render/notebook/notebook-types.ts";
 import { makeProjectEnvironmentMemoizer } from "../../project-environment.ts";
@@ -102,6 +103,24 @@ export async function singleFileProjectContext(
     );
     // Then merge extension metadata
     await mergeExtensionMetadata(result, renderOptions);
+
+    // Check if extensions contributed output-dir metadata
+    // If so, set forceClean as if --output-dir specified on command line,
+    // to ensure proper cleanup
+    const outputDir = result.config?.project?.["output-dir"];
+    if (outputDir) {
+      const willForceClean = renderOptions.flags?.clean !== false;
+      warning(
+        `An extension contributed 'output-dir: ${outputDir}' metadata for single-file render.\n` +
+          `Output will go to that directory. The temporary .quarto directory will ${
+            willForceClean
+              ? "be cleaned up"
+              : "NOT be cleaned up (--no-clean specified)"
+          } after rendering.\n` +
+          "To suppress this warning, use --output-dir flag instead of extension metadata.",
+      );
+      renderOptions.forceClean = willForceClean;
+    }
   }
   // because the single-file project is cleaned up with
   // the global text context, we don't need to register it
