@@ -21,8 +21,8 @@
     "datetime/": "jsr:/@std/datetime@0.225.4/",
     "dotenv": "jsr:/@std/dotenv@0.225.3",
     "dotenv/": "jsr:/@std/dotenv@0.225.3/",
-    "io": "jsr:/@std/io@0.224.0",
-    "io/": "jsr:/@std/io@0.224.0/",
+    "io": "jsr:/@std/io@0.224.9",
+    "io/": "jsr:/@std/io@0.224.9/",
     "log": "jsr:/@std/log@0.224.0",
     "log/": "jsr:/@std/log@0.224.0/",
 
