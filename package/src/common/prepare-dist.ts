@@ -171,6 +171,14 @@ export async function prepareDist(
     { overwrite: true },
   );
 
+  // Copy import_map.json for production use with external engines
+  info("Copying import_map.json for production");
+  copySync(
+    join(config.directoryInfo.src, "import_map.json"),
+    join(config.directoryInfo.pkgWorking.share, "import_map.json"),
+    { overwrite: true },
+  );
+
   // Remove the config directory, if present
   info(`Cleaning config`);
   const configDir = join(config.directoryInfo.dist, "config");
