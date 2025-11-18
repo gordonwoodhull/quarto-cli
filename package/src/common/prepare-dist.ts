@@ -173,11 +173,39 @@ export async function prepareDist(
 
   // Copy import_map.json for production use with external engines
   info("Copying import_map.json for production");
-  copySync(
-    join(config.directoryInfo.src, "import_map.json"),
-    join(config.directoryInfo.pkgWorking.share, "import_map.json"),
-    { overwrite: true },
-  );
+  const importMapSrc = join(config.directoryInfo.src, "import_map.json");
+  const importMapDest = join(config.directoryInfo.pkgWorking.share, "import_map.json");
+  copySync(importMapSrc, importMapDest, { overwrite: true });
+
+  // Pre-cache import map dependencies for --cached-only mode
+  // External engines aren't bundled, so their dependencies must be cached
+  info("Pre-caching import map dependencies for external engines");
+  const denoCacheDir = join(config.directoryInfo.pkgWorking.bin, "deno_cache");
+  ensureDirSync(denoCacheDir);
+
+  // Cache external engine files to populate dependency cache
+  const engineFiles = [
+    join(config.directoryInfo.pkgWorking.share, "extension-subtrees/julia-engine/_extensions/julia-engine/julia-engine.ts"),
+  ];
+
+  const denoPath = join(config.directoryInfo.pkgWorking.bin, "tools", config.arch, "deno");
+
+  for (const engineFile of engineFiles) {
+    if (existsSync(engineFile)) {
+      info(`Caching dependencies for ${engineFile}`);
+      const cacheCmd = new Deno.Command(denoPath, {
+        args: ["cache", "--importmap=" + importMapDest, engineFile],
+        env: { "DENO_DIR": denoCacheDir },
+      });
+
+      const cacheResult = cacheCmd.outputSync();
+      if (!cacheResult.success) {
+        const stderr = new TextDecoder().decode(cacheResult.stderr);
+        info(`Warning: Failed to cache ${engineFile}: ${stderr}`);
+        // Don't fail the build - engine might not be present in all configurations
+      }
+    }
+  }
 
   // Remove the config directory, if present
   info(`Cleaning config`);
