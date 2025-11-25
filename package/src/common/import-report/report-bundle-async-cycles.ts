@@ -875,7 +875,8 @@ if (import.meta.main) {
     console.log("   The bundle should not have async initialization issues.\n");
   } else {
     console.log("⚠️  Found async modules in import cycles:");
-    console.log("   These cause esbuild to generate 'await init_*()' in non-async functions\n");
+    console.log("   These are POTENTIALLY problematic - they cause build failures if they have");
+    console.log("   cycles among themselves. The MFAS analysis below will check for this.\n");
 
     for (const { name, path } of asyncInCycles) {
       console.log(`  ${name.padEnd(30)} ${simplifyPath(path)}`);
@@ -937,6 +938,15 @@ if (import.meta.main) {
       console.log(`✓ Minimum feedback arc set: ${mfasEdges.length} edge(s)\n`);
       const mfasRecommendations = formatMFASRecommendations(mfasEdges);
       console.log(mfasRecommendations);
+      console.log("💡 TIP: If you cannot fix all recommended edges at once:");
+      console.log("   1. Fix some of the recommended dynamic imports");
+      console.log("   2. Rebuild the bundle");
+      console.log("   3. Run this tool again - the recommendations may change!");
+      console.log("   Breaking some cycles can eliminate others, reducing the total work needed.\n");
+    } else {
+      console.log("✅ No cycles found among async modules!");
+      console.log("   The async modules are in cycles with non-async code, which is fine.");
+      console.log("   Build should succeed without issues.\n");
     }
   } else if (asyncInCycles.length === 0) {
     console.log("✅ No async modules in cycles - no chain analysis needed.\n");
