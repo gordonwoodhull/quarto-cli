@@ -44,7 +44,7 @@ async function generateCycles(entryPoint: string): Promise<string> {
       scriptPath,
       entryPoint,
       "--simplify",
-      "--list",
+      "--toon",
       cyclesFile,
     ],
     stdout: "piped",
@@ -538,6 +538,223 @@ function identifyBreakPoints(
   return breakPoints;
 }
 
+function findCycles(
+  graph: Map<string, Set<string>>,
+  maxCycles: number = 1000
+): string[][] {
+  const cycles: string[][] = [];
+  const visited = new Set<string>();
+  const recStack = new Set<string>();
+  const path: string[] = [];
+
+  function dfs(node: string): boolean {
+    if (cycles.length >= maxCycles) return true;
+
+    visited.add(node);
+    recStack.add(node);
+    path.push(node);
+
+    const neighbors = graph.get(node) || new Set();
+    for (const neighbor of neighbors) {
+      if (cycles.length >= maxCycles) return true;
+
+      if (!visited.has(neighbor)) {
+        if (dfs(neighbor)) return true;
+      } else if (recStack.has(neighbor)) {
+        // Found a cycle!
+        const cycleStart = path.indexOf(neighbor);
+        if (cycleStart !== -1) {
+          const cycle = path.slice(cycleStart);
+          cycle.push(neighbor); // Complete the cycle
+          cycles.push(cycle);
+        }
+      }
+    }
+
+    path.pop();
+    recStack.delete(node);
+    return false;
+  }
+
+  // Try DFS from each node
+  for (const node of graph.keys()) {
+    if (cycles.length >= maxCycles) break;
+    if (!visited.has(node)) {
+      dfs(node);
+    }
+  }
+
+  return cycles;
+}
+
+function buildMFASModel(
+  graph: Map<string, Set<string>>,
+  cycles: string[][]
+) {
+  // Extract all edges from graph
+  const edgeSet = new Set<string>();
+  const edges: Edge[] = [];
+
+  for (const [from, toSet] of graph.entries()) {
+    for (const to of toSet) {
+      const edgeKey = `${from}→${to}`;
+      if (!edgeSet.has(edgeKey)) {
+        edgeSet.add(edgeKey);
+        edges.push({ from, to });
+      }
+    }
+  }
+
+  // Build ILP model (same structure as Set Cover)
+  const constraints: Record<string, { min: number }> = {};
+  const variables: Record<string, any> = {};
+  const ints: Record<string, 1> = {};
+
+  // One constraint per cycle: at least one edge must be removed
+  cycles.forEach((cycle, cycleIdx) => {
+    constraints[`cycle_${cycleIdx}`] = { min: 1 };
+  });
+
+  // One variable per edge
+  edges.forEach((edge, edgeIdx) => {
+    const edgeId = `edge_${edgeIdx}`;
+
+    variables[edgeId] = {
+      cost: 1,  // Minimize number of edges removed
+    };
+
+    // Mark which cycles contain this edge
+    cycles.forEach((cycle, cycleIdx) => {
+      // Check if edge is in this cycle
+      for (let i = 0; i < cycle.length - 1; i++) {
+        if (cycle[i] === edge.from && cycle[i + 1] === edge.to) {
+          variables[edgeId][`cycle_${cycleIdx}`] = 1;
+          break;
+        }
+      }
+    });
+
+    // Force binary (0 or 1)
+    ints[edgeId] = 1;
+  });
+
+  return {
+    optimize: "cost",
+    opType: "min",
+    constraints,
+    variables,
+    ints,
+    edges
+  };
+}
+
+function solveMFAS(
+  graph: Map<string, Set<string>>,
+  asyncInCycles: AsyncModule[]
+): Edge[] {
+  if (graph.size === 0 || asyncInCycles.length === 0) {
+    return [];
+  }
+
+  // Build subgraph: async modules in cycles + their immediate neighbors
+  const asyncPaths = new Set<string>();
+  for (const { path } of asyncInCycles) {
+    asyncPaths.add(simplifyPath(path));
+  }
+
+  const subgraph = new Map<string, Set<string>>();
+
+  // Add all async module nodes and their edges
+  for (const asyncPath of asyncPaths) {
+    if (graph.has(asyncPath)) {
+      subgraph.set(asyncPath, new Set(graph.get(asyncPath)!));
+    }
+  }
+
+  // Add edges from any node to async modules (immediate neighbors)
+  for (const [from, toSet] of graph.entries()) {
+    for (const to of toSet) {
+      if (asyncPaths.has(to)) {
+        if (!subgraph.has(from)) {
+          subgraph.set(from, new Set());
+        }
+        subgraph.get(from)!.add(to);
+      }
+    }
+  }
+
+  console.log(`Built subgraph: ${asyncPaths.size} async modules + ${subgraph.size - asyncPaths.size} neighbors`);
+
+  // Find cycles in the subgraph
+  const maxCycles = 1000;
+  console.log("Finding cycles in subgraph...");
+  const allCycles = findCycles(subgraph, maxCycles);
+
+  // Filter to only cycles that contain at least one async module
+  const cycles = allCycles.filter(cycle =>
+    cycle.some(node => asyncPaths.has(node))
+  );
+
+  if (cycles.length === 0) {
+    console.log("✓ No cycles found containing async modules");
+    return [];
+  }
+
+  console.log(`✓ Found ${cycles.length} cycle(s) containing async modules`);
+  if (cycles.length < allCycles.length) {
+    console.log(`   (filtered from ${allCycles.length} total cycles in subgraph)`);
+  }
+
+  // Warn if we hit the cycle limit
+  if (allCycles.length >= maxCycles) {
+    console.log(`⚠️  Warning: Reached maximum cycle limit (${maxCycles})`);
+    console.log(`   Solution may not be globally optimal - only considering ${maxCycles} cycles\n`);
+  }
+
+  // Build and solve ILP model on the subgraph
+  const model = buildMFASModel(subgraph, cycles);
+  const result = solver.Solve(model);
+
+  if (!result || !result.feasible) {
+    console.log("⚠️  MFAS solver could not find a solution");
+    return [];
+  }
+
+  // Extract which edges to remove
+  const edgesToRemove: Edge[] = [];
+  model.edges.forEach((edge, idx) => {
+    const edgeId = `edge_${idx}`;
+    if (result[edgeId] === 1) {
+      edgesToRemove.push(edge);
+    }
+  });
+
+  return edgesToRemove;
+}
+
+function formatMFASRecommendations(edges: Edge[]): string {
+  if (edges.length === 0) {
+    return "✅ No edges need to be removed (graph is already acyclic)\n";
+  }
+
+  const lines: string[] = [];
+  lines.push("=== ALTERNATIVE: BREAK CYCLES DIRECTLY ===\n");
+  lines.push(`Instead of breaking async propagation chains, you could break`);
+  lines.push(`the cycles themselves by making ${edges.length} import(s) dynamic:\n`);
+
+  for (let i = 0; i < edges.length; i++) {
+    const edge = edges[i];
+    lines.push(`${i + 1}. File: ${simplifyPath(edge.from)}`);
+    lines.push(`   Currently imports: ${simplifyPath(edge.to)}`);
+    lines.push(`   💡 Make this import dynamic to help break cycles\n`);
+  }
+
+  lines.push("This represents the minimum feedback arc set (MFAS) -");
+  lines.push("the minimum number of edges to remove to make the graph acyclic.\n");
+
+  return lines.join("\n");
+}
+
 function formatChainRecommendations(
   breakPoints: BreakPoint[],
   rootModules: AsyncModule[]
@@ -709,6 +926,18 @@ if (import.meta.main) {
     // Format and display recommendations
     const recommendations = formatChainRecommendations(breakPoints, rootModules);
     console.log(recommendations);
+
+    // Add MFAS alternative analysis
+    console.log("\n=== ALTERNATIVE APPROACH: MINIMUM FEEDBACK ARC SET ===\n");
+    console.log("Analyzing cycles containing async modules...");
+
+    const mfasEdges = solveMFAS(fullGraph, asyncInCycles);
+
+    if (mfasEdges.length > 0) {
+      console.log(`✓ Minimum feedback arc set: ${mfasEdges.length} edge(s)\n`);
+      const mfasRecommendations = formatMFASRecommendations(mfasEdges);
+      console.log(mfasRecommendations);
+    }
   } else if (asyncInCycles.length === 0) {
     console.log("✅ No async modules in cycles - no chain analysis needed.\n");
   } else {
