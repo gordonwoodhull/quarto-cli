@@ -12,6 +12,7 @@ import { resolve } from "../../../../src/deno_ral/path.ts";
 import { architectureToolsPath } from "../../../../src/core/resources.ts";
 import { Parser } from "npm:acorn@8.14.0";
 import { simple } from "npm:acorn-walk@8.3.4";
+import solver from "npm:javascript-lp-solver";
 
 interface AsyncModule {
   name: string;
@@ -340,6 +341,140 @@ interface BreakPoint {
   affectedFiles: string[];
 }
 
+interface Edge {
+  from: string;
+  to: string;
+}
+
+function reverseChains(paths: Map<string, string[]>): string[][] {
+  const chains: string[][] = [];
+  for (const [_, path] of paths.entries()) {
+    chains.push([...path].reverse());
+  }
+  return chains;
+}
+
+function buildILPModel(chains: string[][]) {
+  // Extract all unique edges
+  const edgeSet = new Set<string>();
+  const edges: Edge[] = [];
+
+  for (const chain of chains) {
+    for (let i = 0; i < chain.length - 1; i++) {
+      const edgeKey = `${chain[i]}→${chain[i + 1]}`;
+      if (!edgeSet.has(edgeKey)) {
+        edgeSet.add(edgeKey);
+        edges.push({ from: chain[i], to: chain[i + 1] });
+      }
+    }
+  }
+
+  // Build ILP model
+  const constraints: Record<string, { min: number }> = {};
+  const variables: Record<string, any> = {};
+  const ints: Record<string, 1> = {};
+
+  // One constraint per chain: must break at least one edge
+  chains.forEach((chain, idx) => {
+    constraints[`chain_${idx}`] = { min: 1 };
+  });
+
+  // One variable per edge
+  edges.forEach((edge, idx) => {
+    const edgeId = `edge_${idx}`;
+
+    variables[edgeId] = {
+      cost: 1,  // Minimize number of edges
+    };
+
+    // Mark which chains contain this edge
+    chains.forEach((chain, chainIdx) => {
+      for (let i = 0; i < chain.length - 1; i++) {
+        if (chain[i] === edge.from && chain[i + 1] === edge.to) {
+          variables[edgeId][`chain_${chainIdx}`] = 1;
+          break;
+        }
+      }
+    });
+
+    // Force binary (0 or 1)
+    ints[edgeId] = 1;
+  });
+
+  return {
+    optimize: "cost",
+    opType: "min",
+    constraints,
+    variables,
+    ints,
+    edges
+  };
+}
+
+function solveMinimumEdgeCut(chains: string[][]): Edge[] {
+  if (chains.length === 0) {
+    return [];
+  }
+
+  const model = buildILPModel(chains);
+  const result = solver.Solve(model);
+
+  // Extract which edges to remove
+  const edgesToRemove: Edge[] = [];
+  model.edges.forEach((edge, idx) => {
+    const edgeId = `edge_${idx}`;
+    if (result[edgeId] === 1) {
+      edgesToRemove.push(edge);
+    }
+  });
+
+  return edgesToRemove;
+}
+
+function convertToBreakPoints(
+  edges: Edge[],
+  allPaths: Map<string, string[]>
+): BreakPoint[] {
+  const breakPointMap = new Map<string, Set<string>>();
+
+  // For each edge to remove, find which cycle files it affects
+  for (const edge of edges) {
+    const edgeKey = `${edge.from}→${edge.to}`;
+
+    if (!breakPointMap.has(edgeKey)) {
+      breakPointMap.set(edgeKey, new Set());
+    }
+
+    // Find all paths containing this edge
+    for (const [cycleFile, path] of allPaths.entries()) {
+      const reversedPath = [...path].reverse();
+      for (let i = 0; i < reversedPath.length - 1; i++) {
+        if (reversedPath[i] === edge.from && reversedPath[i + 1] === edge.to) {
+          breakPointMap.get(edgeKey)!.add(cycleFile);
+          break;
+        }
+      }
+    }
+  }
+
+  // Convert to BreakPoint format
+  const breakPoints: BreakPoint[] = [];
+  for (const [edgeKey, affectedFiles] of breakPointMap.entries()) {
+    const [file, imports] = edgeKey.split("→");
+    breakPoints.push({
+      file,
+      imports,
+      cycleEntry: imports,
+      affectedFiles: Array.from(affectedFiles)
+    });
+  }
+
+  // Sort by number of affected files (descending)
+  breakPoints.sort((a, b) => b.affectedFiles.length - a.affectedFiles.length);
+
+  return breakPoints;
+}
+
 function identifyBreakPoints(
   paths: Map<string, string[]>,
   filesInCycles: Set<string>
@@ -560,8 +695,16 @@ if (import.meta.main) {
 
     console.log(`Found ${allPaths.size} paths from root async modules to cyclic files\n`);
 
-    // Identify break points
-    const breakPoints = identifyBreakPoints(allPaths, filesInCycles);
+    // Add ILP optimization step
+    console.log("=== OPTIMIZING BREAK POINTS WITH ILP ===\n");
+    const reversedChains = reverseChains(allPaths);
+    console.log(`Solving for minimum edge cut across ${reversedChains.length} chains...`);
+
+    const optimalEdges = solveMinimumEdgeCut(reversedChains);
+    console.log(`✓ Optimal solution: ${optimalEdges.length} edge(s) to remove\n`);
+
+    // Convert ILP solution to break points
+    const breakPoints = convertToBreakPoints(optimalEdges, allPaths);
 
     // Format and display recommendations
     const recommendations = formatChainRecommendations(breakPoints, rootModules);
