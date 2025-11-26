@@ -48,11 +48,12 @@ export async function runScript(args: string[], env?: Record<string, string>) {
 export const runCommand = new Command()
   .name("run")
   .stopEarly()
-  .arguments("[--dev] [script:string] [...args]")
+  .arguments("[script:string] [...args]")
   .description(
     "Run a TypeScript, R, Python, or Lua script.\n\n" +
       "Run a utility script written in a variety of languages. For details, see:\n" +
-      "https://quarto.org/docs/projects/scripts.html#periodic-scripts\n\n" +
-      "Options:\n" +
-      "  --dev    Use development import map (for internal Quarto development tools)",
-  );
+      "https://quarto.org/docs/projects/scripts.html#periodic-scripts",
+  )
+  .option("--dev", "Use development import map (when running from source)", {
+    hidden: true,
+  });
