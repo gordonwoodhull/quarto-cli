@@ -696,7 +696,6 @@ function solveMFAS(
   );
 
   if (cycles.length === 0) {
-    console.log("✓ No cycles found containing async modules");
     return [];
   }
 
@@ -944,8 +943,8 @@ if (import.meta.main) {
       console.log("   3. Run this tool again - the recommendations may change!");
       console.log("   Breaking some cycles can eliminate others, reducing the total work needed.\n");
     } else {
-      console.log("✅ No cycles found among async modules!");
-      console.log("   The async modules are in cycles with non-async code, which is fine.");
+      console.log("✅ No cycles found entirely among async modules!");
+      console.log("   The async modules are in cycles with non-async code, which is probably fine.");
       console.log("   Build should succeed without issues.\n");
     }
   } else if (asyncInCycles.length === 0) {
