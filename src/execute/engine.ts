@@ -7,6 +7,7 @@
 import { extname, join, toFileUrl } from "../deno_ral/path.ts";
 
 import * as ld from "../core/lodash.ts";
+import { debug, info } from "../deno_ral/log.ts";
 
 import {
   partitionYamlFrontMatter,
@@ -157,10 +158,12 @@ export function markdownExecutionEngine(
       yaml = mergeConfigs(yaml, flags?.metadata);
       for (const [_, engine] of reorderedEngines) {
         if (yaml[engine.name]) {
+          info(`Engine '${engine.name}' selected from YAML metadata key`);
           return engine.launch(engineProjectContext(project));
         }
         const format = metadataAsFormat(yaml);
         if (format.execute?.[kEngine] === engine.name) {
+          info(`Engine '${engine.name}' selected from YAML execute.engine`);
           return engine.launch(engineProjectContext(project));
         }
       }
@@ -169,11 +172,17 @@ export function markdownExecutionEngine(
 
   // if there are languages see if any engines want to claim them
   const languages = languagesInMarkdown(markdown);
+  if (languages.size > 0) {
+    debug(
+      `Detected languages in markdown: ${Array.from(languages).join(", ")}`,
+    );
+  }
 
   // see if there is an engine that claims this language
   for (const language of languages) {
     for (const [_, engine] of reorderedEngines) {
       if (engine.claimsLanguage(language)) {
+        info(`Engine '${engine.name}' claims language '${language}'`);
         return engine.launch(engineProjectContext(project));
       }
     }
@@ -183,12 +192,14 @@ export function markdownExecutionEngine(
   // if there is a non-cell handler language then this must be jupyter
   for (const language of languages) {
     if (language !== "ojs" && !handlerLanguagesVal.includes(language)) {
+      info(`Non-handler language '${language}' detected, using jupyter engine`);
       return jupyterEngineDiscovery.launch(engineProjectContext(project));
     }
   }
 
   // if there is no computational engine discovered then bind
   // to the markdown engine;
+  info("No computational engine detected, using markdown engine");
   return markdownEngineDiscovery.launch(engineProjectContext(project));
 }
 
@@ -296,15 +307,18 @@ export async function fileExecutionEngine(
       engine.validExtensions().includes(ext)
     ))
   ) {
+    debug(`No engine supports extension '${ext}' for file: ${file}`);
     return undefined;
   }
 
   // try to find an engine that claims this extension outright
   for (const [_, engine] of engines) {
     if (engine.claimsFile(file, ext)) {
+      info(`Engine '${engine.name}' claims file: ${file}`);
       return engine.launch(engineProjectContext(project));
     }
   }
+  debug(`No engine claimed file with extension '${ext}': ${file}`);
 
   // if we were passed a transformed markdown, use that for the text instead
   // of the contents of the file.
