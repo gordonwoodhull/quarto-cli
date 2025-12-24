@@ -1,7 +1,49 @@
-import { testQuartoCmd } from "../../test.ts";
+import { testQuartoCmd, ExecuteOutput, Verify } from "../../test.ts";
 import { fileExists, folderExists, noErrorsOrWarnings, printsMessage } from "../../verify.ts";
 import { join, fromFileUrl, dirname } from "../../../src/deno_ral/path.ts";
 import { ensureDirSync, existsSync } from "../../../src/deno_ral/fs.ts";
+
+// Helper to verify files appear in the correct output sections
+function filesInSections(
+  expected: { overwrite?: string[]; create?: string[] },
+  dryRun: boolean
+): Verify {
+  return {
+    name: "files in correct sections",
+    verify: (outputs: ExecuteOutput[]) => {
+      const overwriteHeader = dryRun ? "Would overwrite:" : "Overwritten:";
+      const createHeader = dryRun ? "Would create:" : "Created:";
+
+      const found: { overwrite: string[]; create: string[] } = { overwrite: [], create: [] };
+      let currentSection: "overwrite" | "create" | null = null;
+
+      for (const output of outputs) {
+        const line = output.msg;
+        if (line.includes(overwriteHeader)) {
+          currentSection = "overwrite";
+        } else if (line.includes(createHeader)) {
+          currentSection = "create";
+        } else if (currentSection && line.trim().startsWith("- ")) {
+          const filename = line.trim().slice(2); // remove "- "
+          found[currentSection].push(filename);
+        }
+      }
+
+      // Verify expected files are in correct sections
+      for (const file of expected.overwrite ?? []) {
+        if (!found.overwrite.includes(file)) {
+          throw new Error(`Expected ${file} in overwrite section, found: [${found.overwrite.join(", ")}]`);
+        }
+      }
+      for (const file of expected.create ?? []) {
+        if (!found.create.includes(file)) {
+          throw new Error(`Expected ${file} in create section, found: [${found.create.join(", ")}]`);
+        }
+      }
+      return Promise.resolve();
+    }
+  };
+}
 
 const tempDir = Deno.makeTempDirSync();
 const testDir = dirname(fromFileUrl(import.meta.url));
@@ -42,7 +84,7 @@ testQuartoCmd(
   [
     noErrorsOrWarnings,
     printsMessage({ level: "INFO", regex: /Would create directory/ }),
-    printsMessage({ level: "INFO", regex: /Would create:/ }),
+    filesInSections({ create: ["_brand.yml", "logo.png"] }, true),
     {
       name: "_brand directory should not exist in dry-run mode",
       verify: () => {
@@ -133,10 +175,9 @@ testQuartoCmd(
   ["brand", join(fixtureDir, "basic-brand"), "--dry-run"],
   [
     noErrorsOrWarnings,
-    // Should report "Would overwrite" for _brand.yml (exists in both)
-    printsMessage({ level: "INFO", regex: /Would overwrite:.*_brand\.yml/ }),
-    // Should report "Would create" for logo.png (not in target)
-    printsMessage({ level: "INFO", regex: /Would create:.*logo\.png/ }),
+    // _brand.yml exists - should be in overwrite section
+    // logo.png doesn't exist - should be in create section
+    filesInSections({ overwrite: ["_brand.yml"], create: ["logo.png"] }, true),
     // Verify _brand.yml was NOT modified
     {
       name: "_brand.yml should not be modified in dry-run",
@@ -341,10 +382,12 @@ testQuartoCmd(
   ["brand", join(fixtureDir, "nested-brand"), "--dry-run"],
   [
     noErrorsOrWarnings,
-    // Should report "Would overwrite" for images/logo.png (exists in both)
-    printsMessage({ level: "INFO", regex: /Would overwrite:.*images\/logo\.png/ }),
-    // Should report "Would create" for images/header.png (not in target)
-    printsMessage({ level: "INFO", regex: /Would create:.*images\/header\.png/ }),
+    // images/logo.png and _brand.yml exist - should be in overwrite section
+    // images/header.png doesn't exist - should be in create section
+    filesInSections({
+      overwrite: ["_brand.yml", "images/logo.png"],
+      create: ["images/header.png"]
+    }, true),
     // Verify images/logo.png was NOT modified
     {
       name: "images/logo.png should not be modified in dry-run",
@@ -439,9 +482,12 @@ testQuartoCmd(
     noErrorsOrWarnings,
     // Should NOT report "Would create directory" for _brand/ (already exists)
     printsMessage({ level: "INFO", regex: /Would create directory/, negate: true }),
-    // Should report "Would create" for files in new subdir
-    printsMessage({ level: "INFO", regex: /Would create:.*images\/logo\.png/ }),
-    printsMessage({ level: "INFO", regex: /Would create:.*images\/header\.png/ }),
+    // _brand.yml exists - should be in overwrite section
+    // images/* files don't exist - should be in create section
+    filesInSections({
+      overwrite: ["_brand.yml"],
+      create: ["images/logo.png", "images/header.png"]
+    }, true),
     // Verify images/ directory was NOT created
     {
       name: "images/ directory should not be created in dry-run",

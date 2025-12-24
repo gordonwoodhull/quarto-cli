@@ -123,7 +123,15 @@ async function useBrand(
     );
   }
 
-  const copyActions: Array<{ file: string; copy: () => Promise<void> }> = [];
+  // Track files by action type
+  const wouldOverwrite: string[] = [];
+  const wouldCreate: string[] = [];
+  const copyActions: Array<{
+    file: string;
+    action: "create" | "overwrite";
+    copy: () => Promise<void>;
+  }> = [];
+
   for (const fileToCopy of filesToCopy) {
     const isDir = Deno.statSync(fileToCopy).isDirectory;
     const rel = relative(stagedDir, fileToCopy);
@@ -146,9 +154,9 @@ async function useBrand(
     };
 
     if (existsSync(targetPath)) {
-      // File exists
+      // File exists - will be overwritten
       if (options.dryRun) {
-        info(`  Would overwrite: ${displayName}`);
+        wouldOverwrite.push(displayName);
       } else if (!options.force) {
         // Prompt for overwrite
         const proceed = await Confirm.prompt({
@@ -156,7 +164,7 @@ async function useBrand(
           default: true,
         });
         if (proceed) {
-          copyActions.push(copyAction);
+          copyActions.push({ ...copyAction, action: "overwrite" });
         } else {
           throw new Error(
             `The file ${displayName} already exists and would be overwritten by this action.`,
@@ -164,20 +172,32 @@ async function useBrand(
         }
       } else {
         // Force mode - overwrite without prompting
-        copyActions.push(copyAction);
+        copyActions.push({ ...copyAction, action: "overwrite" });
       }
     } else {
-      // File doesn't exist
+      // File doesn't exist - will be created
       if (options.dryRun) {
-        info(`  Would create: ${displayName}`);
+        wouldCreate.push(displayName);
       } else {
-        copyActions.push(copyAction);
+        copyActions.push({ ...copyAction, action: "create" });
       }
     }
   }
 
-  // Skip execution for dry-run
+  // Output dry-run summary and return
   if (options.dryRun) {
+    if (wouldOverwrite.length > 0) {
+      info(`\nWould overwrite:`);
+      for (const file of wouldOverwrite) {
+        info(` - ${file}`);
+      }
+    }
+    if (wouldCreate.length > 0) {
+      info(`\nWould create:`);
+      for (const file of wouldCreate) {
+        info(` - ${file}`);
+      }
+    }
     return;
   }
 
@@ -190,12 +210,19 @@ async function useBrand(
     });
   }
 
-  if (copyActions.length > 0) {
-    info(
-      `\nFiles created:`,
-    );
-    for (const copyAction of copyActions) {
-      info(` - ${copyAction.file}`);
+  // Output summary of changes
+  const overwritten = copyActions.filter((a) => a.action === "overwrite");
+  const created = copyActions.filter((a) => a.action === "create");
+  if (overwritten.length > 0) {
+    info(`\nOverwritten:`);
+    for (const a of overwritten) {
+      info(` - ${a.file}`);
+    }
+  }
+  if (created.length > 0) {
+    info(`\nCreated:`);
+    for (const a of created) {
+      info(` - ${a.file}`);
     }
   }
 }
