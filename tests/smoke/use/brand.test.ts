@@ -2,10 +2,11 @@ import { testQuartoCmd, ExecuteOutput, Verify } from "../../test.ts";
 import { fileExists, folderExists, noErrorsOrWarnings, printsMessage } from "../../verify.ts";
 import { join, fromFileUrl, dirname } from "../../../src/deno_ral/path.ts";
 import { ensureDirSync, existsSync } from "../../../src/deno_ral/fs.ts";
+import { pathWithForwardSlashes } from "../../../src/core/path.ts";
 
 // Helper to verify files appear in the correct output sections
 function filesInSections(
-  expected: { overwrite?: string[]; create?: string[] },
+  expected: { overwrite?: string[]; create?: string[]; remove?: string[] },
   dryRun: boolean
 ): Verify {
   return {
@@ -13,9 +14,14 @@ function filesInSections(
     verify: (outputs: ExecuteOutput[]) => {
       const overwriteHeader = dryRun ? "Would overwrite:" : "Overwritten:";
       const createHeader = dryRun ? "Would create:" : "Created:";
+      const removeHeader = dryRun ? "Would remove:" : "Removed:";
 
-      const found: { overwrite: string[]; create: string[] } = { overwrite: [], create: [] };
-      let currentSection: "overwrite" | "create" | null = null;
+      const found: { overwrite: string[]; create: string[]; remove: string[] } = {
+        overwrite: [],
+        create: [],
+        remove: [],
+      };
+      let currentSection: "overwrite" | "create" | "remove" | null = null;
 
       for (const output of outputs) {
         const line = output.msg;
@@ -23,21 +29,29 @@ function filesInSections(
           currentSection = "overwrite";
         } else if (line.includes(createHeader)) {
           currentSection = "create";
+        } else if (line.includes(removeHeader)) {
+          currentSection = "remove";
         } else if (currentSection && line.trim().startsWith("- ")) {
           const filename = line.trim().slice(2); // remove "- "
-          found[currentSection].push(filename);
+          // Normalize path separators for cross-platform compatibility
+          found[currentSection].push(pathWithForwardSlashes(filename));
         }
       }
 
       // Verify expected files are in correct sections
       for (const file of expected.overwrite ?? []) {
-        if (!found.overwrite.includes(file)) {
+        if (!found.overwrite.includes(pathWithForwardSlashes(file))) {
           throw new Error(`Expected ${file} in overwrite section, found: [${found.overwrite.join(", ")}]`);
         }
       }
       for (const file of expected.create ?? []) {
-        if (!found.create.includes(file)) {
+        if (!found.create.includes(pathWithForwardSlashes(file))) {
           throw new Error(`Expected ${file} in create section, found: [${found.create.join(", ")}]`);
+        }
+      }
+      for (const file of expected.remove ?? []) {
+        if (!found.remove.includes(pathWithForwardSlashes(file))) {
+          throw new Error(`Expected ${file} in remove section, found: [${found.remove.join(", ")}]`);
         }
       }
       return Promise.resolve();
@@ -110,7 +124,7 @@ testQuartoCmd(
   "quarto use brand - dry-run mode"
 );
 
-// Scenario 3: Force mode - overwrites existing, creates new, preserves unrelated
+// Scenario 3: Force mode - overwrites existing, creates new, removes extra
 const forceOverwriteDir = join(tempDir, "force-overwrite");
 ensureDirSync(forceOverwriteDir);
 testQuartoCmd(
@@ -134,17 +148,18 @@ testQuartoCmd(
     },
     // logo.png should be created (not in target originally)
     fileExists(join(forceOverwriteDir, "_brand", "logo.png")),
-    // unrelated.txt should be preserved (not in source)
+    // unrelated.txt should be removed (not in source)
     {
-      name: "unrelated.txt should be preserved",
+      name: "unrelated.txt should be removed",
       verify: () => {
-        const content = Deno.readTextFileSync(join(forceOverwriteDir, "_brand", "unrelated.txt"));
-        if (content !== "keep me") {
-          throw new Error("unrelated.txt should be preserved");
+        if (existsSync(join(forceOverwriteDir, "_brand", "unrelated.txt"))) {
+          throw new Error("unrelated.txt should have been removed");
         }
         return Promise.resolve();
       }
     },
+    // Verify output sections
+    filesInSections({ overwrite: ["_brand.yml"], create: ["logo.png"], remove: ["unrelated.txt"] }, false),
   ],
   {
     setup: () => {
@@ -164,10 +179,10 @@ testQuartoCmd(
       return Promise.resolve();
     }
   },
-  "quarto use brand - force overwrites existing, creates new, preserves unrelated"
+  "quarto use brand - force overwrites existing, creates new, removes extra"
 );
 
-// Scenario 4: Dry-run reports "Would overwrite" vs "Would create" correctly
+// Scenario 4: Dry-run reports "Would overwrite" vs "Would create" vs "Would remove" correctly
 const dryRunOverwriteDir = join(tempDir, "dry-run-overwrite");
 ensureDirSync(dryRunOverwriteDir);
 testQuartoCmd(
@@ -177,7 +192,12 @@ testQuartoCmd(
     noErrorsOrWarnings,
     // _brand.yml exists - should be in overwrite section
     // logo.png doesn't exist - should be in create section
-    filesInSections({ overwrite: ["_brand.yml"], create: ["logo.png"] }, true),
+    // extra.txt exists only in target - should be in remove section
+    filesInSections({
+      overwrite: ["_brand.yml"],
+      create: ["logo.png"],
+      remove: ["extra.txt"]
+    }, true),
     // Verify _brand.yml was NOT modified
     {
       name: "_brand.yml should not be modified in dry-run",
@@ -199,14 +219,25 @@ testQuartoCmd(
         return Promise.resolve();
       }
     },
+    // Verify extra.txt was NOT removed
+    {
+      name: "extra.txt should not be removed in dry-run",
+      verify: () => {
+        if (!existsSync(join(dryRunOverwriteDir, "_brand", "extra.txt"))) {
+          throw new Error("extra.txt should not be removed in dry-run mode");
+        }
+        return Promise.resolve();
+      }
+    },
   ],
   {
     setup: () => {
       Deno.writeTextFileSync(join(dryRunOverwriteDir, "_quarto.yml"), "project:\n  type: default\n");
-      // Create existing _brand directory with only _brand.yml (not logo.png)
+      // Create existing _brand directory with _brand.yml and extra.txt (not logo.png)
       const brandDir = join(dryRunOverwriteDir, "_brand");
       ensureDirSync(brandDir);
       Deno.writeTextFileSync(join(brandDir, "_brand.yml"), "meta:\n  name: Old Brand\n");
+      Deno.writeTextFileSync(join(brandDir, "extra.txt"), "extra file not in source");
       return Promise.resolve();
     },
     cwd: () => dryRunOverwriteDir,
@@ -215,7 +246,7 @@ testQuartoCmd(
       return Promise.resolve();
     }
   },
-  "quarto use brand - dry-run reports overwrite vs create correctly"
+  "quarto use brand - dry-run reports overwrite vs create vs remove correctly"
 );
 
 // Scenario 5: Error - force and dry-run together
@@ -319,7 +350,7 @@ testQuartoCmd(
   "quarto use brand - error on no project"
 );
 
-// Scenario 9: Nested directory - overwrite files in subdirectories
+// Scenario 9: Nested directory - overwrite files in subdirectories, remove extra
 const nestedOverwriteDir = join(tempDir, "nested-overwrite");
 ensureDirSync(nestedOverwriteDir);
 testQuartoCmd(
@@ -341,17 +372,22 @@ testQuartoCmd(
     },
     // images/header.png should be created (not in target originally)
     fileExists(join(nestedOverwriteDir, "_brand", "images", "header.png")),
-    // images/unrelated.png should be preserved (not in source)
+    // images/unrelated.png should be removed (not in source)
     {
-      name: "images/unrelated.png should be preserved",
+      name: "images/unrelated.png should be removed",
       verify: () => {
-        const content = Deno.readTextFileSync(join(nestedOverwriteDir, "_brand", "images", "unrelated.png"));
-        if (content !== "keep me nested") {
-          throw new Error("images/unrelated.png should be preserved");
+        if (existsSync(join(nestedOverwriteDir, "_brand", "images", "unrelated.png"))) {
+          throw new Error("images/unrelated.png should have been removed");
         }
         return Promise.resolve();
       }
     },
+    // Verify output sections (_brand.yml is created since not in target setup)
+    filesInSections({
+      overwrite: ["images/logo.png"],
+      create: ["_brand.yml", "images/header.png"],
+      remove: ["images/unrelated.png"]
+    }, false),
   ],
   {
     setup: () => {
@@ -371,7 +407,7 @@ testQuartoCmd(
       return Promise.resolve();
     }
   },
-  "quarto use brand - nested overwrite, create, preserve in subdirectories"
+  "quarto use brand - nested overwrite, create, remove in subdirectories"
 );
 
 // Scenario 10: Dry-run with nested directories - reports correctly
@@ -515,4 +551,102 @@ testQuartoCmd(
     }
   },
   "quarto use brand - dry-run when _brand exists but nested subdir doesn't"
+);
+
+// Scenario 13: Empty directories are cleaned up after file removal
+const emptyDirCleanupDir = join(tempDir, "empty-dir-cleanup");
+ensureDirSync(emptyDirCleanupDir);
+testQuartoCmd(
+  "use",
+  ["brand", join(fixtureDir, "basic-brand"), "--force"],
+  [
+    noErrorsOrWarnings,
+    // extras/orphan.txt should be removed
+    {
+      name: "extras/orphan.txt should be removed",
+      verify: () => {
+        if (existsSync(join(emptyDirCleanupDir, "_brand", "extras", "orphan.txt"))) {
+          throw new Error("extras/orphan.txt should have been removed");
+        }
+        return Promise.resolve();
+      }
+    },
+    // extras/ directory should be cleaned up (was empty after removal)
+    {
+      name: "extras/ directory should be cleaned up",
+      verify: () => {
+        if (existsSync(join(emptyDirCleanupDir, "_brand", "extras"))) {
+          throw new Error("extras/ directory should have been cleaned up");
+        }
+        return Promise.resolve();
+      }
+    },
+    // Verify output shows removal
+    filesInSections({ remove: ["extras/orphan.txt"] }, false),
+  ],
+  {
+    setup: () => {
+      Deno.writeTextFileSync(join(emptyDirCleanupDir, "_quarto.yml"), "project:\n  type: default\n");
+      // Create _brand/extras/ with a file not in source
+      const extrasDir = join(emptyDirCleanupDir, "_brand", "extras");
+      ensureDirSync(extrasDir);
+      Deno.writeTextFileSync(join(extrasDir, "orphan.txt"), "this file will be removed");
+      return Promise.resolve();
+    },
+    cwd: () => emptyDirCleanupDir,
+    teardown: () => {
+      try { Deno.removeSync(emptyDirCleanupDir, { recursive: true }); } catch { /* ignore */ }
+      return Promise.resolve();
+    }
+  },
+  "quarto use brand - empty directories cleaned up after file removal"
+);
+
+// Scenario 14: Deeply nested directories are recursively cleaned up
+const deepNestedCleanupDir = join(tempDir, "deep-nested-cleanup");
+ensureDirSync(deepNestedCleanupDir);
+testQuartoCmd(
+  "use",
+  ["brand", join(fixtureDir, "basic-brand"), "--force"],
+  [
+    noErrorsOrWarnings,
+    // deep/nested/path/orphan.txt should be removed
+    {
+      name: "deep/nested/path/orphan.txt should be removed",
+      verify: () => {
+        if (existsSync(join(deepNestedCleanupDir, "_brand", "deep", "nested", "path", "orphan.txt"))) {
+          throw new Error("deep/nested/path/orphan.txt should have been removed");
+        }
+        return Promise.resolve();
+      }
+    },
+    // All empty parent directories should be cleaned up recursively
+    {
+      name: "deep/ directory tree should be fully cleaned up",
+      verify: () => {
+        if (existsSync(join(deepNestedCleanupDir, "_brand", "deep"))) {
+          throw new Error("deep/ directory should have been cleaned up recursively");
+        }
+        return Promise.resolve();
+      }
+    },
+    // Verify output shows removal with full path
+    filesInSections({ remove: ["deep/nested/path/orphan.txt"] }, false),
+  ],
+  {
+    setup: () => {
+      Deno.writeTextFileSync(join(deepNestedCleanupDir, "_quarto.yml"), "project:\n  type: default\n");
+      // Create _brand/deep/nested/path/ with a file not in source
+      const deepDir = join(deepNestedCleanupDir, "_brand", "deep", "nested", "path");
+      ensureDirSync(deepDir);
+      Deno.writeTextFileSync(join(deepDir, "orphan.txt"), "deeply nested orphan");
+      return Promise.resolve();
+    },
+    cwd: () => deepNestedCleanupDir,
+    teardown: () => {
+      try { Deno.removeSync(deepNestedCleanupDir, { recursive: true }); } catch { /* ignore */ }
+      return Promise.resolve();
+    }
+  },
+  "quarto use brand - deeply nested directories recursively cleaned up"
 );

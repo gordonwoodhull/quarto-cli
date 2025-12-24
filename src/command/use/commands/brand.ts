@@ -23,6 +23,7 @@ import { createTempContext } from "../../../core/temp.ts";
 import { InternalError } from "../../../core/lib/error.ts";
 import { notebookContext } from "../../../render/notebook/notebook-context.ts";
 import { projectContext } from "../../../project/project-context.ts";
+import { afterConfirm } from "../../../tools/tools-console.ts";
 
 const kRootTemplateName = "template.qmd";
 
@@ -123,14 +124,26 @@ async function useBrand(
     );
   }
 
+  // Build set of source file paths for comparison
+  const sourceFiles = new Set(
+    filesToCopy
+      .filter((f) => !Deno.statSync(f).isDirectory)
+      .map((f) => relative(stagedDir, f)),
+  );
+
+  // Find extra files in target that aren't in source
+  const extraFiles = findExtraFiles(brandDir, sourceFiles);
+
   // Track files by action type
   const wouldOverwrite: string[] = [];
   const wouldCreate: string[] = [];
+  const wouldRemove: string[] = [];
   const copyActions: Array<{
     file: string;
     action: "create" | "overwrite";
     copy: () => Promise<void>;
   }> = [];
+  let removed: string[] = [];
 
   for (const fileToCopy of filesToCopy) {
     const isDir = Deno.statSync(fileToCopy).isDirectory;
@@ -198,6 +211,12 @@ async function useBrand(
         info(` - ${file}`);
       }
     }
+    if (extraFiles.length > 0) {
+      info(`\nWould remove:`);
+      for (const file of extraFiles) {
+        info(` - ${file}`);
+      }
+    }
     return;
   }
 
@@ -208,6 +227,33 @@ async function useBrand(
         await copyAction.copy();
       }
     });
+  }
+
+  // Handle extra files in target (not in source)
+  if (extraFiles.length > 0) {
+    const removeExtras = async () => {
+      for (const file of extraFiles) {
+        await Deno.remove(join(brandDir, file));
+      }
+      // Clean up empty directories
+      cleanupEmptyDirs(brandDir);
+      removed = extraFiles;
+    };
+
+    if (options.force) {
+      await removeExtras();
+    } else {
+      // Show the files that would be removed
+      info(`\nExtra files not in source brand:`);
+      for (const file of extraFiles) {
+        info(` - ${file}`);
+      }
+      // Use afterConfirm pattern - declining doesn't cancel command
+      await afterConfirm(
+        `Remove these ${extraFiles.length} file(s)?`,
+        removeExtras,
+      );
+    }
   }
 
   // Output summary of changes
@@ -223,6 +269,12 @@ async function useBrand(
     info(`\nCreated:`);
     for (const a of created) {
       info(` - ${a.file}`);
+    }
+  }
+  if (removed.length > 0) {
+    info(`\nRemoved:`);
+    for (const file of removed) {
+      info(` - ${file}`);
     }
   }
 }
@@ -379,4 +431,45 @@ async function unzipInPlace(zipFile: string) {
       return Promise.resolve();
     },
   );
+}
+
+// Find files in target directory that aren't in source
+function findExtraFiles(
+  targetDir: string,
+  sourceFiles: Set<string>,
+): string[] {
+  const extraFiles: string[] = [];
+
+  function walkDir(dir: string, baseRel: string = "") {
+    if (!existsSync(dir)) return;
+    for (const entry of Deno.readDirSync(dir)) {
+      // Use join() for cross-platform path separator compatibility
+      // This matches the behavior of relative() used to build sourceFiles
+      const rel = baseRel ? join(baseRel, entry.name) : entry.name;
+      if (entry.isDirectory) {
+        walkDir(join(dir, entry.name), rel);
+      } else if (!sourceFiles.has(rel)) {
+        extraFiles.push(rel);
+      }
+    }
+  }
+
+  walkDir(targetDir);
+  return extraFiles;
+}
+
+// Clean up empty directories after file removal
+function cleanupEmptyDirs(dir: string) {
+  if (!existsSync(dir)) return;
+  for (const entry of Deno.readDirSync(dir)) {
+    if (entry.isDirectory) {
+      const subdir = join(dir, entry.name);
+      cleanupEmptyDirs(subdir);
+      // Check if now empty
+      const contents = [...Deno.readDirSync(subdir)];
+      if (contents.length === 0) {
+        Deno.removeSync(subdir);
+      }
+    }
+  }
 }
