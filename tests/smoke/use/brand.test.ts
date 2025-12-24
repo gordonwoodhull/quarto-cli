@@ -277,3 +277,196 @@ testQuartoCmd(
   },
   "quarto use brand - error on no project"
 );
+
+// Scenario 9: Nested directory - overwrite files in subdirectories
+const nestedOverwriteDir = join(tempDir, "nested-overwrite");
+ensureDirSync(nestedOverwriteDir);
+testQuartoCmd(
+  "use",
+  ["brand", join(fixtureDir, "nested-brand"), "--force"],
+  [
+    noErrorsOrWarnings,
+    // images/logo.png should be overwritten (exists in both)
+    {
+      name: "images/logo.png should be overwritten",
+      verify: () => {
+        const stats = Deno.statSync(join(nestedOverwriteDir, "_brand", "images", "logo.png"));
+        // Original was 10 bytes ("old logo\n"), new one is 1862 bytes
+        if (stats.size < 100) {
+          throw new Error("images/logo.png should have been overwritten with larger file");
+        }
+        return Promise.resolve();
+      }
+    },
+    // images/header.png should be created (not in target originally)
+    fileExists(join(nestedOverwriteDir, "_brand", "images", "header.png")),
+    // images/unrelated.png should be preserved (not in source)
+    {
+      name: "images/unrelated.png should be preserved",
+      verify: () => {
+        const content = Deno.readTextFileSync(join(nestedOverwriteDir, "_brand", "images", "unrelated.png"));
+        if (content !== "keep me nested") {
+          throw new Error("images/unrelated.png should be preserved");
+        }
+        return Promise.resolve();
+      }
+    },
+  ],
+  {
+    setup: () => {
+      Deno.writeTextFileSync(join(nestedOverwriteDir, "_quarto.yml"), "project:\n  type: default\n");
+      // Create existing _brand/images directory with files
+      const imagesDir = join(nestedOverwriteDir, "_brand", "images");
+      ensureDirSync(imagesDir);
+      // This file exists in source - should be overwritten
+      Deno.writeTextFileSync(join(imagesDir, "logo.png"), "old logo\n");
+      // This file does NOT exist in source - should be preserved
+      Deno.writeTextFileSync(join(imagesDir, "unrelated.png"), "keep me nested");
+      return Promise.resolve();
+    },
+    cwd: () => nestedOverwriteDir,
+    teardown: () => {
+      try { Deno.removeSync(nestedOverwriteDir, { recursive: true }); } catch { /* ignore */ }
+      return Promise.resolve();
+    }
+  },
+  "quarto use brand - nested overwrite, create, preserve in subdirectories"
+);
+
+// Scenario 10: Dry-run with nested directories - reports correctly
+const dryRunNestedDir = join(tempDir, "dry-run-nested");
+ensureDirSync(dryRunNestedDir);
+testQuartoCmd(
+  "use",
+  ["brand", join(fixtureDir, "nested-brand"), "--dry-run"],
+  [
+    noErrorsOrWarnings,
+    // Should report "Would overwrite" for images/logo.png (exists in both)
+    printsMessage({ level: "INFO", regex: /Would overwrite:.*images\/logo\.png/ }),
+    // Should report "Would create" for images/header.png (not in target)
+    printsMessage({ level: "INFO", regex: /Would create:.*images\/header\.png/ }),
+    // Verify images/logo.png was NOT modified
+    {
+      name: "images/logo.png should not be modified in dry-run",
+      verify: () => {
+        const content = Deno.readTextFileSync(join(dryRunNestedDir, "_brand", "images", "logo.png"));
+        if (content !== "old logo\n") {
+          throw new Error("images/logo.png should not be modified in dry-run mode");
+        }
+        return Promise.resolve();
+      }
+    },
+    // Verify images/header.png was NOT created
+    {
+      name: "images/header.png should not be created in dry-run",
+      verify: () => {
+        if (existsSync(join(dryRunNestedDir, "_brand", "images", "header.png"))) {
+          throw new Error("images/header.png should not be created in dry-run mode");
+        }
+        return Promise.resolve();
+      }
+    },
+  ],
+  {
+    setup: () => {
+      Deno.writeTextFileSync(join(dryRunNestedDir, "_quarto.yml"), "project:\n  type: default\n");
+      // Create existing _brand/images directory with only logo.png (not header.png)
+      const imagesDir = join(dryRunNestedDir, "_brand", "images");
+      ensureDirSync(imagesDir);
+      Deno.writeTextFileSync(join(imagesDir, "logo.png"), "old logo\n");
+      // Also create _brand.yml so we're only testing nested behavior
+      Deno.writeTextFileSync(join(dryRunNestedDir, "_brand", "_brand.yml"), "meta:\n  name: Old\n");
+      return Promise.resolve();
+    },
+    cwd: () => dryRunNestedDir,
+    teardown: () => {
+      try { Deno.removeSync(dryRunNestedDir, { recursive: true }); } catch { /* ignore */ }
+      return Promise.resolve();
+    }
+  },
+  "quarto use brand - dry-run reports nested overwrite vs create correctly"
+);
+
+// Scenario 11: Nested directory created when doesn't exist
+const nestedNewSubdirDir = join(tempDir, "nested-new-subdir");
+ensureDirSync(nestedNewSubdirDir);
+testQuartoCmd(
+  "use",
+  ["brand", join(fixtureDir, "nested-brand"), "--force"],
+  [
+    noErrorsOrWarnings,
+    // _brand/ exists but images/ doesn't - should be created
+    folderExists(join(nestedNewSubdirDir, "_brand", "images")),
+    fileExists(join(nestedNewSubdirDir, "_brand", "images", "logo.png")),
+    fileExists(join(nestedNewSubdirDir, "_brand", "images", "header.png")),
+    // existing file at root should be overwritten
+    {
+      name: "_brand.yml should be overwritten",
+      verify: () => {
+        const content = Deno.readTextFileSync(join(nestedNewSubdirDir, "_brand", "_brand.yml"));
+        if (content.includes("Old Brand")) {
+          throw new Error("_brand.yml should have been overwritten");
+        }
+        return Promise.resolve();
+      }
+    },
+  ],
+  {
+    setup: () => {
+      Deno.writeTextFileSync(join(nestedNewSubdirDir, "_quarto.yml"), "project:\n  type: default\n");
+      // Create _brand/ but NOT images/ subdirectory
+      const brandDir = join(nestedNewSubdirDir, "_brand");
+      ensureDirSync(brandDir);
+      Deno.writeTextFileSync(join(brandDir, "_brand.yml"), "meta:\n  name: Old Brand\n");
+      return Promise.resolve();
+    },
+    cwd: () => nestedNewSubdirDir,
+    teardown: () => {
+      try { Deno.removeSync(nestedNewSubdirDir, { recursive: true }); } catch { /* ignore */ }
+      return Promise.resolve();
+    }
+  },
+  "quarto use brand - creates nested subdirectory when _brand exists but subdir doesn't"
+);
+
+// Scenario 12: Dry-run reports new subdirectory creation
+const dryRunNewSubdirDir = join(tempDir, "dry-run-new-subdir");
+ensureDirSync(dryRunNewSubdirDir);
+testQuartoCmd(
+  "use",
+  ["brand", join(fixtureDir, "nested-brand"), "--dry-run"],
+  [
+    noErrorsOrWarnings,
+    // Should NOT report "Would create directory" for _brand/ (already exists)
+    printsMessage({ level: "INFO", regex: /Would create directory/, negate: true }),
+    // Should report "Would create" for files in new subdir
+    printsMessage({ level: "INFO", regex: /Would create:.*images\/logo\.png/ }),
+    printsMessage({ level: "INFO", regex: /Would create:.*images\/header\.png/ }),
+    // Verify images/ directory was NOT created
+    {
+      name: "images/ directory should not be created in dry-run",
+      verify: () => {
+        if (existsSync(join(dryRunNewSubdirDir, "_brand", "images"))) {
+          throw new Error("images/ directory should not be created in dry-run mode");
+        }
+        return Promise.resolve();
+      }
+    },
+  ],
+  {
+    setup: () => {
+      Deno.writeTextFileSync(join(dryRunNewSubdirDir, "_quarto.yml"), "project:\n  type: default\n");
+      // Create _brand/ but NOT images/ subdirectory
+      const brandDir = join(dryRunNewSubdirDir, "_brand");
+      ensureDirSync(brandDir);
+      Deno.writeTextFileSync(join(brandDir, "_brand.yml"), "meta:\n  name: Old\n");
+      return Promise.resolve();
+    },
+    cwd: () => dryRunNewSubdirDir,
+    teardown: () => {
+      try { Deno.removeSync(dryRunNewSubdirDir, { recursive: true }); } catch { /* ignore */ }
+      return Promise.resolve();
+    }
+  },
+  "quarto use brand - dry-run when _brand exists but nested subdir doesn't"
+);
