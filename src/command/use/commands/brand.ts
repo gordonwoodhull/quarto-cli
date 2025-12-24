@@ -69,7 +69,7 @@ async function useBrand(
 ) {
   // Print header for dry-run
   if (options.dryRun) {
-    info("\nDry run - no changes will be made:");
+    info("\nDry run - no changes will be made.");
   }
 
   // Resolve brand host and trust
