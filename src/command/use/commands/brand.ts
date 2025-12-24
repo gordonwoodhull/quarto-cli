@@ -33,12 +33,12 @@ export const useBrandCommand = new Command()
     "Use a brand for this project.",
   )
   .option(
-    "--no-prompt",
-    "Do not prompt to confirm actions",
+    "--force",
+    "Skip all prompts and confirmations",
   )
   .option(
-    "--allow-write",
-    "Allow creating _brand directory and overwriting files",
+    "--dry-run",
+    "Show what would happen without making changes",
   )
   .example(
     "Use a brand from Github",
@@ -46,9 +46,12 @@ export const useBrandCommand = new Command()
   )
   .action(
     async (
-      options: { prompt?: boolean; allowWrite?: boolean },
+      options: { force?: boolean; dryRun?: boolean },
       target: string,
     ) => {
+      if (options.force && options.dryRun) {
+        throw new Error("Cannot use --force and --dry-run together");
+      }
       await initYamlIntelligenceResourcesFromFilesystem();
       const temp = createTempContext();
       try {
@@ -60,10 +63,15 @@ export const useBrandCommand = new Command()
   );
 
 async function useBrand(
-  options: { prompt?: boolean; allowWrite?: boolean },
+  options: { force?: boolean; dryRun?: boolean },
   target: string,
   tempContext: TempContext,
 ) {
+  // Print header for dry-run
+  if (options.dryRun) {
+    info("\nDry run - no changes will be made:");
+  }
+
   // Resolve brand host and trust
   const source = await extensionSource(target);
   // Is this source valid?
@@ -73,15 +81,19 @@ async function useBrand(
     );
     return;
   }
-  const trusted = await isTrusted(source, options.prompt !== false);
-  if (!trusted) {
-    return;
+
+  // Check trust (skip for dry-run or force)
+  if (!options.dryRun && !options.force) {
+    const trusted = await isTrusted(source);
+    if (!trusted) {
+      return;
+    }
   }
 
   // Resolve brand directory
   const brandDir = await ensureBrandDirectory(
-    options.prompt !== false,
-    options.allowWrite === true,
+    options.force === true,
+    options.dryRun === true,
   );
 
   // Extract and move the template into place
@@ -90,8 +102,8 @@ async function useBrand(
   // Filter the list to template files
   const filesToCopy = templateFiles(stagedDir);
 
-  // Confirm changes to brand directory
-  if (options.prompt) {
+  // Confirm changes to brand directory (skip for dry-run or force)
+  if (!options.dryRun && !options.force) {
     const filename = (typeof (source.resolvedTarget) === "string"
       ? source.resolvedTarget
       : source.resolvedFile) || "brand.zip";
@@ -105,10 +117,11 @@ async function useBrand(
     }
   }
 
-  // Confirm any overwrites
-  info(
-    `\nPreparing brand files...`,
-  );
+  if (!options.dryRun) {
+    info(
+      `\nPreparing brand files...`,
+    );
+  }
 
   const copyActions: Array<{ file: string; copy: () => Promise<void> }> = [];
   for (const fileToCopy of filesToCopy) {
@@ -118,9 +131,9 @@ async function useBrand(
       continue;
     }
     // Compute the paths
-    const target = join(brandDir, rel);
+    const targetPath = join(brandDir, rel);
     const displayName = rel;
-    const targetDir = dirname(target);
+    const targetDir = dirname(targetPath);
     const copyAction = {
       file: displayName,
       copy: async () => {
@@ -128,20 +141,16 @@ async function useBrand(
         await ensureDir(targetDir);
 
         // Copy the file into place
-        await Deno.copyFile(fileToCopy, target);
+        await Deno.copyFile(fileToCopy, targetPath);
       },
     };
 
-    if (existsSync(target)) {
-      // File exists - check if we can proceed
-      if (!options.allowWrite && options.prompt === false) {
-        throw new Error(
-          `The file ${displayName} already exists and would be overwritten. Use --allow-write to overwrite existing files.`,
-        );
-      }
-
-      // If we can prompt, ask for confirmation (regardless of allowWrite)
-      if (options.prompt !== false) {
+    if (existsSync(targetPath)) {
+      // File exists
+      if (options.dryRun) {
+        info(`  Would overwrite: ${displayName}`);
+      } else if (!options.force) {
+        // Prompt for overwrite
         const proceed = await Confirm.prompt({
           message: `Overwrite file ${displayName}?`,
           default: true,
@@ -154,12 +163,22 @@ async function useBrand(
           );
         }
       } else {
-        // No prompt and we have allowWrite, so proceed with overwrite
+        // Force mode - overwrite without prompting
         copyActions.push(copyAction);
       }
     } else {
-      copyActions.push(copyAction);
+      // File doesn't exist
+      if (options.dryRun) {
+        info(`  Would create: ${displayName}`);
+      } else {
+        copyActions.push(copyAction);
+      }
     }
+  }
+
+  // Skip execution for dry-run
+  if (options.dryRun) {
+    return;
   }
 
   // Copy the files
@@ -263,15 +282,14 @@ async function stageBrand(
   }
 }
 
-// Determines whether the user trusts the template
+// Determines whether the user trusts the brand
 async function isTrusted(
   source: ExtensionSource,
-  allowPrompt: boolean,
 ): Promise<boolean> {
-  if (allowPrompt && source.type === "remote") {
+  if (source.type === "remote") {
     // Write the preamble
     const preamble =
-      `\nIf you do not \ntrust the authors of the brand, we recommend that you do not install or \nuse the brand.`;
+      `\nIf you do not trust the authors of the brand, we recommend that you do not install or use the brand.`;
     info(preamble);
 
     // Ask for trust
@@ -286,7 +304,7 @@ async function isTrusted(
   }
 }
 
-async function ensureBrandDirectory(allowPrompt: boolean, allowWrite: boolean) {
+async function ensureBrandDirectory(force: boolean, dryRun: boolean) {
   const currentDir = Deno.cwd();
   const nbContext = notebookContext();
   const project = await projectContext(currentDir, nbContext);
@@ -295,15 +313,10 @@ async function ensureBrandDirectory(allowPrompt: boolean, allowWrite: boolean) {
   }
   const brandDir = join(project.dir, "_brand");
   if (!existsSync(brandDir)) {
-    // If we can't write and can't prompt, throw error
-    if (!allowWrite && !allowPrompt) {
-      throw new Error(
-        `Brand directory ${brandDir} does not exist. Use --allow-write to create it.`,
-      );
-    }
-
-    // If we can prompt, ask for confirmation (regardless of allowWrite)
-    if (allowPrompt) {
+    if (dryRun) {
+      info(`  Would create directory: _brand/`);
+    } else if (!force) {
+      // Prompt for confirmation
       if (
         !await Confirm.prompt({
           message: `Create brand directory ${brandDir}?`,
@@ -312,10 +325,11 @@ async function ensureBrandDirectory(allowPrompt: boolean, allowWrite: boolean) {
       ) {
         throw new Error(`Could not create brand directory ${brandDir}`);
       }
+      ensureDirSync(brandDir);
+    } else {
+      // Force mode - create without prompting
+      ensureDirSync(brandDir);
     }
-
-    // Create the directory (either allowWrite is true, or user confirmed via prompt)
-    ensureDirSync(brandDir);
   }
   return brandDir;
 }
