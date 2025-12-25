@@ -123,17 +123,10 @@ function renderEquation(eq, label, alt, order)
       escaped_alt = escaped_alt:gsub('"', '\\"')
       alt_param = ", alt: \"" .. escaped_alt .. "\""
     end
-    -- Determine numbering format: chapter-based "(1.1)" or simple "(1)"
-    local numbering_str
-    if crossrefOption("chapters", false) then
-      -- Chapter-based: "(2.1)" format with appendix support ("(A.1)")
-      -- Uses appendix-state to detect appendix chapters
-      numbering_str = "it => { let pattern = if state(\"appendix-state\", none).get() != none { \"(A.1)\" } else { \"(1.1)\" }; numbering(pattern, counter(heading).get().first(), it) }"
-    else
-      numbering_str = "\"(1)\""
-    end
+    -- Use quarto-equation-numbering variable defined in template
+    -- (simple "(1)" for articles, chapter-based function for books)
     result:insert(pandoc.RawInline("typst",
-      "#math.equation(block: " .. is_block .. ", numbering: " .. numbering_str .. alt_param .. ", [ "))
+      "#math.equation(block: " .. is_block .. ", numbering: quarto-equation-numbering" .. alt_param .. ", [ "))
     result:insert(eq)
     result:insert(pandoc.RawInline("typst", " ])<" .. label .. ">"))
 
