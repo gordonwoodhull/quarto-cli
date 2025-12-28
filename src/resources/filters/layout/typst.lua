@@ -1,6 +1,165 @@
 -- typst.lua
 -- Copyright (C) 2023 Posit Software, PBC
 
+-- Full-width column class mapping for wideblock
+local widthClassToSide = {
+  ["column-page-right"] = "outer",
+  ["column-page-left"] = "inner",
+  ["column-page"] = "both",
+  ["column-screen"] = "both",
+  ["column-screen-inset"] = "both",
+  ["column-screen-inset-left"] = "inner",
+  ["column-screen-inset-right"] = "outer",
+  ["column-screen-left"] = "inner",
+  ["column-screen-right"] = "outer",
+}
+
+-- Check if element has a full-width class and return the wideblock side
+function getWideblockSide(classes)
+  if classes == nil then
+    return nil, nil
+  end
+  for clz, side in pairs(widthClassToSide) do
+    if classes:includes(clz) then
+      return side, clz
+    end
+  end
+  return nil, nil
+end
+
+-- Wrap content in a wideblock for full-width layout
+function make_typst_wideblock(tbl)
+  local content = tbl.content or pandoc.Blocks({})
+  local side = tbl.side or "both"
+
+  local result = pandoc.Blocks({})
+  result:insert(pandoc.RawBlock("typst", '#wideblock(side: "' .. side .. '")['))
+  result:extend(quarto.utils.as_blocks(content))
+  result:insert(pandoc.RawBlock("typst", ']'))
+  result:insert(pandoc.RawBlock("typst", '\n\n'))
+  return result
+end
+
+-- Helper to format shift parameter for marginalia
+-- auto/true/false are unquoted, "avoid"/"ignore" are quoted strings
+local function formatShiftParam(shift)
+  if shift == "true" or shift == "false" or shift == "auto" then
+    return shift
+  else
+    return '"' .. shift .. '"'
+  end
+end
+
+-- Render a figure in the margin using marginalia's notefigure
+function make_typst_margin_figure(tbl)
+  local content = tbl.content or pandoc.Div({})
+  local caption = tbl.caption
+  local caption_location = tbl.caption_location or "bottom"
+  local identifier = tbl.identifier
+  local shift = tbl.shift or "auto"
+  local alignment = tbl.alignment or "baseline"
+  local dy = tbl.dy or "0pt"
+  local kind = tbl.kind or "quarto-float-fig"
+  local supplement = tbl.supplement or "Figure"
+
+  local result = pandoc.Blocks({})
+
+  -- Start notefigure call with parameters
+  -- Include kind and supplement to share counter with regular figures
+  result:insert(pandoc.RawBlock("typst",
+    '#notefigure(alignment: "' .. alignment .. '", dy: ' .. dy ..
+    ', shift: ' .. formatShiftParam(shift) .. ', counter: none' ..
+    ', kind: "' .. kind .. '", supplement: "' .. supplement .. '", '))
+
+  -- Add figure content
+  result:insert(pandoc.RawBlock("typst", '['))
+  -- Listings should not be centered inside the figure
+  if kind:match("lst") then
+    result:insert(pandoc.RawBlock("typst", '#set align(left)'))
+  end
+  result:extend(quarto.utils.as_blocks(content))
+  result:insert(pandoc.RawBlock("typst", ']'))
+
+  -- Add caption if present, with position control
+  if caption and not quarto.utils.is_empty_node(caption) then
+    result:insert(pandoc.RawBlock("typst", ', caption: figure.caption(position: ' .. caption_location .. ', ['))
+    if pandoc.utils.type(caption) == "Blocks" then
+      result:extend(caption)
+    else
+      result:insert(caption)
+    end
+    result:insert(pandoc.RawBlock("typst", '])'))
+  end
+
+  -- Close notefigure
+  result:insert(pandoc.RawBlock("typst", ')'))
+
+  -- Add label for cross-references
+  if identifier and identifier ~= "" then
+    result:insert(pandoc.RawBlock("typst", '<' .. identifier .. '>'))
+  end
+
+  result:insert(pandoc.RawBlock("typst", '\n\n'))
+  return result
+end
+
+-- Render a figure in main column with caption in margin
+-- Uses marginalia's recommended show-rule approach for proper top-alignment
+function make_typst_margin_caption_figure(tbl)
+  local content = tbl.content or pandoc.Div({})
+  local caption = tbl.caption
+  local identifier = tbl.identifier
+  local kind = tbl.kind or "quarto-float-fig"
+  local supplement = tbl.supplement or "Figure"
+  -- Margin captions align with top of content (consistent with HTML visual behavior)
+  local alignment = tbl.alignment or "top"
+
+  local result = pandoc.Blocks({})
+
+  -- Use marginalia's recommended approach: show rule transforms figure.caption into margin note
+  -- This ensures proper alignment because the caption anchors at the figure's position
+  local cap_position = alignment == "top" and "top" or "bottom"
+  local dy = alignment == "top" and "-0.01pt" or "0pt"
+
+  -- Scoped show rule: transform figure captions into margin notes
+  result:insert(pandoc.RawBlock("typst", '#['))
+  result:insert(pandoc.RawBlock("typst", '#set figure(gap: 0pt)'))
+  result:insert(pandoc.RawBlock("typst", '#set figure.caption(position: ' .. cap_position .. ')'))
+  result:insert(pandoc.RawBlock("typst",
+    '#show figure.caption: it => note(alignment: "' .. alignment .. '", dy: ' .. dy ..
+    ', counter: none, shift: "avoid", keep-order: true)[#text(size: 0.9em)[#it]]'))
+
+  -- Render figure WITH caption - the show rule transforms it into a margin note
+  -- Typst's figure.caption already includes "Figure N:" prefix, so just include caption text
+  result:insert(pandoc.RawBlock("typst", '#figure(['))
+  -- Listings should not be centered inside the figure
+  if kind:match("lst") then
+    result:insert(pandoc.RawBlock("typst", '#set align(left)'))
+  end
+  result:extend(quarto.utils.as_blocks(content))
+  result:insert(pandoc.RawBlock("typst", '], caption: ['))
+  if caption and not quarto.utils.is_empty_node(caption) then
+    if pandoc.utils.type(caption) == "Blocks" then
+      result:extend(caption)
+    else
+      result:insert(caption)
+    end
+  end
+  result:insert(pandoc.RawBlock("typst",
+    '], kind: "' .. kind .. '", supplement: "' .. supplement .. '")'))
+
+  -- Add label for cross-references
+  if identifier and identifier ~= "" then
+    result:insert(pandoc.RawBlock("typst", '<' .. identifier .. '>'))
+  end
+
+  -- Close scoping block
+  result:insert(pandoc.RawBlock("typst", ']'))
+
+  result:insert(pandoc.RawBlock("typst", '\n\n'))
+  return result
+end
+
 function make_typst_figure(tbl)
   local content = tbl.content or pandoc.Div({})
   local caption_location = tbl.caption_location
