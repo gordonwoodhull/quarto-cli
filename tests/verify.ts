@@ -1076,3 +1076,6 @@ const asRegexp = (m: string | RegExp) => {
 
 // Re-export ensurePdfTextPositions from dedicated module
 export { ensurePdfTextPositions } from "./verify-pdf-text-position.ts";
+
+// Re-export ensurePdfMetadata from dedicated module
+export { ensurePdfMetadata } from "./verify-pdf-metadata.ts";
