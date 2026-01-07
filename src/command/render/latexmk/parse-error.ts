@@ -107,6 +107,53 @@ const resolvingMatchers = [
   },
 ];
 
+// Finds PDF/UA accessibility warnings from tagpdf and DocumentMetadata
+export interface PdfAccessibilityWarnings {
+  missingAltText: string[]; // filenames of images missing alt text
+  missingLanguage: boolean; // document language not set
+  otherWarnings: string[]; // other tagpdf warnings
+}
+
+export function findPdfAccessibilityWarnings(
+  logText: string,
+): PdfAccessibilityWarnings {
+  const result: PdfAccessibilityWarnings = {
+    missingAltText: [],
+    missingLanguage: false,
+    otherWarnings: [],
+  };
+
+  // Match: Package tagpdf Warning: Alternative text for graphic is missing.
+  //        (tagpdf)                Using 'filename' instead.
+  const altTextRegex =
+    /Package tagpdf Warning: Alternative text for graphic is missing\.\s*\n\(tagpdf\)\s*Using ['`]([^'`]+)['`] instead\./g;
+  let match;
+  while ((match = altTextRegex.exec(logText)) !== null) {
+    result.missingAltText.push(match[1]);
+  }
+
+  // Match: LaTeX DocumentMetadata Warning: The language has not been set in
+  if (
+    /LaTeX DocumentMetadata Warning: The language has not been set in/.test(
+      logText,
+    )
+  ) {
+    result.missingLanguage = true;
+  }
+
+  // Capture any other tagpdf warnings we haven't specifically handled
+  const otherTagpdfRegex = /Package tagpdf Warning: ([^\n]+)/g;
+  while ((match = otherTagpdfRegex.exec(logText)) !== null) {
+    const warning = match[1];
+    // Skip the alt text warning we already handle specifically
+    if (!warning.startsWith("Alternative text for graphic is missing")) {
+      result.otherWarnings.push(warning);
+    }
+  }
+
+  return result;
+}
+
 // Finds missing hyphenation files (these appear as warnings in the log file)
 export function findMissingHyphenationFiles(logText: string) {
   //ngerman gets special cased
@@ -297,7 +344,7 @@ const packageMatchers = [
 ];
 
 function fontSearchTerm(font: string): string {
-  const fontPattern = font.replace(/\s+/g, '\\s*');
+  const fontPattern = font.replace(/\s+/g, "\\s*");
   return `${fontPattern}(-(Bold|Italic|Regular).*)?[.](tfm|afm|mf|otf|ttf)`;
 }
 
