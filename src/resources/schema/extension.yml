@@ -30,15 +30,7 @@
                     path:
                       schema: path
                     at:
-                      enum:
-                        - pre-ast
-                        - post-ast
-                        - pre-quarto
-                        - post-quarto
-                        - pre-render
-                        - post-render
-                        - pre-finalize
-                        - post-finalize
+                      ref: filter-entry-point
                   required:
                     - path
         formats:
