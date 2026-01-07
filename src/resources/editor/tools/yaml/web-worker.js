@@ -17998,6 +17998,51 @@ try {
               short: "When used in conjunction with `pdfa`, specifies the output intent for the colors.",
               long: "When used in conjunction with `pdfa`, specifies the output intent for\nthe colors, for example `ISO coated v2 300\\letterpercent\\space (ECI)`\n\nIf left unspecified, `sRGB IEC61966-2.1` is used as default.\n"
             }
+          },
+          {
+            name: "pdf-standard",
+            schema: {
+              maybeArrayOf: {
+                enum: [
+                  "1.4",
+                  "1.5",
+                  "1.6",
+                  "1.7",
+                  "2.0",
+                  "a-1b",
+                  "a-2a",
+                  "a-2b",
+                  "a-2u",
+                  "a-3a",
+                  "a-3b",
+                  "a-3u",
+                  "a-4",
+                  "a-4f",
+                  "a-1a",
+                  "a-4e",
+                  "ua-1",
+                  "ua-2",
+                  "x-4",
+                  "x-4p",
+                  "x-5g",
+                  "x-5n",
+                  "x-5pg",
+                  "x-6",
+                  "x-6n",
+                  "x-6p"
+                ]
+              }
+            },
+            tags: {
+              formats: [
+                "$pdf-all",
+                "typst"
+              ]
+            },
+            description: {
+              short: "PDF conformance standard (e.g., a-2b, ua-1, 1.7)",
+              long: "Specifies PDF conformance standards and/or version for the output.\n\nAccepts a single value or array of values:\n\n**PDF versions** (both Typst and LaTeX):\n`1.4`, `1.5`, `1.6`, `1.7`, `2.0`\n\n**PDF/A standards** (both engines):\n`a-1b`, `a-2a`, `a-2b`, `a-2u`, `a-3a`, `a-3b`, `a-3u`, `a-4`, `a-4f`\n\n**PDF/A standards** (Typst only):\n`a-1a`, `a-4e`\n\n**PDF/UA standards**:\n`ua-1` (both), `ua-2` (LaTeX only)\n\n**PDF/X standards** (LaTeX only):\n`x-4`, `x-4p`, `x-5g`, `x-5n`, `x-5pg`, `x-6`, `x-6n`, `x-6p`\n\nExample: `pdf-standard: [a-2b, ua-1]` for accessible archival PDF.\n"
+            }
           }
         ],
         "schema/document-references.yml": [
@@ -21366,6 +21411,12 @@ try {
           "asciidoc",
           "asciidoc_legacy",
           "asciidoctor",
+          "bbcode",
+          "bbcode_fluxbb",
+          "bbcode_hubzilla",
+          "bbcode_phpbb",
+          "bbcode_steam",
+          "bbcode_xenforo",
           "beamer",
           "biblatex",
           "bibtex",
@@ -21427,6 +21478,8 @@ try {
           "texinfo",
           "textile",
           "typst",
+          "vimdoc",
+          "xml",
           "xwiki",
           "zimwiki"
         ],
@@ -23816,6 +23869,10 @@ try {
             short: "When used in conjunction with <code>pdfa</code>, specifies the output\nintent for the colors.",
             long: "When used in conjunction with <code>pdfa</code>, specifies the output\nintent for the colors, for example\n<code>ISO coated v2 300\\letterpercent\\space (ECI)</code>\nIf left unspecified, <code>sRGB IEC61966-2.1</code> is used as\ndefault."
           },
+          {
+            short: "PDF conformance standard (e.g., a-2b, ua-1, 1.7)",
+            long: "Specifies PDF conformance standards and/or version for the\noutput.\nAccepts a single value or array of values:\n<strong>PDF versions</strong> (both Typst and LaTeX):\n<code>1.4</code>, <code>1.5</code>, <code>1.6</code>, <code>1.7</code>,\n<code>2.0</code>\n<strong>PDF/A standards</strong> (both engines): <code>a-1b</code>,\n<code>a-2a</code>, <code>a-2b</code>, <code>a-2u</code>,\n<code>a-3a</code>, <code>a-3b</code>, <code>a-3u</code>,\n<code>a-4</code>, <code>a-4f</code>\n<strong>PDF/A standards</strong> (Typst only): <code>a-1a</code>,\n<code>a-4e</code>\n<strong>PDF/UA standards</strong>: <code>ua-1</code> (both),\n<code>ua-2</code> (LaTeX only)\n<strong>PDF/X standards</strong> (LaTeX only): <code>x-4</code>,\n<code>x-4p</code>, <code>x-5g</code>, <code>x-5n</code>,\n<code>x-5pg</code>, <code>x-6</code>, <code>x-6n</code>,\n<code>x-6p</code>\nExample: <code>pdf-standard: [a-2b, ua-1]</code> for accessible\narchival PDF."
+          },
           "Document bibliography (BibTeX or CSL). May be a single file or a list\nof files",
           "Citation Style Language file to use for formatting references.",
           "Enables a hover popup for citation that shows the reference\ninformation.",
@@ -25080,12 +25137,12 @@ try {
           mermaid: "%%"
         },
         "handlers/mermaid/schema.yml": {
-          _internalId: 197583,
+          _internalId: 218947,
           type: "object",
           description: "be an object",
           properties: {
             "mermaid-format": {
-              _internalId: 197575,
+              _internalId: 218939,
               type: "enum",
               enum: [
                 "png",
@@ -25101,7 +25158,7 @@ try {
               exhaustiveCompletions: true
             },
             theme: {
-              _internalId: 197582,
+              _internalId: 218946,
               type: "anyOf",
               anyOf: [
                 {
@@ -34419,7 +34476,7 @@ ${tidyverseInfo(
   }
 
   // ../break-quarto-md.ts
-  async function breakQuartoMd(src, validate2 = false, lenient = false) {
+  async function breakQuartoMd(src, validate2 = false, lenient = false, startCodeCellRegex) {
     if (typeof src === "string") {
       src = asMappedString(src);
     }
@@ -34428,7 +34485,7 @@ ${tidyverseInfo(
       cells: []
     };
     const yamlRegEx = /^---\s*$/;
-    const startCodeCellRegEx = new RegExp(
+    const startCodeCellRegEx = startCodeCellRegex || new RegExp(
       "^\\s*(```+)\\s*\\{([=A-Za-z]+)( *[ ,].*)?\\}\\s*$"
     );
     const startCodeRegEx = /^```/;
