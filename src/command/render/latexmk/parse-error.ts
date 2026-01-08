@@ -321,6 +321,12 @@ const packageMatchers = [
     },
   },
   {
+    regex: /.*No support files for \\DocumentMetadata found.*/g,
+    filter: (_match: string, _text: string) => {
+      return "latex-lab";
+    },
+  },
+  {
     regex: /.*No file ([^`'. ]+[.]fd)[.].*/g,
     filter: (match: string, _text: string) => {
       return match.toLowerCase();
