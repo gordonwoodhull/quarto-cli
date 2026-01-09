@@ -2,9 +2,9 @@
 
 This is the first chapter of the book.
 
-## Section 1.1
+## Basic Figures {#sec-basic-figures}
 
-Some content in section 1.1. See @fig-cars for an example figure.
+Some content in @sec-basic-figures. See @fig-cars for an example figure.
 
 ```{r}
 #| label: fig-cars
@@ -12,15 +12,15 @@ Some content in section 1.1. See @fig-cars for an example figure.
 plot(cars)
 ```
 
-## Section 1.2
+## Embedded Notebooks {#sec-embedded-notebooks}
 
-Some content in section 1.2. See @fig-visualization for an embedded notebook figure.
+Some content in @sec-embedded-notebooks. See @fig-visualization for an embedded notebook figure.
 
 {{< embed notebooks/computations.ipynb#fig-visualization >}}
 
 We will discuss methods in @sec-methods.
 
-## Section 1.3 - Callouts
+## Callouts {#sec-callouts}
 
 ::: {.callout-note}
 The ships hung in the sky in much the same way that bricks don't. This is a note callout without a custom title.
@@ -31,23 +31,23 @@ The ships hung in the sky in much the same way that bricks don't. This is a note
 On no account allow anyone to make you a conditions-affected beverage. The alarm on Arthur Dent's alarm clock had been going off for several hours when he finally woke up. See @wrn-tea to reference this warning.
 :::
 
-## Section 1.4 - Custom Crossref Dinosaurs
+## Custom Crossref Dinosaurs {#sec-custom-crossref-dinosaurs}
 
-This section tests custom cross-reference types using the user-defined "Dinosaur" category.
+@sec-custom-crossref-dinosaurs tests custom cross-reference types using the user-defined "Dinosaur" category.
 
 ::: {#dino-steg}
 **Stegosaurus**
 
-This is the first dinosaur in Chapter 1, a herbivore with distinctive plates. See @dino-steg to self-reference.
+This is the first dinosaur in @sec-intro, a herbivore with distinctive plates. See @dino-steg to self-reference.
 :::
 
 ::: {#dino-trex}
 **Tyrannosaurus Rex**
 
-This is the second dinosaur in Chapter 1, the king of predators. See @dino-trex to self-reference, or @dino-steg for the first dinosaur.
+This is the second dinosaur in @sec-intro, the king of predators. See @dino-trex to self-reference, or @dino-steg for the first dinosaur.
 :::
 
-## Section 1.5 - Equations
+## Equations {#sec-equations}
 
 The fundamental equation of special relativity:
 
@@ -65,7 +65,7 @@ $$ {#eq-newton}
 
 Newton's second law (@eq-newton) relates force to acceleration.
 
-## Section 1.6 - Theorems
+## Theorems {#sec-theorems}
 
 ::: {#thm-pythagorean}
 ## Pythagorean Theorem
@@ -81,7 +81,7 @@ For any triangle with sides $a$, $b$, and $c$: $a + b > c$
 
 See @lem-triangle for the inequality.
 
-## Section 1.7 - Code Listings
+## Code Listings {#sec-code-listings}
 
 ```{#lst-hello .python lst-cap="Hello World in Python"}
 def hello():

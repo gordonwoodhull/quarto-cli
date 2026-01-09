@@ -2,19 +2,19 @@
 
 This appendix contains additional resources and supplementary material.
 
-## Data Sources
+## Data Sources {#sec-data-sources}
 
 The data used in this book comes from various sources.
 
-## Code Repository
+## Code Repository {#sec-code-repository}
 
 All code examples are available in the companion repository.
 
 See @sec-intro for the main introduction, and @fig-cars for example visualizations.
 
-## Appendix Sub-figures
+## Appendix Sub-figures {#sec-appendix-sub-figures}
 
-This section tests sub-figure numbering in appendices. Sub-figures should use letter-based chapter numbering (e.g., Figure A.1a instead of Figure 1.1a).
+@sec-appendix-sub-figures tests sub-figure numbering in appendices. Sub-figures should use letter-based chapter numbering (e.g., Figure A.1a instead of Figure 1.1a).
 
 See @fig-appendix-panel for a panel of appendix sub-figures, or @fig-appendix-panel-a and @fig-appendix-panel-b individually.
 
@@ -27,9 +27,9 @@ See @fig-appendix-panel for a panel of appendix sub-figures, or @fig-appendix-pa
 A panel of sub-figures in the appendix demonstrating letter-based numbering.
 :::
 
-## Appendix Callouts
+## Appendix Callouts {#sec-appendix-callouts}
 
-This section tests callout numbering in appendices. Callouts should use letter-based chapter numbering (e.g., Warning A.1 instead of Warning 1.1).
+@sec-appendix-callouts tests callout numbering in appendices. Callouts should use letter-based chapter numbering (e.g., Warning A.1 instead of Warning 1.1).
 
 ::: {#wrn-appendix .callout-warning}
 ## Appendix Warning
@@ -41,11 +41,11 @@ This is a warning callout in the appendix. It should be numbered Warning A.1, no
 This is a tip callout in the appendix. It should be numbered Tip A.1. See @tip-appendix to reference this appendix tip.
 :::
 
-We can also reference callouts from the main chapters: see @wrn-tea for the tea warning from Chapter 1.
+We can also reference callouts from the main chapters: see @wrn-tea for the tea warning from @sec-intro.
 
-## Appendix Custom Crossref Dinosaurs
+## Appendix Custom Crossref Dinosaurs {#sec-appendix-dinosaurs}
 
-This section tests custom cross-reference numbering in appendices.
+@sec-appendix-dinosaurs tests custom cross-reference numbering in appendices.
 
 ::: {#dino-appendix}
 **Triceratops**
@@ -53,9 +53,9 @@ This section tests custom cross-reference numbering in appendices.
 This dinosaur in the appendix should be numbered Dinosaur A.1, not Dinosaur 1.1 or Dinosaur 4.1. See @dino-appendix to self-reference.
 :::
 
-We can reference dinosaurs from main chapters: see @dino-steg from Chapter 1.
+We can reference dinosaurs from main chapters: see @dino-steg from @sec-intro.
 
-## Appendix Equations
+## Appendix Equations {#sec-appendix-equations}
 
 The Pythagorean theorem:
 
@@ -65,18 +65,18 @@ $$ {#eq-pythagorean}
 
 See @eq-pythagorean for right triangles. This should be Equation A.1.
 
-Cross-chapter reference: Recall @eq-einstein from Chapter 1 and @eq-quadratic from Chapter 2.
+Cross-chapter reference: Recall @eq-einstein from @sec-intro and @eq-quadratic from @sec-methods.
 
-## Appendix Theorems
+## Appendix Theorems {#sec-appendix-theorems}
 
 ::: {#thm-appendix}
 ## Example Appendix Theorem
 This theorem demonstrates appendix numbering. It should ideally be Theorem A.1.
 :::
 
-See @thm-appendix for the appendix theorem. Reference @thm-pythagorean from Chapter 1 and @thm-calculus from Chapter 2.
+See @thm-appendix for the appendix theorem. Reference @thm-pythagorean from @sec-intro and @thm-calculus from @sec-methods.
 
-## Appendix Listings
+## Appendix Listings {#sec-appendix-listings}
 
 ```{#lst-appendix-example .python lst-cap="Appendix Code Example"}
 # This demonstrates appendix listing numbering
@@ -87,4 +87,4 @@ def appendix_function():
 
 See @lst-appendix-example for an appendix code example. This should be Listing A.1.
 
-Cross-chapter references: See @lst-hello from Chapter 1 and @lst-quicksort from Chapter 2.
+Cross-chapter references: See @lst-hello from @sec-intro and @lst-quicksort from @sec-methods.
