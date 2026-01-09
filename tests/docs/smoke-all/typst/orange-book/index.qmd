@@ -1,0 +1,220 @@
+---
+keep-typ: true
+_quarto:
+  render-project: true
+  tests:
+    orange-book-typst:
+      ensureTypstFileRegexMatches:
+        - # matches array (first positional argument)
+          - "test book for Typst output format"
+          - "first chapter of the book"
+          - "second chapter of the book"
+          - "third chapter of the book"
+          - "#heading\\(level: 1, numbering: none\\)\\[Preface\\]"
+          - "<fig-cars>"
+          - "<fig-visualization>"
+          - "<tbl-data>"
+          - "<sec-intro>"
+          - "<sec-methods>"
+          - "<sec-results>"
+          - "#ref\\(<fig-cars>, supplement: \\[Figure\\]\\)"
+          - "#ref\\(<fig-visualization>, supplement: \\[Figure\\]\\)"
+          - "#ref\\(<tbl-data>, supplement: \\[Table\\]\\)"
+          - "#ref\\(<sec-intro>, supplement: \\[Chapter\\]\\)"
+          - "#ref\\(<sec-methods>, supplement: \\[Chapter\\]\\)"
+          - "A plot of the cars dataset"
+          - "Sample data table"
+          - "#cite\\(<knuth84>"
+          - '#bibliography\(\("references\.bib"\)\)'
+          - "#part\\[Part I: Getting Started\\]"
+          - "#part\\[Part II: Advanced Topics\\]"
+          - '#show: appendices\.with\("Appendices", hide-parent: true\)'
+          - "<sec-resources>"
+          - "#quarto_super\\("
+          - "<fig-panel>"
+          - "<fig-panel-a>"
+          - "<fig-panel-b>"
+          - "#ref\\(<fig-panel>, supplement: \\[Figure\\]\\)"
+          - "#ref\\(<fig-panel-a>, supplement: \\[Figure\\]\\)"
+          - "#callout\\("
+          - 'kind: "quarto-callout-Warning"'
+          - 'kind: "quarto-callout-Tip"'
+          - 'kind: "quarto-callout-Note"'
+          - 'kind: "quarto-callout-Important"'
+          - "<wrn-tea>"
+          - "<tip-towel>"
+          - "<nte-vogon>"
+          - "<imp-answer>"
+          - "#ref\\(<wrn-tea>, supplement: \\[Warning\\]\\)"
+          - "#ref\\(<tip-towel>, supplement: \\[Tip\\]\\)"
+          - "#ref\\(<nte-vogon>, supplement: \\[Note\\]\\)"
+          - "#ref\\(<imp-answer>, supplement: \\[Important\\]\\)"
+          - "<fig-appendix-panel>"
+          - "<fig-appendix-panel-a>"
+          - "<fig-appendix-panel-b>"
+          - "#ref\\(<fig-appendix-panel>, supplement: \\[Figure\\]\\)"
+          - "#ref\\(<fig-appendix-panel-a>, supplement: \\[Figure\\]\\)"
+          - "<wrn-appendix>"
+          - "<tip-appendix>"
+          - "#ref\\(<wrn-appendix>, supplement: \\[Warning\\]\\)"
+          - "#ref\\(<tip-appendix>, supplement: \\[Tip\\]\\)"
+          - 'kind: "quarto-float-dino"'
+          - "<dino-steg>"
+          - "<dino-trex>"
+          - "<dino-raptor>"
+          - "<dino-ptero>"
+          - "<dino-appendix>"
+          - "<dino-appendix-b>"
+          - "#ref\\(<dino-steg>, supplement: \\[Dinosaur\\]\\)"
+          - "#ref\\(<dino-raptor>, supplement: \\[Dinosaur\\]\\)"
+          - "#ref\\(<dino-appendix>, supplement: \\[Dinosaur\\]\\)"
+          - "#ref\\(<dino-appendix-b>, supplement: \\[Dinosaur\\]\\)"
+          - "<fig-appendix-b-panel>"
+          - "<fig-appendix-b-panel-a>"
+          - "<wrn-appendix-b>"
+          - "<tip-appendix-b>"
+          - "#ref\\(<fig-appendix-b-panel>, supplement: \\[Figure\\]\\)"
+          - "#ref\\(<wrn-appendix-b>, supplement: \\[Warning\\]\\)"
+          - 'counter\(figure\.where\(kind: "quarto-float-dino"\)\)\.update\(0\)'
+          - "<eq-einstein>"
+          - "<eq-newton>"
+          - "<eq-quadratic>"
+          - "<eq-pythagorean>"
+          - "#ref\\(<eq-einstein>, supplement: \\[Equation\\]\\)"
+          - "#ref\\(<eq-newton>, supplement: \\[Equation\\]\\)"
+          - "#ref\\(<eq-quadratic>, supplement: \\[Equation\\]\\)"
+          - "#ref\\(<eq-pythagorean>, supplement: \\[Equation\\]\\)"
+          - 'math\.equation\(block: true, numbering: quarto-equation-numbering'
+          - 'counter\(math\.equation\)\.update\(0\)'
+          - "#import \"@preview/ctheorems:1\\.1\\.3\""
+          - "#show: thmrules"
+          - 'thmbox\("theorem".*\.\.quarto-thmbox-args'
+          - "<thm-pythagorean>"
+          - "<lem-triangle>"
+          - "<thm-calculus>"
+          - "<def-continuous>"
+          - "<thm-appendix>"
+          - "#ref\\(<thm-pythagorean>"
+          - "#ref\\(<lem-triangle>"
+          - "#ref\\(<thm-calculus>"
+          - "#ref\\(<thm-appendix>"
+          - "<lst-hello>"
+          - "<lst-fibonacci>"
+          - "<lst-quicksort>"
+          - "<lst-appendix-example>"
+          - "#ref\\(<lst-hello>"
+          - "#ref\\(<lst-fibonacci>"
+          - "#ref\\(<lst-quicksort>"
+          - "#ref\\(<lst-appendix-example>"
+          - 'kind: "quarto-float-lst"'
+          - '#let brand-color = \('
+          - 'primary: rgb\("#f36619"\)'
+          - 'secondary: rgb\("#2e86ab"\)'
+          - '#let brand-color-background = \('
+          - 'main-color: brand-color\.at\("primary", default: blue\)'
+          - '#let brand-logo = \('
+          - 'medium:'
+          - 'path: "logo\.svg"'
+          - 'alt: "Test Logo"'
+          - 'logo: \{'
+          - 'outline-depth: 17,'
+      ensurePdfRegexMatches:
+        - # matches array (first positional argument)
+          - "Figure 1\\.1: A plot of the cars dataset"
+          - "Figure 1\\.2: A display of a line"
+          - "Table 2\\.1: Sample data table"
+          - "Figure 2\\.1: A panel with two sub-figures"
+          - "See Figure 1\\.1 for an example figure"
+          - "See Figure 1\\.2 for an embedded notebook figure"
+          - "See Table 2\\.1 for sample data"
+          - "Refer back to Figure 1\\.1 and Table 2\\.1"
+          - "See Chapter 1\\. for the main introduction"
+          - "As discussed in Chapter 1\\., we now present"
+          - "See Figure 2\\.1 for a panel.*Figure 2\\.1a and Figure 2\\.1b"
+          - "Recall the panel figure from Chapter 2\\.: see Figure 2\\.1 for the complete panel"
+          - "Figure 2\\.1a shows th first panel and Figure 2\\.1b shows the\\s+second panel"
+          - "reference the main figure from Chapter 1\\.: Figure 1\\.1 shows the cars"
+          - "Warning 1\\.1: Whose Tea Is This"
+          - "Tip 2\\.1: Whose Towel Is This"
+          - "Note 2\\.1: A Note About Vogon Poetry"
+          - "Important 3\\.1: The Answer"
+          - "See Warning 1\\.1 to\\s+reference this warning"
+          - "See Tip 2\\.1 to\\s+reference this tip"
+          - "See Note 2\\.1 to\\s+reference this note"
+          - "See Important 3\\.1 to\\s+reference this important"
+          - "see Warning 1\\.1"
+          - "See Warning 1\\.1 for the tea warning"
+          - "See Tip 2\\.1 for towel advice"
+          - "See Note 2\\.1 for important information about Vogon poetry"
+          - "Figure A\\.1: A panel of sub-figures in the appendix"
+          - "See Figure A\\.1 for a panel of appendix sub-figures"
+          - "Figure A\\.1a and Figure A\\.1b individually"
+          - "Warning A\\.1: Appendix Warning"
+          - "Tip A\\.1: Appendix Tip"
+          - "See Warning A\\.1 to reference this\\s+appendix warning"
+          - "See Tip A\\.1 to reference this\\s+appendix tip"
+          - "See Figure A\\.1 for appendix sub-figures"
+          - "See Warning A\\.1 for the appendix warning"
+          - "See Tip A\\.1 for the appendix tip"
+          - "see Warning 1\\.1 for the tea warning from Chapter 1"
+          - "Dinosaur 1\\.1: This is the first dinosaur"
+          - "Dinosaur 1\\.2: This is the second dinosaur"
+          - "Dinosaur 2\\.1: This dinosaur demonstrates clever"
+          - "Dinosaur 3\\.1: This flying reptile"
+          - "Dinosaur A\\.1: This dinosaur in the appendix"
+          - "See Dinosaur 1\\.1\\s+to self"
+          - "See Dinosaur 2\\.1 to self"
+          - "see Dinosaur 1\\.1 and Dinosaur 1\\.2 from\\s+Chapter"
+          - "see Dinosaur 1\\.1 from Chapter 1 and Dinosaur 2\\.1"
+          - "See Dinosaur A\\.1 for the appendix dinosaur"
+          - "see Dinosaur 1\\.1 from Chapter 1"
+          - "Figure B\\.1: A panel of sub-figures in Appendix B"
+          - "Figure B\\.1a and Figure B\\.1b individually"
+          - "Warning B\\.1: Appendix B Warning"
+          - "Tip B\\.1: Appendix B Tip"
+          - "Dinosaur B\\.1: This dinosaur in Appendix B"
+          - "See Dinosaur B\\.1 to self"
+          - "See Figure B\\.1 for Appendix B sub-figures"
+          - "See Warning B\\.1 for the Appendix B warning"
+          - "See Tip B\\.1 for the Appendix B tip"
+          - "See Dinosaur B\\.1 for the Appendix B dinosaur"
+          - "see Figure A\\.1 for Appendix A"
+          - "\\(1\\.1\\)"
+          - "\\(1\\.2\\)"
+          - "\\(2\\.1\\)"
+          - "\\(A\\.1\\)"
+          - "As shown in Equation \\(1\\.1\\), energy and mass"
+          - "Newton.s second law \\(Equation \\(1\\.2\\)\\)"
+          - "Use Equation \\(2\\.1\\) to solve quadratic equations"
+          - "See Equation \\(A\\.1\\) for right triangles"
+          - "Recall Equation \\(1\\.1\\) from Chapter 1 and Equation \\(1\\.2\\)"
+          - "Recall Equation \\(1\\.1\\) from Chapter 1 and Equation \\(2\\.1\\)"
+          - "Theorem 1\\.1.*Pythagorean"
+          - "Lemma 1\\.1.*Triangle Inequality"
+          - "Theorem 2\\.1.*Fundamental Theorem"
+          - "Definition 2\\.1.*Continuous"
+          - "See Theorem 1\\.1 for the classic result"
+          - "See Lemma 1\\.1 for the inequality"
+          - "See Theorem 2\\.1"
+          - "See Definition 2\\.1 for the definition"
+          - "Recall Theorem 1\\.1 and Lemma 1\\.1 from Chapter 1"
+          - "Listing 1\\.1.*Hello World"
+          - "Listing 1\\.2.*Fibonacci"
+          - "Listing 2\\.1.*Quicksort"
+          - "Listing A\\.1.*Appendix Code Example"
+          - "See Listing 1\\.1 for a simple Python example"
+          - "Listing 1\\.2.*uses recursion"
+          - "See Listing 2\\.1 for an efficient sorting algorithm"
+          - "See Listing A\\.1 for an appendix code example"
+          - "See Listing 1\\.1 and Listing 1\\.2 from Chapter 1"
+          - "See Listing 1\\.1 from Chapter 1 and Listing 2\\.1 from Chapter 2"
+---
+
+# Preface {.unnumbered}
+
+This is a test book for Typst output format.
+
+## About this book
+
+This book tests the basic Typst book rendering functionality in Quarto.
+See @knuth84 for additional discussion of literate programming.
