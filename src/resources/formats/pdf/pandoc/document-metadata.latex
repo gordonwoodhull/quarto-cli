@@ -7,7 +7,7 @@ $if(pdf-standards)$
   pdfstandard={$for(pdf-standards)$$it$$sep$,$endfor$},
 $endif$
 $if(pdf-tagging)$
-  testphase=phase-III,
+  tagging=on,
 $endif$
 }
 $endif$

@@ -327,6 +327,13 @@ const packageMatchers = [
     },
   },
   {
+    // PDF/A requires embedded color profiles - pdfmanagement-testphase needs colorprofiles
+    regex: /.*\(pdf backend\): cannot open file for embedding.*/g,
+    filter: (_match: string, _text: string) => {
+      return "colorprofiles";
+    },
+  },
+  {
     regex: /.*No file ([^`'. ]+[.]fd)[.].*/g,
     filter: (match: string, _text: string) => {
       return match.toLowerCase();

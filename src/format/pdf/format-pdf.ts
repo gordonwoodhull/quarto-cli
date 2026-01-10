@@ -333,11 +333,9 @@ function createPdfFormat(
           if (standards.length > 0) {
             // Pass as array - Pandoc template will iterate with $for()$
             extras.pandoc.variables["pdf-standards"] = standards;
-            // Enable tagging for PDF/UA standards (required for accessibility)
-            if (standards.some((s) => s.startsWith("ua-"))) {
-              extras.pandoc.variables["pdf-tagging"] = true;
-            }
           }
+          // Always enable tagging for pdf-standard (stable in LaTeX 2025+)
+          extras.pandoc.variables["pdf-tagging"] = true;
         }
 
         return extras;

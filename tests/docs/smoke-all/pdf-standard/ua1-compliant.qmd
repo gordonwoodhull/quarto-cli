@@ -9,7 +9,7 @@ _quarto:
     pdf:
       noErrors: default
       ensureLatexFileRegexMatches:
-        - ['\\DocumentMetadata\{', 'pdfstandard=\{ua-1\}', 'testphase=phase-III']
+        - ['\\DocumentMetadata\{', 'pdfstandard=\{ua-1\}', 'tagging=on']
         - []
       printsMessage:
         level: WARN

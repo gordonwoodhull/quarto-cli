@@ -8,7 +8,7 @@ _quarto:
     pdf:
       noErrors: default
       ensureLatexFileRegexMatches:
-        - ['\\DocumentMetadata\{', 'pdfversion=1\.7']
+        - ['\\DocumentMetadata\{', 'pdfversion=1\.7', 'tagging=on']
         - []
 ---
 
