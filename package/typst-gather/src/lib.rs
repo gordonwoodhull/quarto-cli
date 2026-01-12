@@ -27,7 +27,7 @@ pub struct Stats {
 ///
 /// ```toml
 /// destination = "/path/to/packages"
-/// discover = "/path/to/templates"
+/// discover = ["/path/to/templates", "/path/to/other.typ"]
 ///
 /// [preview]
 /// cetz = "0.4.1"
@@ -36,16 +36,61 @@ pub struct Stats {
 /// [local]
 /// my-pkg = "/path/to/pkg"
 /// ```
+/// Helper enum for deserializing string or array of strings
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum StringOrVec {
+    Single(String),
+    Multiple(Vec<String>),
+}
+
+impl Default for StringOrVec {
+    fn default() -> Self {
+        StringOrVec::Multiple(Vec::new())
+    }
+}
+
+impl From<StringOrVec> for Vec<PathBuf> {
+    fn from(value: StringOrVec) -> Self {
+        match value {
+            StringOrVec::Single(s) => vec![PathBuf::from(s)],
+            StringOrVec::Multiple(v) => v.into_iter().map(PathBuf::from).collect(),
+        }
+    }
+}
+
+/// Raw config for deserialization
 #[derive(Debug, Deserialize, Default)]
+struct RawConfig {
+    destination: Option<PathBuf>,
+    #[serde(default)]
+    discover: Option<StringOrVec>,
+    #[serde(default)]
+    preview: HashMap<String, String>,
+    #[serde(default)]
+    local: HashMap<String, String>,
+}
+
+#[derive(Debug, Default)]
 pub struct Config {
     /// Destination directory for gathered packages
     pub destination: Option<PathBuf>,
-    /// Directory to scan for .typ files and discover their imports
-    pub discover: Option<PathBuf>,
-    #[serde(default)]
+    /// Paths to scan for imports. Can be directories (scans .typ files) or individual .typ files.
+    /// Accepts either a single path or an array of paths.
+    pub discover: Vec<PathBuf>,
     pub preview: HashMap<String, String>,
-    #[serde(default)]
     pub local: HashMap<String, String>,
+}
+
+impl From<RawConfig> for Config {
+    fn from(raw: RawConfig) -> Self {
+        Config {
+            destination: raw.destination,
+            discover: raw.discover.map(Into::into).unwrap_or_default(),
+            preview: raw.preview,
+            local: raw.local,
+        }
+    }
 }
 
 /// A resolved package entry ready for gathering.
@@ -58,7 +103,8 @@ pub enum PackageEntry {
 impl Config {
     /// Parse a TOML configuration string.
     pub fn parse(content: &str) -> Result<Self, toml::de::Error> {
-        toml::from_str(content)
+        let raw: RawConfig = toml::from_str(content)?;
+        Ok(raw.into())
     }
 
     /// Convert config into a list of package entries.
@@ -84,7 +130,7 @@ impl Config {
 pub fn gather_packages(
     dest: &Path,
     entries: Vec<PackageEntry>,
-    discover: Option<&Path>,
+    discover_paths: &[PathBuf],
 ) -> Stats {
     let storage = PackageStorage::new(
         Some(dest.to_path_buf()),
@@ -95,9 +141,9 @@ pub fn gather_packages(
     let mut processed = HashSet::new();
     let mut stats = Stats::default();
 
-    // First, process discover directory if specified
-    if let Some(discover_dir) = discover {
-        discover_imports(discover_dir, &storage, &mut processed, &mut stats);
+    // First, process discover paths
+    for path in discover_paths {
+        discover_imports(path, &storage, &mut processed, &mut stats);
     }
 
     // Then process explicit entries
@@ -115,37 +161,58 @@ pub fn gather_packages(
     stats
 }
 
-/// Scan .typ files in the immediate directory (non-recursive) and cache their @preview imports.
+/// Scan a path for imports. If it's a directory, scans .typ files in it (non-recursive).
+/// If it's a file, scans that file directly.
 fn discover_imports(
-    dir: &Path,
+    path: &Path,
     storage: &PackageStorage,
     processed: &mut HashSet<String>,
     stats: &mut Stats,
 ) {
-    println!("Discovering imports in {}...", dir.display());
-
-    // Read directory entries (non-recursive)
-    let entries = match std::fs::read_dir(dir) {
-        Ok(e) => e,
-        Err(e) => {
-            eprintln!("  Failed to read directory: {e}");
-            stats.failed += 1;
-            return;
-        }
-    };
-
-    for entry in entries.flatten() {
-        let path = entry.path();
+    if path.is_file() {
+        // Single file
         if path.extension().is_some_and(|e| e == "typ") {
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                let mut imports = Vec::new();
-                collect_imports(&typst_syntax::parse(&content), &mut imports);
+            println!("Discovering imports in {}...", path.display());
+            scan_file_for_imports(path, storage, processed, stats);
+        }
+    } else if path.is_dir() {
+        // Directory - scan .typ files (non-recursive)
+        println!("Discovering imports in {}...", path.display());
 
-                for spec in imports {
-                    if spec.namespace == "preview" {
-                        cache_preview_with_deps(storage, &spec, processed, stats);
-                    }
-                }
+        let entries = match std::fs::read_dir(path) {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("  Failed to read directory: {e}");
+                stats.failed += 1;
+                return;
+            }
+        };
+
+        for entry in entries.flatten() {
+            let file_path = entry.path();
+            if file_path.is_file() && file_path.extension().is_some_and(|e| e == "typ") {
+                scan_file_for_imports(&file_path, storage, processed, stats);
+            }
+        }
+    } else {
+        eprintln!("Warning: discover path does not exist: {}", path.display());
+    }
+}
+
+/// Scan a single .typ file for @preview imports and cache them.
+fn scan_file_for_imports(
+    path: &Path,
+    storage: &PackageStorage,
+    processed: &mut HashSet<String>,
+    stats: &mut Stats,
+) {
+    if let Ok(content) = std::fs::read_to_string(path) {
+        let mut imports = Vec::new();
+        collect_imports(&typst_syntax::parse(&content), &mut imports);
+
+        for spec in imports {
+            if spec.namespace == "preview" {
+                cache_preview_with_deps(storage, &spec, processed, stats);
             }
         }
     }
@@ -343,7 +410,7 @@ mod tests {
         fn empty_config() {
             let config = Config::parse("").unwrap();
             assert!(config.destination.is_none());
-            assert!(config.discover.is_none());
+            assert!(config.discover.is_empty());
             assert!(config.preview.is_empty());
             assert!(config.local.is_empty());
         }
@@ -353,20 +420,38 @@ mod tests {
             let toml = r#"destination = "/path/to/cache""#;
             let config = Config::parse(toml).unwrap();
             assert_eq!(config.destination, Some(PathBuf::from("/path/to/cache")));
-            assert!(config.discover.is_none());
+            assert!(config.discover.is_empty());
             assert!(config.preview.is_empty());
             assert!(config.local.is_empty());
         }
 
         #[test]
-        fn with_discover() {
+        fn with_discover_string() {
             let toml = r#"
 destination = "/cache"
 discover = "/path/to/templates"
 "#;
             let config = Config::parse(toml).unwrap();
             assert_eq!(config.destination, Some(PathBuf::from("/cache")));
-            assert_eq!(config.discover, Some(PathBuf::from("/path/to/templates")));
+            assert_eq!(config.discover, vec![PathBuf::from("/path/to/templates")]);
+        }
+
+        #[test]
+        fn with_discover_array() {
+            let toml = r#"
+destination = "/cache"
+discover = ["/path/to/templates", "template.typ", "other.typ"]
+"#;
+            let config = Config::parse(toml).unwrap();
+            assert_eq!(config.destination, Some(PathBuf::from("/cache")));
+            assert_eq!(
+                config.discover,
+                vec![
+                    PathBuf::from("/path/to/templates"),
+                    PathBuf::from("template.typ"),
+                    PathBuf::from("other.typ"),
+                ]
+            );
         }
 
         #[test]
