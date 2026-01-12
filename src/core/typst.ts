@@ -39,6 +39,7 @@ export type TypstCompileOptions = {
   quiet?: boolean;
   fontPaths?: string[];
   rootDir?: string;
+  packagePath?: string;
 };
 
 export async function typstCompile(
@@ -57,6 +58,10 @@ export async function typstCompile(
   ];
   if (options.rootDir) {
     cmd.push("--root", options.rootDir);
+  }
+  if (options.packagePath) {
+    cmd.push("--package-path", options.packagePath);
+    cmd.push("--package-cache-path", options.packagePath);
   }
   cmd.push(
     input,
