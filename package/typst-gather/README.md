@@ -20,6 +20,7 @@ Then set `TYPST_PACKAGE_CACHE_PATH` to the destination directory when running Ty
 
 ```toml
 destination = "/path/to/packages"
+discover = "/path/to/templates"
 
 [preview]
 cetz = "0.4.1"
@@ -30,6 +31,7 @@ my-template = "/path/to/src"
 ```
 
 - `destination` - Required. Directory where packages will be gathered.
+- `discover` - Optional. Directory to scan for .typ files; their @preview imports will be gathered.
 - `[preview]` packages are downloaded from Typst Universe (cached - skipped if already present)
 - `[local]` packages are copied from the specified directory (always fresh - version read from `typst.toml`)
 
@@ -37,5 +39,6 @@ my-template = "/path/to/src"
 
 - Recursively resolves `@preview` dependencies from `#import` statements
 - Uses Typst's own parser for reliable import detection
+- Discover mode scans .typ files in a directory (non-recursive) for imports
 - Local packages always overwrite (clean slate)
 - Preview packages skip if already cached

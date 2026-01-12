@@ -38,8 +38,9 @@ fn main() -> ExitCode {
         }
     };
 
+    let discover = config.discover.clone();
     let entries = config.into_entries();
-    let stats = gather_packages(&dest, entries);
+    let stats = gather_packages(&dest, entries, discover.as_deref());
 
     println!(
         "\nDone: {} downloaded, {} copied, {} skipped, {} failed",

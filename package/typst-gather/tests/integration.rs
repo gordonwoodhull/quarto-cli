@@ -43,7 +43,7 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.copied, 1);
         assert_eq!(stats.failed, 0);
@@ -68,13 +68,13 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        gather_packages(cache_dir.path(), entries.clone());
+        gather_packages(cache_dir.path(), entries.clone(), None);
 
         // Update source
         fs::write(src_dir.path().join("lib.typ"), "// v2").unwrap();
 
         // Cache again
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
         assert_eq!(stats.copied, 1);
 
         // Verify new content
@@ -103,7 +103,7 @@ mod local_packages {
             },
         ];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.copied, 2);
         assert!(cache_dir.path().join("local/pkg-one/1.0.0").exists());
@@ -123,7 +123,7 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.copied, 0);
         assert_eq!(stats.failed, 1);
@@ -143,7 +143,7 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.copied, 0);
         assert_eq!(stats.failed, 1);
@@ -158,7 +158,7 @@ mod local_packages {
             dir: "/nonexistent/path/to/package".into(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.copied, 0);
         assert_eq!(stats.failed, 1);
@@ -181,7 +181,7 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.copied, 1);
 
@@ -317,7 +317,7 @@ my-pkg = "{}"
         let config = Config::parse(&toml).unwrap();
         let dest = config.destination.clone().unwrap();
         let entries = config.into_entries();
-        let stats = gather_packages(&dest, entries);
+        let stats = gather_packages(&dest, entries, None);
 
         assert_eq!(stats.copied, 1);
         assert!(cache_dir.path().join("local/my-pkg/1.0.0").exists());
@@ -331,7 +331,7 @@ my-pkg = "{}"
         let config = Config::parse(&toml).unwrap();
         let dest = config.destination.clone().unwrap();
         let entries = config.into_entries();
-        let stats = gather_packages(&dest, entries);
+        let stats = gather_packages(&dest, entries, None);
 
         assert_eq!(stats.downloaded, 0);
         assert_eq!(stats.copied, 0);
@@ -343,6 +343,19 @@ my-pkg = "{}"
     fn missing_destination_returns_none() {
         let config = Config::parse("").unwrap();
         assert!(config.destination.is_none());
+    }
+
+    #[test]
+    fn parse_discover_field() {
+        let toml = r#"
+destination = "/cache"
+discover = "/path/to/templates"
+"#;
+        let config = Config::parse(toml).unwrap();
+        assert_eq!(
+            config.discover,
+            Some(std::path::PathBuf::from("/path/to/templates"))
+        );
     }
 }
 
@@ -361,7 +374,7 @@ mod network {
             version: "0.1.0".to_string(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.downloaded, 1);
         assert_eq!(stats.failed, 0);
@@ -382,7 +395,7 @@ mod network {
             version: "0.3.4".to_string(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         // Should download cetz plus its dependencies
         assert!(stats.downloaded >= 1);
@@ -400,11 +413,11 @@ mod network {
         }];
 
         // First download
-        let stats1 = gather_packages(cache_dir.path(), entries.clone());
+        let stats1 = gather_packages(cache_dir.path(), entries.clone(), None);
         assert_eq!(stats1.downloaded, 1);
 
         // Second run should skip
-        let stats2 = gather_packages(cache_dir.path(), entries);
+        let stats2 = gather_packages(cache_dir.path(), entries, None);
         assert_eq!(stats2.downloaded, 0);
         assert_eq!(stats2.skipped, 1);
     }
@@ -419,7 +432,7 @@ mod network {
             version: "0.0.0".to_string(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.downloaded, 0);
         assert_eq!(stats.failed, 1);
@@ -444,7 +457,7 @@ mod network {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries);
+        let stats = gather_packages(cache_dir.path(), entries, None);
 
         assert_eq!(stats.copied, 1);
         assert!(stats.downloaded >= 1); // Should have downloaded example
