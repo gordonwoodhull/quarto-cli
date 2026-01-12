@@ -1,7 +1,7 @@
 /*
  * render-typst-package-staging.test.ts
  *
- * Tests that typst packages are staged to .quarto/typst-packages/ during render:
+ * Tests that typst packages are staged to .quarto/typst/packages/ during render:
  * - Built-in packages (marginalia) from quarto resources
  * - Extension @preview packages from typst/packages/preview/ directories
  * - Extension @local packages from typst/packages/local/ directories
@@ -17,7 +17,7 @@ import { safeRemoveSync } from "../../../src/core/path.ts";
 
 const input = docs("render/typst-package-staging/test.qmd");
 const projectDir = docs("render/typst-package-staging");
-const stagedPackages = join(projectDir, ".quarto/typst-packages");
+const stagedPackages = join(projectDir, ".quarto/typst/packages");
 
 // Verify extension @preview package was staged
 const helloPackage = join(stagedPackages, "preview/hello/0.1.0");

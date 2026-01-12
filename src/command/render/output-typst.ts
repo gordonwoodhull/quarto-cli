@@ -73,8 +73,8 @@ async function stageTypstPackages(
     return undefined;
   }
 
-  // Stage to .quarto/typst-packages/
-  const cacheDir = projectScratchPath(projectDir, "typst-packages");
+  // Stage to .quarto/typst/packages/
+  const cacheDir = projectScratchPath(projectDir, "typst/packages");
 
   // Copy contents of each source directory (merging namespaces like "preview", "local")
   for (const source of packageSources) {
