@@ -161,17 +161,17 @@ pub fn gather_packages(
 
     // First, process discover paths
     for path in discover_paths {
-        discover_imports(path, &storage, &mut processed, &mut stats, &mut discovered_local);
+        discover_imports(path, &storage, &mut processed, &mut stats, &mut discovered_local, configured_local);
     }
 
     // Then process explicit entries
     for entry in entries {
         match entry {
             PackageEntry::Preview { name, version } => {
-                cache_preview(&name, &version, &storage, &mut processed, &mut stats);
+                cache_preview(&name, &version, &storage, &mut processed, &mut stats, configured_local);
             }
             PackageEntry::Local { name, dir } => {
-                gather_local(dest, &name, &dir, &storage, &mut processed, &mut stats);
+                gather_local(dest, &name, &dir, &storage, &mut processed, &mut stats, configured_local);
             }
         }
     }
@@ -196,12 +196,13 @@ fn discover_imports(
     processed: &mut HashSet<String>,
     stats: &mut Stats,
     discovered_local: &mut HashMap<String, String>,
+    configured_local: &HashSet<String>,
 ) {
     if path.is_file() {
         // Single file
         if path.extension().is_some_and(|e| e == "typ") {
             println!("Discovering imports in {}...", display_path(path));
-            scan_file_for_imports(path, storage, processed, stats, discovered_local);
+            scan_file_for_imports(path, storage, processed, stats, discovered_local, configured_local);
         }
     } else if path.is_dir() {
         // Directory - scan .typ files (non-recursive)
@@ -219,7 +220,7 @@ fn discover_imports(
         for entry in entries.flatten() {
             let file_path = entry.path();
             if file_path.is_file() && file_path.extension().is_some_and(|e| e == "typ") {
-                scan_file_for_imports(&file_path, storage, processed, stats, discovered_local);
+                scan_file_for_imports(&file_path, storage, processed, stats, discovered_local, configured_local);
             }
         }
     } else {
@@ -235,6 +236,7 @@ fn scan_file_for_imports(
     processed: &mut HashSet<String>,
     stats: &mut Stats,
     discovered_local: &mut HashMap<String, String>,
+    configured_local: &HashSet<String>,
 ) {
     if let Ok(content) = std::fs::read_to_string(path) {
         let mut imports = Vec::new();
@@ -246,7 +248,7 @@ fn scan_file_for_imports(
 
         for spec in imports {
             if spec.namespace == "preview" {
-                cache_preview_with_deps(storage, &spec, processed, stats);
+                cache_preview_with_deps(storage, &spec, processed, stats, configured_local);
             } else if spec.namespace == "local" {
                 // Track @local imports (only first occurrence per package name)
                 discovered_local.entry(spec.name.to_string())
@@ -262,6 +264,7 @@ fn cache_preview(
     storage: &PackageStorage,
     processed: &mut HashSet<String>,
     stats: &mut Stats,
+    configured_local: &HashSet<String>,
 ) {
     let Ok(version): Result<PackageVersion, _> = version_str.parse() else {
         eprintln!("Invalid version '{version_str}' for @preview/{name}");
@@ -275,16 +278,20 @@ fn cache_preview(
         version,
     };
 
-    cache_preview_with_deps(storage, &spec, processed, stats);
+    cache_preview_with_deps(storage, &spec, processed, stats, configured_local);
 }
 
 /// Default exclude patterns for local packages (common non-package files).
 const DEFAULT_EXCLUDES: &[&str] = &[
+    ".git",
     ".git/**",
+    ".github",
     ".github/**",
     ".gitignore",
     ".gitattributes",
+    ".vscode",
     ".vscode/**",
+    ".idea",
     ".idea/**",
     "*.bak",
     "*.swp",
@@ -298,6 +305,7 @@ fn gather_local(
     storage: &PackageStorage,
     processed: &mut HashSet<String>,
     stats: &mut Stats,
+    configured_local: &HashSet<String>,
 ) {
     // Read typst.toml to get version (and validate name)
     let manifest_path = src_dir.join("typst.toml");
@@ -371,7 +379,7 @@ fn gather_local(
     processed.insert(spec.to_string());
 
     // Scan for @preview dependencies
-    scan_deps(storage, &dest_dir, processed, stats);
+    scan_deps(storage, &dest_dir, processed, stats, configured_local);
 }
 
 /// Copy directory contents, excluding files that match the exclude patterns.
@@ -411,7 +419,13 @@ fn cache_preview_with_deps(
     spec: &PackageSpec,
     processed: &mut HashSet<String>,
     stats: &mut Stats,
+    configured_local: &HashSet<String>,
 ) {
+    // Skip @preview packages that are configured as @local (use local version instead)
+    if configured_local.contains(spec.name.as_str()) {
+        return;
+    }
+
     let key = spec.to_string();
     if !processed.insert(key) {
         return;
@@ -423,7 +437,7 @@ fn cache_preview_with_deps(
     if cached_path.as_ref().is_some_and(|p| p.exists()) {
         println!("Skipping {spec} (cached)");
         stats.skipped += 1;
-        scan_deps(storage, cached_path.as_ref().unwrap(), processed, stats);
+        scan_deps(storage, cached_path.as_ref().unwrap(), processed, stats, configured_local);
         return;
     }
 
@@ -432,7 +446,7 @@ fn cache_preview_with_deps(
         Ok(path) => {
             println!("  -> {}", display_path(&path));
             stats.downloaded += 1;
-            scan_deps(storage, &path, processed, stats);
+            scan_deps(storage, &path, processed, stats, configured_local);
         }
         Err(e) => {
             eprintln!("  Failed: {e:?}");
@@ -446,10 +460,11 @@ fn scan_deps(
     dir: &Path,
     processed: &mut HashSet<String>,
     stats: &mut Stats,
+    configured_local: &HashSet<String>,
 ) {
     for spec in find_imports(dir) {
         if spec.namespace == "preview" {
-            cache_preview_with_deps(storage, &spec, processed, stats);
+            cache_preview_with_deps(storage, &spec, processed, stats, configured_local);
         }
     }
 }
@@ -778,6 +793,62 @@ Some content here.
             assert_eq!(stats.copied, 0);
             assert_eq!(stats.skipped, 0);
             assert_eq!(stats.failed, 0);
+        }
+    }
+
+    mod local_override {
+        use super::*;
+
+        /// When a package is configured in [local], @preview imports of the same
+        /// package name should be skipped. This handles the case where a local
+        /// package contains template examples that import from @preview.
+        #[test]
+        fn configured_local_contains_check() {
+            let mut configured_local = HashSet::new();
+            configured_local.insert("my-pkg".to_string());
+            configured_local.insert("other-pkg".to_string());
+
+            // These should be skipped (configured as local)
+            assert!(configured_local.contains("my-pkg"));
+            assert!(configured_local.contains("other-pkg"));
+
+            // These should NOT be skipped (not configured)
+            assert!(!configured_local.contains("cetz"));
+            assert!(!configured_local.contains("fletcher"));
+        }
+    }
+
+    mod copy_filtering {
+        use super::*;
+
+        #[test]
+        fn default_excludes_match_git() {
+            let mut builder = GlobSetBuilder::new();
+            for pattern in DEFAULT_EXCLUDES {
+                builder.add(Glob::new(pattern).unwrap());
+            }
+            let excludes = builder.build().unwrap();
+
+            // Should match .git and contents
+            assert!(excludes.is_match(".git"));
+            assert!(excludes.is_match(".git/config"));
+            assert!(excludes.is_match(".git/objects/pack/foo"));
+
+            // Should match .github
+            assert!(excludes.is_match(".github"));
+            assert!(excludes.is_match(".github/workflows/ci.yml"));
+
+            // Should match editor files
+            assert!(excludes.is_match(".gitignore"));
+            assert!(excludes.is_match("foo.bak"));
+            assert!(excludes.is_match("foo.swp"));
+            assert!(excludes.is_match("foo~"));
+
+            // Should NOT match normal files
+            assert!(!excludes.is_match("lib.typ"));
+            assert!(!excludes.is_match("typst.toml"));
+            assert!(!excludes.is_match("src/main.typ"));
+            assert!(!excludes.is_match("template/main.typ"));
         }
     }
 }
