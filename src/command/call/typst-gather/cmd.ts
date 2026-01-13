@@ -321,16 +321,26 @@ async function initConfig(): Promise<void> {
     Deno.exit(1);
   }
 
-  // Find .typ files in current directory
-  const typFiles: string[] = [];
-  for (const entry of Deno.readDirSync(Deno.cwd())) {
-    if (entry.isFile && entry.name.endsWith(".typ")) {
-      typFiles.push(entry.name);
-    }
+  // Find typst files via extension directory structure
+  const extensionDir = await findExtensionDir();
+
+  if (!extensionDir) {
+    console.error("No extension directory found.");
+    console.error(
+      "Run this command from a directory containing _extension.yml or _extensions/",
+    );
+    Deno.exit(1);
   }
 
+  const typFiles = extractTypstFiles(extensionDir);
+
   if (typFiles.length === 0) {
-    info("Warning: No .typ files found in current directory");
+    info("Warning: No .typ files found in _extension.yml.");
+    info(
+      "Edit the generated typst-gather.toml to configure local or pinned dependencies.",
+    );
+  } else {
+    info(`Found extension: ${extensionDir}`);
   }
 
   // Discover imports from the files
@@ -463,7 +473,26 @@ export const typstGatherCommand = new Command()
       }
 
       if (!result.success) {
-        console.error("typst-gather failed");
+        // Print any output from the tool
+        if (result.stdout) {
+          console.log(result.stdout);
+        }
+        if (result.stderr) {
+          console.error(result.stderr);
+        }
+
+        // Check for @local imports not configured error and suggest --init-config
+        const output = (result.stdout || "") + (result.stderr || "");
+        if (output.includes("@local imports not configured")) {
+          console.error("");
+          console.error(
+            "Tip: Run 'quarto call typst-gather --init-config' to generate a config file",
+          );
+          console.error(
+            "     with placeholders for your @local package paths.",
+          );
+        }
+
         Deno.exit(1);
       }
 
