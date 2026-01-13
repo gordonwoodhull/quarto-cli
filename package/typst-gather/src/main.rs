@@ -39,10 +39,24 @@ fn main() -> ExitCode {
         }
     };
 
+    // Resolve paths relative to rootdir if specified
+    let rootdir = config.rootdir.clone();
+    let dest = match &rootdir {
+        Some(root) => root.join(&dest),
+        None => dest,
+    };
+    let discover: Vec<PathBuf> = config
+        .discover
+        .iter()
+        .map(|p| match &rootdir {
+            Some(root) => root.join(p),
+            None => p.clone(),
+        })
+        .collect();
+
     // Build set of configured local packages
     let configured_local: HashSet<String> = config.local.keys().cloned().collect();
 
-    let discover = config.discover.clone();
     let entries = config.into_entries();
     let result = gather_packages(&dest, entries, &discover, &configured_local);
 

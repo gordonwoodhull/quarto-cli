@@ -71,6 +71,8 @@ impl From<StringOrVec> for Vec<PathBuf> {
 /// Raw config for deserialization
 #[derive(Debug, Deserialize, Default)]
 struct RawConfig {
+    /// Root directory for resolving relative paths (discover, destination)
+    rootdir: Option<PathBuf>,
     destination: Option<PathBuf>,
     #[serde(default)]
     discover: Option<StringOrVec>,
@@ -82,6 +84,9 @@ struct RawConfig {
 
 #[derive(Debug, Default)]
 pub struct Config {
+    /// Root directory for resolving relative paths (discover, destination).
+    /// If set, discover and destination paths are resolved relative to this.
+    pub rootdir: Option<PathBuf>,
     /// Destination directory for gathered packages
     pub destination: Option<PathBuf>,
     /// Paths to scan for imports. Can be directories (scans .typ files) or individual .typ files.
@@ -94,6 +99,7 @@ pub struct Config {
 impl From<RawConfig> for Config {
     fn from(raw: RawConfig) -> Self {
         Config {
+            rootdir: raw.rootdir,
             destination: raw.destination,
             discover: raw.discover.map(Into::into).unwrap_or_default(),
             preview: raw.preview,

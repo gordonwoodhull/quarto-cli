@@ -9,7 +9,7 @@ import { info } from "../../../deno_ral/log.ts";
 
 import { architectureToolsPath } from "../../../core/resources.ts";
 import { execProcess } from "../../../core/process.ts";
-import { dirname, join } from "../../../deno_ral/path.ts";
+import { dirname, join, relative } from "../../../deno_ral/path.ts";
 import { existsSync } from "../../../deno_ral/fs.ts";
 import { expandGlobSync } from "../../../core/deno/expand-glob.ts";
 import { readYaml } from "../../../core/yaml.ts";
@@ -25,7 +25,8 @@ interface ExtensionYml {
   };
 }
 
-interface TypestGatherConfig {
+interface TypstGatherConfig {
+  rootdir?: string;
   destination: string;
   discover: string[];
 }
@@ -100,7 +101,7 @@ function extractTypstFiles(extensionDir: string): string[] {
 
 async function resolveConfig(
   extensionDir: string | null,
-): Promise<TypestGatherConfig | null> {
+): Promise<TypstGatherConfig | null> {
   const cwd = Deno.cwd();
 
   // First, check for typst-gather.toml in current directory
@@ -149,13 +150,21 @@ async function resolveConfig(
   };
 }
 
-function parseSimpleToml(content: string): TypestGatherConfig {
+function parseSimpleToml(content: string): TypstGatherConfig {
   const lines = content.split("\n");
+  let rootdir: string | undefined;
   let destination = "";
   const discover: string[] = [];
 
   for (const line of lines) {
     const trimmed = line.trim();
+
+    // Parse rootdir
+    const rootdirMatch = trimmed.match(/^rootdir\s*=\s*"([^"]+)"/);
+    if (rootdirMatch) {
+      rootdir = rootdirMatch[1];
+      continue;
+    }
 
     // Parse destination
     const destMatch = trimmed.match(/^destination\s*=\s*"([^"]+)"/);
@@ -184,7 +193,7 @@ function parseSimpleToml(content: string): TypestGatherConfig {
     }
   }
 
-  return { destination, discover };
+  return { rootdir, destination, discover };
 }
 
 interface DiscoveredImport {
@@ -238,14 +247,20 @@ function discoverImportsFromFiles(files: string[]): DiscoveryResult {
   return result;
 }
 
-function generateConfigContent(discovery: DiscoveryResult): string {
+function generateConfigContent(
+  discovery: DiscoveryResult,
+  rootdir?: string,
+): string {
   const lines: string[] = [];
 
   lines.push("# typst-gather configuration");
   lines.push("# Run: quarto call typst-gather");
   lines.push("");
 
-  lines.push('destination = ".quarto/typst/packages"');
+  if (rootdir) {
+    lines.push(`rootdir = "${rootdir}"`);
+  }
+  lines.push('destination = "typst/packages"');
   lines.push("");
 
   // Discover section
@@ -346,8 +361,11 @@ async function initConfig(): Promise<void> {
   // Discover imports from the files
   const discovery = discoverImportsFromFiles(typFiles);
 
+  // Calculate relative path from cwd to extension dir for rootdir
+  const rootdir = relative(Deno.cwd(), extensionDir);
+
   // Generate config content
-  const configContent = generateConfigContent(discovery);
+  const configContent = generateConfigContent(discovery, rootdir);
 
   // Write config file
   try {
@@ -452,8 +470,12 @@ export const typstGatherCommand = new Command()
       // Create a temporary TOML config file
       const tempConfig = Deno.makeTempFileSync({ suffix: ".toml" });
       const discoverArray = config.discover.map((p) => `"${p}"`).join(", ");
-      const tomlContent =
-        `destination = "${config.destination}"\ndiscover = [${discoverArray}]\n`;
+      let tomlContent = "";
+      if (config.rootdir) {
+        tomlContent += `rootdir = "${config.rootdir}"\n`;
+      }
+      tomlContent += `destination = "${config.destination}"\n`;
+      tomlContent += `discover = [${discoverArray}]\n`;
       Deno.writeTextFileSync(tempConfig, tomlContent);
 
       info(`Running typst-gather...`);
