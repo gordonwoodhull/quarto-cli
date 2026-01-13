@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::env;
 use std::path::{Path, PathBuf};
 
 use ecow::EcoString;
@@ -199,12 +200,12 @@ fn discover_imports(
     if path.is_file() {
         // Single file
         if path.extension().is_some_and(|e| e == "typ") {
-            println!("Discovering imports in {}...", path.display());
+            println!("Discovering imports in {}...", display_path(path));
             scan_file_for_imports(path, storage, processed, stats, discovered_local);
         }
     } else if path.is_dir() {
         // Directory - scan .typ files (non-recursive)
-        println!("Discovering imports in {}...", path.display());
+        println!("Discovering imports in {}...", display_path(path));
 
         let entries = match std::fs::read_dir(path) {
             Ok(e) => e,
@@ -222,7 +223,7 @@ fn discover_imports(
             }
         }
     } else {
-        eprintln!("Warning: discover path does not exist: {}", path.display());
+        eprintln!("Warning: discover path does not exist: {}", display_path(path));
     }
 }
 
@@ -332,7 +333,7 @@ fn gather_local(
         return;
     }
 
-    println!("  -> {}", dest_dir.display());
+    println!("  -> {}", display_path(&dest_dir));
     stats.copied += 1;
 
     // Mark as processed
@@ -371,7 +372,7 @@ fn cache_preview_with_deps(
     println!("Downloading {spec}...");
     match storage.prepare_package(spec, &mut ProgressSink) {
         Ok(path) => {
-            println!("  -> {}", path.display());
+            println!("  -> {}", display_path(&path));
             stats.downloaded += 1;
             scan_deps(storage, &path, processed, stats);
         }
@@ -393,6 +394,16 @@ fn scan_deps(
             cache_preview_with_deps(storage, &spec, processed, stats);
         }
     }
+}
+
+/// Display a path relative to the current working directory.
+fn display_path(path: &Path) -> String {
+    if let Ok(cwd) = env::current_dir() {
+        if let Ok(relative) = path.strip_prefix(&cwd) {
+            return relative.display().to_string();
+        }
+    }
+    path.display().to_string()
 }
 
 /// Find all package imports in `.typ` files under a directory.

@@ -143,9 +143,13 @@ async function resolveConfig(
   // Default destination is 'typst/packages' directory in extension folder
   const destination = join(extensionDir, "typst/packages");
 
+  // Show paths relative to cwd for cleaner output
+  const relDest = relative(cwd, destination);
+  const relFiles = typstFiles.map((f) => relative(cwd, f));
+
   info(`Auto-detected from _extension.yml:`);
-  info(`  Destination: ${destination}`);
-  info(`  Files to scan: ${typstFiles.join(", ")}`);
+  info(`  Destination: ${relDest}`);
+  info(`  Files to scan: ${relFiles.join(", ")}`);
 
   return {
     destination,
