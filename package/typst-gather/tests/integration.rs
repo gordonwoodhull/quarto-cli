@@ -5,6 +5,7 @@
 //! - Dependency scanning from .typ files
 //! - Preview package caching (requires network)
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
@@ -43,10 +44,11 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local: HashSet<String> = ["my-pkg".to_string()].into_iter().collect();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.copied, 1);
-        assert_eq!(stats.failed, 0);
+        assert_eq!(result.stats.copied, 1);
+        assert_eq!(result.stats.failed, 0);
 
         // Verify package was copied to correct location
         let cached = cache_dir.path().join("local/my-pkg/1.0.0");
@@ -68,14 +70,15 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        gather_packages(cache_dir.path(), entries.clone(), &[]);
+        let configured_local: HashSet<String> = ["my-pkg".to_string()].into_iter().collect();
+        gather_packages(cache_dir.path(), entries.clone(), &[], &configured_local);
 
         // Update source
         fs::write(src_dir.path().join("lib.typ"), "// v2").unwrap();
 
         // Cache again
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
-        assert_eq!(stats.copied, 1);
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
+        assert_eq!(result.stats.copied, 1);
 
         // Verify new content
         let cached_lib = cache_dir.path().join("local/my-pkg/1.0.0/lib.typ");
@@ -103,9 +106,10 @@ mod local_packages {
             },
         ];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local: HashSet<String> = ["pkg-one".to_string(), "pkg-two".to_string()].into_iter().collect();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.copied, 2);
+        assert_eq!(result.stats.copied, 2);
         assert!(cache_dir.path().join("local/pkg-one/1.0.0").exists());
         assert!(cache_dir.path().join("local/pkg-two/2.0.0").exists());
     }
@@ -123,10 +127,11 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local: HashSet<String> = ["wrong-name".to_string()].into_iter().collect();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.copied, 0);
-        assert_eq!(stats.failed, 1);
+        assert_eq!(result.stats.copied, 0);
+        assert_eq!(result.stats.failed, 1);
     }
 
     #[test]
@@ -143,10 +148,11 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local: HashSet<String> = ["my-pkg".to_string()].into_iter().collect();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.copied, 0);
-        assert_eq!(stats.failed, 1);
+        assert_eq!(result.stats.copied, 0);
+        assert_eq!(result.stats.failed, 1);
     }
 
     #[test]
@@ -158,10 +164,11 @@ mod local_packages {
             dir: "/nonexistent/path/to/package".into(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local: HashSet<String> = ["my-pkg".to_string()].into_iter().collect();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.copied, 0);
-        assert_eq!(stats.failed, 1);
+        assert_eq!(result.stats.copied, 0);
+        assert_eq!(result.stats.failed, 1);
     }
 
     #[test]
@@ -181,9 +188,10 @@ mod local_packages {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local: HashSet<String> = ["my-pkg".to_string()].into_iter().collect();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.copied, 1);
+        assert_eq!(result.stats.copied, 1);
 
         let cached_helper = cache_dir
             .path()
@@ -316,10 +324,11 @@ my-pkg = "{}"
 
         let config = Config::parse(&toml).unwrap();
         let dest = config.destination.clone().unwrap();
+        let configured_local: HashSet<String> = config.local.keys().cloned().collect();
         let entries = config.into_entries();
-        let stats = gather_packages(&dest, entries, &[]);
+        let result = gather_packages(&dest, entries, &[], &configured_local);
 
-        assert_eq!(stats.copied, 1);
+        assert_eq!(result.stats.copied, 1);
         assert!(cache_dir.path().join("local/my-pkg/1.0.0").exists());
     }
 
@@ -330,13 +339,14 @@ my-pkg = "{}"
         let toml = format!(r#"destination = "{}""#, cache_dir.path().display());
         let config = Config::parse(&toml).unwrap();
         let dest = config.destination.clone().unwrap();
+        let configured_local: HashSet<String> = config.local.keys().cloned().collect();
         let entries = config.into_entries();
-        let stats = gather_packages(&dest, entries, &[]);
+        let result = gather_packages(&dest, entries, &[], &configured_local);
 
-        assert_eq!(stats.downloaded, 0);
-        assert_eq!(stats.copied, 0);
-        assert_eq!(stats.skipped, 0);
-        assert_eq!(stats.failed, 0);
+        assert_eq!(result.stats.downloaded, 0);
+        assert_eq!(result.stats.copied, 0);
+        assert_eq!(result.stats.skipped, 0);
+        assert_eq!(result.stats.failed, 0);
     }
 
     #[test]
@@ -375,6 +385,49 @@ discover = ["template.typ", "typst-show.typ"]
     }
 }
 
+mod unconfigured_local {
+    use super::*;
+
+    #[test]
+    fn detects_unconfigured_local_imports() {
+        let cache_dir = TempDir::new().unwrap();
+        let discover_dir = TempDir::new().unwrap();
+
+        // Create a .typ file that imports @local/my-pkg
+        let content = r#"#import "@local/my-pkg:1.0.0""#;
+        fs::write(discover_dir.path().join("template.typ"), content).unwrap();
+
+        // Don't configure my-pkg in the local section
+        let configured_local: HashSet<String> = HashSet::new();
+        let discover = vec![discover_dir.path().to_path_buf()];
+
+        let result = gather_packages(cache_dir.path(), vec![], &discover, &configured_local);
+
+        // Should have one unconfigured local
+        assert_eq!(result.unconfigured_local.len(), 1);
+        assert_eq!(result.unconfigured_local[0].0, "my-pkg");
+    }
+
+    #[test]
+    fn configured_local_not_reported() {
+        let cache_dir = TempDir::new().unwrap();
+        let discover_dir = TempDir::new().unwrap();
+
+        // Create a .typ file that imports @local/my-pkg
+        let content = r#"#import "@local/my-pkg:1.0.0""#;
+        fs::write(discover_dir.path().join("template.typ"), content).unwrap();
+
+        // Configure my-pkg (even though we don't actually copy it)
+        let configured_local: HashSet<String> = ["my-pkg".to_string()].into_iter().collect();
+        let discover = vec![discover_dir.path().to_path_buf()];
+
+        let result = gather_packages(cache_dir.path(), vec![], &discover, &configured_local);
+
+        // Should have no unconfigured local
+        assert!(result.unconfigured_local.is_empty());
+    }
+}
+
 /// Tests that require network access.
 /// Run with: cargo test -- --ignored
 mod network {
@@ -390,10 +443,11 @@ mod network {
             version: "0.1.0".to_string(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local = HashSet::new();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.downloaded, 1);
-        assert_eq!(stats.failed, 0);
+        assert_eq!(result.stats.downloaded, 1);
+        assert_eq!(result.stats.failed, 0);
 
         let cached = cache_dir.path().join("preview/example/0.1.0");
         assert!(cached.exists());
@@ -411,11 +465,12 @@ mod network {
             version: "0.3.4".to_string(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local = HashSet::new();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
         // Should download cetz plus its dependencies
-        assert!(stats.downloaded >= 1);
-        assert_eq!(stats.failed, 0);
+        assert!(result.stats.downloaded >= 1);
+        assert_eq!(result.stats.failed, 0);
     }
 
     #[test]
@@ -428,14 +483,16 @@ mod network {
             version: "0.1.0".to_string(),
         }];
 
+        let configured_local = HashSet::new();
+
         // First download
-        let stats1 = gather_packages(cache_dir.path(), entries.clone(), &[]);
-        assert_eq!(stats1.downloaded, 1);
+        let result1 = gather_packages(cache_dir.path(), entries.clone(), &[], &configured_local);
+        assert_eq!(result1.stats.downloaded, 1);
 
         // Second run should skip
-        let stats2 = gather_packages(cache_dir.path(), entries, &[]);
-        assert_eq!(stats2.downloaded, 0);
-        assert_eq!(stats2.skipped, 1);
+        let result2 = gather_packages(cache_dir.path(), entries, &[], &configured_local);
+        assert_eq!(result2.stats.downloaded, 0);
+        assert_eq!(result2.stats.skipped, 1);
     }
 
     #[test]
@@ -448,10 +505,11 @@ mod network {
             version: "0.0.0".to_string(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local = HashSet::new();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.downloaded, 0);
-        assert_eq!(stats.failed, 1);
+        assert_eq!(result.stats.downloaded, 0);
+        assert_eq!(result.stats.failed, 1);
     }
 
     #[test]
@@ -473,10 +531,11 @@ mod network {
             dir: src_dir.path().to_path_buf(),
         }];
 
-        let stats = gather_packages(cache_dir.path(), entries, &[]);
+        let configured_local: HashSet<String> = ["my-pkg".to_string()].into_iter().collect();
+        let result = gather_packages(cache_dir.path(), entries, &[], &configured_local);
 
-        assert_eq!(stats.copied, 1);
-        assert!(stats.downloaded >= 1); // Should have downloaded example
+        assert_eq!(result.stats.copied, 1);
+        assert!(result.stats.downloaded >= 1); // Should have downloaded example
 
         assert!(cache_dir.path().join("local/my-pkg/1.0.0").exists());
         assert!(cache_dir.path().join("preview/example/0.1.0").exists());

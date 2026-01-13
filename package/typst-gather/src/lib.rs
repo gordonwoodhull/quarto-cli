@@ -23,6 +23,15 @@ pub struct Stats {
     pub failed: usize,
 }
 
+/// Result of a gather operation.
+#[derive(Debug, Default)]
+pub struct GatherResult {
+    pub stats: Stats,
+    /// @local imports discovered during scanning that are not configured in [local] section.
+    /// Each entry is (package_name, source_file_path).
+    pub unconfigured_local: Vec<(String, String)>,
+}
+
 /// TOML configuration format.
 ///
 /// ```toml
@@ -131,7 +140,8 @@ pub fn gather_packages(
     dest: &Path,
     entries: Vec<PackageEntry>,
     discover_paths: &[PathBuf],
-) -> Stats {
+    configured_local: &HashSet<String>,
+) -> GatherResult {
     let storage = PackageStorage::new(
         Some(dest.to_path_buf()),
         None,
@@ -140,10 +150,11 @@ pub fn gather_packages(
 
     let mut processed = HashSet::new();
     let mut stats = Stats::default();
+    let mut discovered_local: HashMap<String, String> = HashMap::new(); // name -> source_file
 
     // First, process discover paths
     for path in discover_paths {
-        discover_imports(path, &storage, &mut processed, &mut stats);
+        discover_imports(path, &storage, &mut processed, &mut stats, &mut discovered_local);
     }
 
     // Then process explicit entries
@@ -158,7 +169,16 @@ pub fn gather_packages(
         }
     }
 
-    stats
+    // Find @local imports that aren't configured
+    let unconfigured_local: Vec<(String, String)> = discovered_local
+        .into_iter()
+        .filter(|(name, _)| !configured_local.contains(name))
+        .collect();
+
+    GatherResult {
+        stats,
+        unconfigured_local,
+    }
 }
 
 /// Scan a path for imports. If it's a directory, scans .typ files in it (non-recursive).
@@ -168,12 +188,13 @@ fn discover_imports(
     storage: &PackageStorage,
     processed: &mut HashSet<String>,
     stats: &mut Stats,
+    discovered_local: &mut HashMap<String, String>,
 ) {
     if path.is_file() {
         // Single file
         if path.extension().is_some_and(|e| e == "typ") {
             println!("Discovering imports in {}...", path.display());
-            scan_file_for_imports(path, storage, processed, stats);
+            scan_file_for_imports(path, storage, processed, stats, discovered_local);
         }
     } else if path.is_dir() {
         // Directory - scan .typ files (non-recursive)
@@ -191,7 +212,7 @@ fn discover_imports(
         for entry in entries.flatten() {
             let file_path = entry.path();
             if file_path.is_file() && file_path.extension().is_some_and(|e| e == "typ") {
-                scan_file_for_imports(&file_path, storage, processed, stats);
+                scan_file_for_imports(&file_path, storage, processed, stats, discovered_local);
             }
         }
     } else {
@@ -199,20 +220,30 @@ fn discover_imports(
     }
 }
 
-/// Scan a single .typ file for @preview imports and cache them.
+/// Scan a single .typ file for @preview and @local imports.
+/// @preview imports are cached, @local imports are tracked for later warning.
 fn scan_file_for_imports(
     path: &Path,
     storage: &PackageStorage,
     processed: &mut HashSet<String>,
     stats: &mut Stats,
+    discovered_local: &mut HashMap<String, String>,
 ) {
     if let Ok(content) = std::fs::read_to_string(path) {
         let mut imports = Vec::new();
         collect_imports(&typst_syntax::parse(&content), &mut imports);
 
+        let source_file = path.file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| path.display().to_string());
+
         for spec in imports {
             if spec.namespace == "preview" {
                 cache_preview_with_deps(storage, &spec, processed, stats);
+            } else if spec.namespace == "local" {
+                // Track @local imports (only first occurrence per package name)
+                discovered_local.entry(spec.name.to_string())
+                    .or_insert(source_file.clone());
             }
         }
     }

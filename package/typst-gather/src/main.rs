@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -38,16 +39,33 @@ fn main() -> ExitCode {
         }
     };
 
+    // Build set of configured local packages
+    let configured_local: HashSet<String> = config.local.keys().cloned().collect();
+
     let discover = config.discover.clone();
     let entries = config.into_entries();
-    let stats = gather_packages(&dest, entries, &discover);
+    let result = gather_packages(&dest, entries, &discover, &configured_local);
+
+    // Check for unconfigured @local imports FIRST (this is an error)
+    if !result.unconfigured_local.is_empty() {
+        eprintln!("\nError: Found @local imports not configured in [local] section:");
+        for (name, source_file) in &result.unconfigured_local {
+            eprintln!("  - {name} (in {source_file})");
+        }
+        eprintln!("\nAdd them to your config file:");
+        eprintln!("  [local]");
+        for (name, _) in &result.unconfigured_local {
+            eprintln!("  {name} = \"/path/to/{name}\"");
+        }
+        return ExitCode::FAILURE;
+    }
 
     println!(
         "\nDone: {} downloaded, {} copied, {} skipped, {} failed",
-        stats.downloaded, stats.copied, stats.skipped, stats.failed
+        result.stats.downloaded, result.stats.copied, result.stats.skipped, result.stats.failed
     );
 
-    if stats.failed > 0 {
+    if result.stats.failed > 0 {
         ExitCode::FAILURE
     } else {
         ExitCode::SUCCESS

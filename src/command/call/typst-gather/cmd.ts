@@ -178,6 +178,188 @@ function parseSimpleToml(content: string): TypestGatherConfig {
   return { destination, discover };
 }
 
+interface DiscoveredImport {
+  name: string;
+  version: string;
+  sourceFile: string;
+}
+
+interface DiscoveryResult {
+  preview: DiscoveredImport[];
+  local: DiscoveredImport[];
+  scannedFiles: string[];
+}
+
+function discoverImportsFromFiles(files: string[]): DiscoveryResult {
+  const result: DiscoveryResult = {
+    preview: [],
+    local: [],
+    scannedFiles: [],
+  };
+
+  // Regex to match @namespace/name:version imports
+  // Note: #include is for files, not packages, so we only match #import
+  const importRegex = /#import\s+"@(\w+)\/([^:]+):([^"]+)"/g;
+
+  for (const file of files) {
+    if (!existsSync(file)) continue;
+    if (!file.endsWith(".typ")) continue;
+
+    const filename = file.split("/").pop() || file;
+    result.scannedFiles.push(filename);
+
+    try {
+      const content = Deno.readTextFileSync(file);
+      let match;
+      while ((match = importRegex.exec(content)) !== null) {
+        const [, namespace, name, version] = match;
+        const entry = { name, version, sourceFile: filename };
+
+        if (namespace === "preview") {
+          result.preview.push(entry);
+        } else if (namespace === "local") {
+          result.local.push(entry);
+        }
+      }
+    } catch {
+      // Skip files that can't be read
+    }
+  }
+
+  return result;
+}
+
+function generateConfigContent(discovery: DiscoveryResult): string {
+  const lines: string[] = [];
+
+  lines.push("# typst-gather configuration");
+  lines.push("# Run: quarto call typst-gather");
+  lines.push("");
+
+  lines.push('destination = ".quarto/typst/packages"');
+  lines.push("");
+
+  // Discover section
+  if (discovery.scannedFiles.length > 0) {
+    if (discovery.scannedFiles.length === 1) {
+      lines.push(`discover = "${discovery.scannedFiles[0]}"`);
+    } else {
+      const files = discovery.scannedFiles.map((f) => `"${f}"`).join(", ");
+      lines.push(`discover = [${files}]`);
+    }
+  } else {
+    lines.push('# discover = "template.typ"  # Add your .typ files here');
+  }
+
+  lines.push("");
+
+  // Preview section (commented out - packages will be auto-discovered)
+  lines.push("# Preview packages are auto-discovered from imports.");
+  lines.push("# Uncomment to pin specific versions:");
+  lines.push("# [preview]");
+  if (discovery.preview.length > 0) {
+    // Deduplicate
+    const seen = new Set<string>();
+    for (const { name, version } of discovery.preview) {
+      if (!seen.has(name)) {
+        seen.add(name);
+        lines.push(`# ${name} = "${version}"`);
+      }
+    }
+  } else {
+    lines.push('# cetz = "0.4.1"');
+  }
+
+  lines.push("");
+
+  // Local section
+  lines.push(
+    "# Local packages (@local namespace) must be configured manually.",
+  );
+  if (discovery.local.length > 0) {
+    lines.push("# Found @local imports:");
+    const seen = new Set<string>();
+    for (const { name, version, sourceFile } of discovery.local) {
+      if (!seen.has(name)) {
+        seen.add(name);
+        lines.push(`#   @local/${name}:${version} (in ${sourceFile})`);
+      }
+    }
+    lines.push("[local]");
+    seen.clear();
+    for (const { name } of discovery.local) {
+      if (!seen.has(name)) {
+        seen.add(name);
+        lines.push(`${name} = "/path/to/${name}"  # TODO: set correct path`);
+      }
+    }
+  } else {
+    lines.push("# [local]");
+    lines.push('# my-pkg = "/path/to/my-pkg"');
+  }
+
+  lines.push("");
+  return lines.join("\n");
+}
+
+async function initConfig(): Promise<void> {
+  const configFile = join(Deno.cwd(), "typst-gather.toml");
+
+  // Check if config already exists
+  if (existsSync(configFile)) {
+    error("typst-gather.toml already exists");
+    error("Remove it first or edit it manually.");
+    Deno.exit(1);
+  }
+
+  // Find .typ files in current directory
+  const typFiles: string[] = [];
+  for (const entry of Deno.readDirSync(Deno.cwd())) {
+    if (entry.isFile && entry.name.endsWith(".typ")) {
+      typFiles.push(entry.name);
+    }
+  }
+
+  if (typFiles.length === 0) {
+    info("Warning: No .typ files found in current directory");
+  }
+
+  // Discover imports from the files
+  const discovery = discoverImportsFromFiles(typFiles);
+
+  // Generate config content
+  const configContent = generateConfigContent(discovery);
+
+  // Write config file
+  try {
+    Deno.writeTextFileSync(configFile, configContent);
+  } catch (e) {
+    error(`Error writing typst-gather.toml: ${e}`);
+    Deno.exit(1);
+  }
+
+  info("Created typst-gather.toml");
+  if (discovery.scannedFiles.length > 0) {
+    info(`  Scanned: ${discovery.scannedFiles.join(", ")}`);
+  }
+  if (discovery.preview.length > 0) {
+    info(`  Found ${discovery.preview.length} @preview import(s)`);
+  }
+  if (discovery.local.length > 0) {
+    info(
+      `  Found ${discovery.local.length} @local import(s) - configure paths in [local] section`,
+    );
+  }
+
+  info("");
+  info("Next steps:");
+  info("  1. Review and edit typst-gather.toml");
+  if (discovery.local.length > 0) {
+    info("  2. Add paths for @local packages in [local] section");
+  }
+  info("  3. Run: quarto call typst-gather");
+}
+
 export const typstGatherCommand = new Command()
   .name("typst-gather")
   .description(
@@ -188,7 +370,16 @@ export const typstGatherCommand = new Command()
       "  1. typst-gather.toml in current directory (if present)\n" +
       "  2. Auto-detection from _extension.yml (template and template-partials)",
   )
-  .action(async () => {
+  .option(
+    "--init-config",
+    "Generate a starter typst-gather.toml in current directory",
+  )
+  .action(async (options: { initConfig?: boolean }) => {
+    // Handle --init-config
+    if (options.initConfig) {
+      await initConfig();
+      return;
+    }
     try {
       // Find extension directory
       const extensionDir = await findExtensionDir();
