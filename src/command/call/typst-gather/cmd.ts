@@ -5,7 +5,8 @@
  */
 
 import { Command } from "cliffy/command/mod.ts";
-import { error, info } from "../../../deno_ral/log.ts";
+import { info } from "../../../deno_ral/log.ts";
+
 import { architectureToolsPath } from "../../../core/resources.ts";
 import { execProcess } from "../../../core/process.ts";
 import { dirname, join } from "../../../deno_ral/path.ts";
@@ -48,9 +49,13 @@ async function findExtensionDir(): Promise<string | null> {
     if (extensionDirs.length === 1) {
       return extensionDirs[0];
     } else if (extensionDirs.length > 1) {
-      error("Multiple extension directories found.\n");
-      error("Run this command from within a specific extension directory,");
-      error("or create a typst-gather.toml to specify the configuration.");
+      console.error("Multiple extension directories found.\n");
+      console.error(
+        "Run this command from within a specific extension directory,",
+      );
+      console.error(
+        "or create a typst-gather.toml to specify the configuration.",
+      );
       return null;
     }
   }
@@ -110,18 +115,22 @@ async function resolveConfig(
 
   // No config file - try to auto-detect from _extension.yml
   if (!extensionDir) {
-    error("No typst-gather.toml found and no extension directory detected.\n");
-    error("Either:");
-    error("  1. Create a typst-gather.toml file, or");
-    error("  2. Run from within an extension directory with _extension.yml");
+    console.error(
+      "No typst-gather.toml found and no extension directory detected.\n",
+    );
+    console.error("Either:");
+    console.error("  1. Create a typst-gather.toml file, or");
+    console.error(
+      "  2. Run from within an extension directory with _extension.yml",
+    );
     return null;
   }
 
   const typstFiles = extractTypstFiles(extensionDir);
 
   if (typstFiles.length === 0) {
-    error("No Typst files found in _extension.yml.\n");
-    error(
+    console.error("No Typst files found in _extension.yml.\n");
+    console.error(
       "The extension must define 'template' or 'template-partials' under contributes.formats.typst",
     );
     return null;
@@ -307,8 +316,8 @@ async function initConfig(): Promise<void> {
 
   // Check if config already exists
   if (existsSync(configFile)) {
-    error("typst-gather.toml already exists");
-    error("Remove it first or edit it manually.");
+    console.error("typst-gather.toml already exists");
+    console.error("Remove it first or edit it manually.");
     Deno.exit(1);
   }
 
@@ -334,7 +343,7 @@ async function initConfig(): Promise<void> {
   try {
     Deno.writeTextFileSync(configFile, configContent);
   } catch (e) {
-    error(`Error writing typst-gather.toml: ${e}`);
+    console.error(`Error writing typst-gather.toml: ${e}`);
     Deno.exit(1);
   }
 
@@ -391,12 +400,12 @@ export const typstGatherCommand = new Command()
       }
 
       if (!config.destination) {
-        error("No destination specified in configuration.");
+        console.error("No destination specified in configuration.");
         Deno.exit(1);
       }
 
       if (config.discover.length === 0) {
-        error("No files to discover imports from.");
+        console.error("No files to discover imports from.");
         Deno.exit(1);
       }
 
@@ -418,14 +427,14 @@ export const typstGatherCommand = new Command()
           if (existsSync(devPath)) {
             typstGatherBinary = devPath;
           } else {
-            error(
+            console.error(
               `typst-gather binary not found.\n` +
                 `Build it with: cd package/typst-gather && cargo build --release`,
             );
             Deno.exit(1);
           }
         } else {
-          error("typst-gather binary not found.");
+          console.error("typst-gather binary not found.");
           Deno.exit(1);
         }
       }
@@ -454,16 +463,16 @@ export const typstGatherCommand = new Command()
       }
 
       if (!result.success) {
-        error("typst-gather failed");
+        console.error("typst-gather failed");
         Deno.exit(1);
       }
 
       info("Done!");
     } catch (e) {
       if (e instanceof Error) {
-        error(e.message);
+        console.error(e.message);
       } else {
-        error(String(e));
+        console.error(String(e));
       }
       Deno.exit(1);
     }

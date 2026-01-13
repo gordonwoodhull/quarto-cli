@@ -1,8 +1,8 @@
 [package]
 name = "typst-gather"
 version = "0.1.2"
-edition = "2024"
-rust-version = "1.89"
+edition = "2021"
+rust-version = "1.81"
 
 [dependencies]
 typst-kit = { version = "0.14.2", features = ["packages"] }

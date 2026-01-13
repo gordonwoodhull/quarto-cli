@@ -136,7 +136,7 @@ jobs:
       - name: Install Rust for typst-gather
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.89"
+          toolchain: "1.81"
 
       - name: Configure
         run: |
@@ -269,7 +269,7 @@ jobs:
       - name: Install Rust for typst-gather
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.89"
+          toolchain: "1.81"
 
       - name: Configure
         run: |
@@ -373,7 +373,7 @@ jobs:
       - name: Install Rust for typst-gather and launcher
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.89"
+          toolchain: "1.81"
 
       - name: Configure
         run: |
@@ -506,7 +506,7 @@ jobs:
       - name: Install Rust for typst-gather
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.89"
+          toolchain: "1.81"
 
       - name: Configure
         run: |
