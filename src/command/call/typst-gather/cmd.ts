@@ -26,6 +26,7 @@ interface ExtensionYml {
 }
 
 interface TypstGatherConfig {
+  configFile?: string; // Path to config file if one was found
   rootdir?: string;
   destination: string;
   discover: string[];
@@ -108,9 +109,11 @@ async function resolveConfig(
   const configPath = join(cwd, "typst-gather.toml");
   if (existsSync(configPath)) {
     info(`Using config: ${configPath}`);
+    // Return the config file path - rust will parse it directly
+    // We still parse minimally to validate and show info
     const content = Deno.readTextFileSync(configPath);
-    // Parse TOML (simple parsing for our needs)
     const config = parseSimpleToml(content);
+    config.configFile = configPath;
     return config;
   }
 
@@ -467,31 +470,43 @@ export const typstGatherCommand = new Command()
         }
       }
 
-      // Create a temporary TOML config file
-      const tempConfig = Deno.makeTempFileSync({ suffix: ".toml" });
-      const discoverArray = config.discover.map((p) => `"${p}"`).join(", ");
-      let tomlContent = "";
-      if (config.rootdir) {
-        tomlContent += `rootdir = "${config.rootdir}"\n`;
+      // Determine config file to use
+      let configFileToUse: string;
+      let tempConfig: string | null = null;
+
+      if (config.configFile) {
+        // Use existing config file directly - rust will parse [local], [preview], etc.
+        configFileToUse = config.configFile;
+      } else {
+        // Create a temporary TOML config file for auto-detected config
+        tempConfig = Deno.makeTempFileSync({ suffix: ".toml" });
+        const discoverArray = config.discover.map((p) => `"${p}"`).join(", ");
+        let tomlContent = "";
+        if (config.rootdir) {
+          tomlContent += `rootdir = "${config.rootdir}"\n`;
+        }
+        tomlContent += `destination = "${config.destination}"\n`;
+        tomlContent += `discover = [${discoverArray}]\n`;
+        Deno.writeTextFileSync(tempConfig, tomlContent);
+        configFileToUse = tempConfig;
       }
-      tomlContent += `destination = "${config.destination}"\n`;
-      tomlContent += `discover = [${discoverArray}]\n`;
-      Deno.writeTextFileSync(tempConfig, tomlContent);
 
       info(`Running typst-gather...`);
 
       // Run typst-gather
       const result = await execProcess({
         cmd: typstGatherBinary,
-        args: [tempConfig],
+        args: [configFileToUse],
         cwd: Deno.cwd(),
       });
 
-      // Clean up temp file
-      try {
-        Deno.removeSync(tempConfig);
-      } catch {
-        // Ignore cleanup errors
+      // Clean up temp file if we created one
+      if (tempConfig) {
+        try {
+          Deno.removeSync(tempConfig);
+        } catch {
+          // Ignore cleanup errors
+        }
       }
 
       if (!result.success) {
@@ -504,8 +519,11 @@ export const typstGatherCommand = new Command()
         }
 
         // Check for @local imports not configured error and suggest --init-config
+        // Only suggest if no config file was found
         const output = (result.stdout || "") + (result.stderr || "");
-        if (output.includes("@local imports not configured")) {
+        if (
+          output.includes("@local imports not configured") && !config.configFile
+        ) {
           console.error("");
           console.error(
             "Tip: Run 'quarto call typst-gather --init-config' to generate a config file",
