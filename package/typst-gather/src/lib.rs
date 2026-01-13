@@ -6,7 +6,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 use ecow::EcoString;
-use fs_extra::dir::CopyOptions;
+use globset::{Glob, GlobSetBuilder};
 use serde::Deserialize;
 use typst_kit::download::{Downloader, ProgressSink};
 use typst_kit::package::PackageStorage;
@@ -278,6 +278,19 @@ fn cache_preview(
     cache_preview_with_deps(storage, &spec, processed, stats);
 }
 
+/// Default exclude patterns for local packages (common non-package files).
+const DEFAULT_EXCLUDES: &[&str] = &[
+    ".git/**",
+    ".github/**",
+    ".gitignore",
+    ".gitattributes",
+    ".vscode/**",
+    ".idea/**",
+    "*.bak",
+    "*.swp",
+    "*~",
+];
+
 fn gather_local(
     dest: &Path,
     name: &str,
@@ -324,10 +337,23 @@ fn gather_local(
         }
     }
 
-    // Copy source to destination
-    std::fs::create_dir_all(&dest_dir).ok();
-    let opts = CopyOptions::new().content_only(true);
-    if let Err(e) = fs_extra::dir::copy(src_dir, &dest_dir, &opts) {
+    // Build exclude pattern matcher from defaults + manifest excludes
+    let mut builder = GlobSetBuilder::new();
+    for pattern in DEFAULT_EXCLUDES {
+        if let Ok(glob) = Glob::new(pattern) {
+            builder.add(glob);
+        }
+    }
+    // Add manifest excludes if present
+    for pattern in &manifest.package.exclude {
+        if let Ok(glob) = Glob::new(pattern.as_str()) {
+            builder.add(glob);
+        }
+    }
+    let excludes = builder.build().unwrap_or_else(|_| GlobSetBuilder::new().build().unwrap());
+
+    // Copy files, respecting exclude patterns
+    if let Err(e) = copy_filtered(src_dir, &dest_dir, &excludes) {
         eprintln!("  Failed to copy: {e}");
         stats.failed += 1;
         return;
@@ -346,6 +372,38 @@ fn gather_local(
 
     // Scan for @preview dependencies
     scan_deps(storage, &dest_dir, processed, stats);
+}
+
+/// Copy directory contents, excluding files that match the exclude patterns.
+fn copy_filtered(
+    src: &Path,
+    dest: &Path,
+    excludes: &globset::GlobSet,
+) -> std::io::Result<()> {
+    std::fs::create_dir_all(dest)?;
+
+    for entry in WalkDir::new(src).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        let relative = path.strip_prefix(src).unwrap_or(path);
+
+        // Check if this path matches any exclude pattern
+        if excludes.is_match(relative) {
+            continue;
+        }
+
+        let dest_path = dest.join(relative);
+
+        if path.is_dir() {
+            std::fs::create_dir_all(&dest_path)?;
+        } else if path.is_file() {
+            if let Some(parent) = dest_path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::copy(path, &dest_path)?;
+        }
+    }
+
+    Ok(())
 }
 
 fn cache_preview_with_deps(
