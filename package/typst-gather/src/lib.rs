@@ -142,6 +142,34 @@ impl Config {
     }
 }
 
+/// Context for gathering operations, holding shared state.
+struct GatherContext<'a> {
+    storage: PackageStorage,
+    dest: &'a Path,
+    configured_local: &'a HashSet<String>,
+    processed: HashSet<String>,
+    stats: Stats,
+    /// @local imports discovered during scanning (name -> source_file)
+    discovered_local: HashMap<String, String>,
+}
+
+impl<'a> GatherContext<'a> {
+    fn new(dest: &'a Path, configured_local: &'a HashSet<String>) -> Self {
+        Self {
+            storage: PackageStorage::new(
+                Some(dest.to_path_buf()),
+                None,
+                Downloader::new("typst-gather/0.1.0"),
+            ),
+            dest,
+            configured_local,
+            processed: HashSet::new(),
+            stats: Stats::default(),
+            discovered_local: HashMap::new(),
+        }
+    }
+}
+
 /// Gather packages to the destination directory.
 pub fn gather_packages(
     dest: &Path,
@@ -149,60 +177,45 @@ pub fn gather_packages(
     discover_paths: &[PathBuf],
     configured_local: &HashSet<String>,
 ) -> GatherResult {
-    let storage = PackageStorage::new(
-        Some(dest.to_path_buf()),
-        None,
-        Downloader::new("typst-gather/0.1.0"),
-    );
-
-    let mut processed = HashSet::new();
-    let mut stats = Stats::default();
-    let mut discovered_local: HashMap<String, String> = HashMap::new(); // name -> source_file
+    let mut ctx = GatherContext::new(dest, configured_local);
 
     // First, process discover paths
     for path in discover_paths {
-        discover_imports(path, &storage, &mut processed, &mut stats, &mut discovered_local, configured_local);
+        discover_imports(&mut ctx, path);
     }
 
     // Then process explicit entries
     for entry in entries {
         match entry {
             PackageEntry::Preview { name, version } => {
-                cache_preview(&name, &version, &storage, &mut processed, &mut stats, configured_local);
+                cache_preview(&mut ctx, &name, &version);
             }
             PackageEntry::Local { name, dir } => {
-                gather_local(dest, &name, &dir, &storage, &mut processed, &mut stats, configured_local);
+                gather_local(&mut ctx, &name, &dir);
             }
         }
     }
 
     // Find @local imports that aren't configured
-    let unconfigured_local: Vec<(String, String)> = discovered_local
+    let unconfigured_local: Vec<(String, String)> = ctx.discovered_local
         .into_iter()
-        .filter(|(name, _)| !configured_local.contains(name))
+        .filter(|(name, _)| !ctx.configured_local.contains(name))
         .collect();
 
     GatherResult {
-        stats,
+        stats: ctx.stats,
         unconfigured_local,
     }
 }
 
 /// Scan a path for imports. If it's a directory, scans .typ files in it (non-recursive).
 /// If it's a file, scans that file directly.
-fn discover_imports(
-    path: &Path,
-    storage: &PackageStorage,
-    processed: &mut HashSet<String>,
-    stats: &mut Stats,
-    discovered_local: &mut HashMap<String, String>,
-    configured_local: &HashSet<String>,
-) {
+fn discover_imports(ctx: &mut GatherContext, path: &Path) {
     if path.is_file() {
         // Single file
         if path.extension().is_some_and(|e| e == "typ") {
             println!("Discovering imports in {}...", display_path(path));
-            scan_file_for_imports(path, storage, processed, stats, discovered_local, configured_local);
+            scan_file_for_imports(ctx, path);
         }
     } else if path.is_dir() {
         // Directory - scan .typ files (non-recursive)
@@ -212,7 +225,7 @@ fn discover_imports(
             Ok(e) => e,
             Err(e) => {
                 eprintln!("  Failed to read directory: {e}");
-                stats.failed += 1;
+                ctx.stats.failed += 1;
                 return;
             }
         };
@@ -220,7 +233,7 @@ fn discover_imports(
         for entry in entries.flatten() {
             let file_path = entry.path();
             if file_path.is_file() && file_path.extension().is_some_and(|e| e == "typ") {
-                scan_file_for_imports(&file_path, storage, processed, stats, discovered_local, configured_local);
+                scan_file_for_imports(ctx, &file_path);
             }
         }
     } else {
@@ -230,14 +243,7 @@ fn discover_imports(
 
 /// Scan a single .typ file for @preview and @local imports.
 /// @preview imports are cached, @local imports are tracked for later warning.
-fn scan_file_for_imports(
-    path: &Path,
-    storage: &PackageStorage,
-    processed: &mut HashSet<String>,
-    stats: &mut Stats,
-    discovered_local: &mut HashMap<String, String>,
-    configured_local: &HashSet<String>,
-) {
+fn scan_file_for_imports(ctx: &mut GatherContext, path: &Path) {
     if let Ok(content) = std::fs::read_to_string(path) {
         let mut imports = Vec::new();
         collect_imports(&typst_syntax::parse(&content), &mut imports);
@@ -248,27 +254,20 @@ fn scan_file_for_imports(
 
         for spec in imports {
             if spec.namespace == "preview" {
-                cache_preview_with_deps(storage, &spec, processed, stats, configured_local);
+                cache_preview_with_deps(ctx, &spec);
             } else if spec.namespace == "local" {
                 // Track @local imports (only first occurrence per package name)
-                discovered_local.entry(spec.name.to_string())
+                ctx.discovered_local.entry(spec.name.to_string())
                     .or_insert(source_file.clone());
             }
         }
     }
 }
 
-fn cache_preview(
-    name: &str,
-    version_str: &str,
-    storage: &PackageStorage,
-    processed: &mut HashSet<String>,
-    stats: &mut Stats,
-    configured_local: &HashSet<String>,
-) {
+fn cache_preview(ctx: &mut GatherContext, name: &str, version_str: &str) {
     let Ok(version): Result<PackageVersion, _> = version_str.parse() else {
         eprintln!("Invalid version '{version_str}' for @preview/{name}");
-        stats.failed += 1;
+        ctx.stats.failed += 1;
         return;
     };
 
@@ -278,7 +277,7 @@ fn cache_preview(
         version,
     };
 
-    cache_preview_with_deps(storage, &spec, processed, stats, configured_local);
+    cache_preview_with_deps(ctx, &spec);
 }
 
 /// Default exclude patterns for local packages (common non-package files).
@@ -298,15 +297,7 @@ const DEFAULT_EXCLUDES: &[&str] = &[
     "*~",
 ];
 
-fn gather_local(
-    dest: &Path,
-    name: &str,
-    src_dir: &Path,
-    storage: &PackageStorage,
-    processed: &mut HashSet<String>,
-    stats: &mut Stats,
-    configured_local: &HashSet<String>,
-) {
+fn gather_local(ctx: &mut GatherContext, name: &str, src_dir: &Path) {
     // Read typst.toml to get version (and validate name)
     let manifest_path = src_dir.join("typst.toml");
     let manifest: PackageManifest = match std::fs::read_to_string(&manifest_path)
@@ -316,7 +307,7 @@ fn gather_local(
         Ok(m) => m,
         Err(e) => {
             eprintln!("Error reading typst.toml for @local/{name}: {e}");
-            stats.failed += 1;
+            ctx.stats.failed += 1;
             return;
         }
     };
@@ -327,12 +318,12 @@ fn gather_local(
             "Name mismatch for @local/{name}: typst.toml has '{}'",
             manifest.package.name
         );
-        stats.failed += 1;
+        ctx.stats.failed += 1;
         return;
     }
 
     let version = manifest.package.version;
-    let dest_dir = dest.join(format!("local/{name}/{version}"));
+    let dest_dir = ctx.dest.join(format!("local/{name}/{version}"));
 
     println!("Copying @local/{name}:{version}...");
 
@@ -340,7 +331,7 @@ fn gather_local(
     if dest_dir.exists() {
         if let Err(e) = std::fs::remove_dir_all(&dest_dir) {
             eprintln!("  Failed to remove existing dir: {e}");
-            stats.failed += 1;
+            ctx.stats.failed += 1;
             return;
         }
     }
@@ -363,12 +354,12 @@ fn gather_local(
     // Copy files, respecting exclude patterns
     if let Err(e) = copy_filtered(src_dir, &dest_dir, &excludes) {
         eprintln!("  Failed to copy: {e}");
-        stats.failed += 1;
+        ctx.stats.failed += 1;
         return;
     }
 
     println!("  -> {}", display_path(&dest_dir));
-    stats.copied += 1;
+    ctx.stats.copied += 1;
 
     // Mark as processed
     let spec = PackageSpec {
@@ -376,10 +367,10 @@ fn gather_local(
         name: EcoString::from(name),
         version,
     };
-    processed.insert(spec.to_string());
+    ctx.processed.insert(spec.to_string());
 
     // Scan for @preview dependencies
-    scan_deps(storage, &dest_dir, processed, stats, configured_local);
+    scan_deps(ctx, &dest_dir);
 }
 
 /// Copy directory contents, excluding files that match the exclude patterns.
@@ -414,57 +405,45 @@ fn copy_filtered(
     Ok(())
 }
 
-fn cache_preview_with_deps(
-    storage: &PackageStorage,
-    spec: &PackageSpec,
-    processed: &mut HashSet<String>,
-    stats: &mut Stats,
-    configured_local: &HashSet<String>,
-) {
+fn cache_preview_with_deps(ctx: &mut GatherContext, spec: &PackageSpec) {
     // Skip @preview packages that are configured as @local (use local version instead)
-    if configured_local.contains(spec.name.as_str()) {
+    if ctx.configured_local.contains(spec.name.as_str()) {
         return;
     }
 
     let key = spec.to_string();
-    if !processed.insert(key) {
+    if !ctx.processed.insert(key) {
         return;
     }
 
     let subdir = format!("{}/{}/{}", spec.namespace, spec.name, spec.version);
-    let cached_path = storage.package_cache_path().map(|p| p.join(&subdir));
+    let cached_path = ctx.storage.package_cache_path().map(|p| p.join(&subdir));
 
     if cached_path.as_ref().is_some_and(|p| p.exists()) {
         println!("Skipping {spec} (cached)");
-        stats.skipped += 1;
-        scan_deps(storage, cached_path.as_ref().unwrap(), processed, stats, configured_local);
+        ctx.stats.skipped += 1;
+        scan_deps(ctx, cached_path.as_ref().unwrap());
         return;
     }
 
     println!("Downloading {spec}...");
-    match storage.prepare_package(spec, &mut ProgressSink) {
+    match ctx.storage.prepare_package(spec, &mut ProgressSink) {
         Ok(path) => {
             println!("  -> {}", display_path(&path));
-            stats.downloaded += 1;
-            scan_deps(storage, &path, processed, stats, configured_local);
+            ctx.stats.downloaded += 1;
+            scan_deps(ctx, &path);
         }
         Err(e) => {
             eprintln!("  Failed: {e:?}");
-            stats.failed += 1;
+            ctx.stats.failed += 1;
         }
     }
 }
 
-fn scan_deps(
-    storage: &PackageStorage,
-    dir: &Path,
-    processed: &mut HashSet<String>,
-    stats: &mut Stats,
-    configured_local: &HashSet<String>,
-) {
+fn scan_deps(ctx: &mut GatherContext, dir: &Path) {
     for spec in find_imports(dir) {
         if spec.namespace == "preview" {
-            cache_preview_with_deps(storage, &spec, processed, stats, configured_local);
+            cache_preview_with_deps(ctx, &spec);
         }
     }
 }
