@@ -48,6 +48,7 @@ testQuartoCmd("render", [fixtureQmd, "--to", "typst"], [], {
     await runPositiveTests();
     await runExpectedFailureTests();
     await runSemanticTagTests();
+    await runPageRoleTests();
 
     // Cleanup
     if (safeExistsSync(fixturePdf)) {
@@ -213,4 +214,59 @@ async function runSemanticTagTests() {
     },
   ]);
   await correctRoles.verify([]);
+}
+
+/**
+ * Test Page role - represents entire page bounds
+ * Page intersects all content on that page, so directional relations should fail
+ */
+async function runPageRoleTests() {
+  // Test: Page role should NOT be above/below/leftOf/rightOf any content on same page
+  // because Page covers the entire page and thus intersects everything
+  const pageNotDirectional = ensurePdfTextPositions(
+    fixturePdf,
+    [], // No positive assertions
+    [
+      // Page 1 is NOT above body text (it contains it)
+      {
+        subject: { role: "Page", page: 1 },
+        relation: "above",
+        object: "FIXTURE_BODY_P1_TEXT",
+      },
+      // Page 1 is NOT below anything on page 1
+      {
+        subject: { role: "Page", page: 1 },
+        relation: "below",
+        object: "FIXTURE_TITLE_TEXT",
+      },
+      // Page 1 is NOT leftOf anything on page 1
+      {
+        subject: { role: "Page", page: 1 },
+        relation: "leftOf",
+        object: "FIXTURE_BODY_P1_TEXT",
+      },
+      // Page 1 is NOT rightOf anything on page 1
+      {
+        subject: { role: "Page", page: 1 },
+        relation: "rightOf",
+        object: "FIXTURE_BODY_P1_TEXT",
+      },
+    ],
+  );
+  await pageNotDirectional.verify([]);
+
+  // Test: Two Page selectors for same page should be aligned (both at origin 0,0)
+  const pageAlignment = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { role: "Page", page: 1 },
+      relation: "topAligned",
+      object: { role: "Page", page: 1 },
+    },
+    {
+      subject: { role: "Page", page: 1 },
+      relation: "leftAligned",
+      object: { role: "Page", page: 1 },
+    },
+  ]);
+  await pageAlignment.verify([]);
 }

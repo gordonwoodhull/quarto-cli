@@ -24,6 +24,9 @@
  * - role: "Decoration" - Use for untagged page elements like headers, footers,
  *   page numbers, and other decorations. These use text item bounds directly
  *   instead of requiring MCID/structure tree support.
+ * - role: "Page" - Use for the entire page bounds. Requires `page` field to
+ *   specify which page number (1-indexed). The `text` field is ignored.
+ *   Useful for NOT assertions since Page intersects all content on that page.
  *
  * Copyright (C) 2020-2025 Posit Software, PBC
  */
@@ -41,8 +44,9 @@ import { ExecuteOutput, Verify } from "./test.ts";
 //    named destinations for links, but not structure element identifiers)
 // 2. Even if IDs were present, pdf.js doesn't expose /ID through getStructTree()
 interface TextSelector {
-  text: string;
+  text?: string;  // Text to search for (ignored for role: "Page")
   role?: string;  // PDF 1.4 structure role: P, H1, H2, Figure, Table, Span, etc.
+  page?: number;  // Page number (1-indexed), required for role: "Page"
 }
 
 // Assertion format
@@ -335,14 +339,39 @@ export const ensurePdfTextPositions = (
       }));
 
       // Track search texts and their selectors (to know if Decoration role is requested)
+      // Page role selectors are tracked separately since they don't need text search
       const searchTexts = new Set<string>();
       const textToSelectors = new Map<string, TextSelector[]>();
+      const pageSelectors = new Map<number, TextSelector>(); // page number -> selector
+
+      // Helper: check if selector is a Page role (no text search needed)
+      const isPageRole = (sel: TextSelector): boolean => sel.role === "Page";
+
+      // Helper: get unique key for a selector (for resolvedSelectors map)
+      const selectorKey = (sel: TextSelector): string => {
+        if (isPageRole(sel)) {
+          return `Page:${sel.page}`;
+        }
+        return sel.text ?? "";
+      };
 
       const addSelector = (sel: TextSelector) => {
-        searchTexts.add(sel.text);
-        const existing = textToSelectors.get(sel.text) ?? [];
-        existing.push(sel);
-        textToSelectors.set(sel.text, existing);
+        if (isPageRole(sel)) {
+          if (sel.page === undefined) {
+            errors.push(`Page role requires 'page' field to specify page number`);
+            return;
+          }
+          pageSelectors.set(sel.page, sel);
+        } else {
+          if (!sel.text) {
+            errors.push(`Selector requires 'text' field (unless role is "Page")`);
+            return;
+          }
+          searchTexts.add(sel.text);
+          const existing = textToSelectors.get(sel.text) ?? [];
+          existing.push(sel);
+          textToSelectors.set(sel.text, existing);
+        }
       };
 
       for (const a of normalizedAssertions) {
@@ -370,10 +399,14 @@ export const ensurePdfTextPositions = (
       const allTextItems: MarkedTextItem[] = [];
       const mcidToTextItems = new Map<string, MarkedTextItem[]>();
       const mcidToStructNode = new Map<string, StructTreeNode>();
+      const pageDimensions = new Map<number, { width: number; height: number }>();
 
       for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
         const page = await doc.getPage(pageNum);
         const viewport = page.getViewport({ scale: 1.0 });
+
+        // Store page dimensions for Page role
+        pageDimensions.set(pageNum, { width: viewport.width, height: viewport.height });
 
         // Get text content with marked content
         const textContent = await page.getTextContent({
@@ -425,6 +458,29 @@ export const ensurePdfTextPositions = (
       // Stage 6 & 7: Resolve selectors to structure nodes and compute bboxes
       const resolvedSelectors = new Map<string, ResolvedSelector>();
 
+      // First, resolve Page role selectors (no text search needed)
+      for (const [pageNum, sel] of pageSelectors) {
+        const dims = pageDimensions.get(pageNum);
+        if (!dims) {
+          errors.push(`Page ${pageNum} does not exist in PDF (has ${pageDimensions.size} pages)`);
+          continue;
+        }
+        const key = selectorKey(sel);
+        resolvedSelectors.set(key, {
+          selector: sel,
+          textItem: { str: "", x: 0, y: 0, width: 0, height: 0, mcid: null, page: pageNum },
+          structNode: null,
+          bbox: {
+            x: 0,
+            y: 0,
+            width: dims.width,
+            height: dims.height,
+            page: pageNum,
+          },
+        });
+      }
+
+      // Then, resolve text-based selectors
       for (const searchText of searchTexts) {
         const textItem = foundTexts.get(searchText);
         if (!textItem) {
@@ -480,9 +536,11 @@ export const ensurePdfTextPositions = (
         });
       }
 
-      // Validate role assertions
+      // Validate role assertions (skip Page role since it's a virtual selector)
       for (const a of normalizedAssertions) {
-        const resolved = resolvedSelectors.get(a.subject.text);
+        if (isPageRole(a.subject)) continue; // Page role has no struct node to validate
+
+        const resolved = resolvedSelectors.get(selectorKey(a.subject));
         if (!resolved) continue;
 
         if (a.subject.role && resolved.structNode) {
@@ -493,8 +551,8 @@ export const ensurePdfTextPositions = (
           }
         }
 
-        if (a.object) {
-          const resolvedObj = resolvedSelectors.get(a.object.text);
+        if (a.object && !isPageRole(a.object)) {
+          const resolvedObj = resolvedSelectors.get(selectorKey(a.object));
           if (!resolvedObj) continue;
 
           if (a.object.role && resolvedObj.structNode) {
@@ -514,8 +572,10 @@ export const ensurePdfTextPositions = (
           continue; // Already validated in stage 6
         }
 
-        const subjectResolved = resolvedSelectors.get(a.subject.text);
-        const objectResolved = resolvedSelectors.get(a.object.text);
+        const subjectKey = selectorKey(a.subject);
+        const objectKey = selectorKey(a.object);
+        const subjectResolved = resolvedSelectors.get(subjectKey);
+        const objectResolved = resolvedSelectors.get(objectKey);
 
         if (!subjectResolved || !objectResolved) {
           continue; // Error already recorded
@@ -532,8 +592,8 @@ export const ensurePdfTextPositions = (
         // Check same page
         if (subjectResolved.bbox.page !== objectResolved.bbox.page) {
           errors.push(
-            `Cannot compare positions: "${a.subject.text}" is on page ${subjectResolved.bbox.page}, ` +
-            `"${a.object.text}" is on page ${objectResolved.bbox.page}`,
+            `Cannot compare positions: "${subjectKey}" is on page ${subjectResolved.bbox.page}, ` +
+            `"${objectKey}" is on page ${objectResolved.bbox.page}`,
           );
           continue;
         }
@@ -541,7 +601,7 @@ export const ensurePdfTextPositions = (
         // Evaluate relation
         if (!relationFn(subjectResolved.bbox, objectResolved.bbox, a.tolerance)) {
           errors.push(
-            `Position assertion failed: "${a.subject.text}" is NOT ${a.relation} "${a.object.text}". ` +
+            `Position assertion failed: "${subjectKey}" is NOT ${a.relation} "${objectKey}". ` +
             `Subject bbox: (${subjectResolved.bbox.x.toFixed(1)}, ${subjectResolved.bbox.y.toFixed(1)}, ` +
             `w=${subjectResolved.bbox.width.toFixed(1)}, h=${subjectResolved.bbox.height.toFixed(1)}) page ${subjectResolved.bbox.page}, ` +
             `Object bbox: (${objectResolved.bbox.x.toFixed(1)}, ${objectResolved.bbox.y.toFixed(1)}, ` +
@@ -554,8 +614,10 @@ export const ensurePdfTextPositions = (
       for (const a of normalizedNoMatch ?? []) {
         if (!a.relation || !a.object) continue;
 
-        const subjectResolved = resolvedSelectors.get(a.subject.text);
-        const objectResolved = resolvedSelectors.get(a.object.text);
+        const subjectKey = selectorKey(a.subject);
+        const objectKey = selectorKey(a.object);
+        const subjectResolved = resolvedSelectors.get(subjectKey);
+        const objectResolved = resolvedSelectors.get(objectKey);
 
         if (!subjectResolved || !objectResolved) {
           continue; // Assertion trivially doesn't hold
@@ -575,7 +637,7 @@ export const ensurePdfTextPositions = (
 
         if (relationFn(subjectResolved.bbox, objectResolved.bbox, a.tolerance)) {
           errors.push(
-            `Negative assertion failed: "${a.subject.text}" IS ${a.relation} "${a.object.text}" (expected NOT to be). ` +
+            `Negative assertion failed: "${subjectKey}" IS ${a.relation} "${objectKey}" (expected NOT to be). ` +
             `Subject bbox: (${subjectResolved.bbox.x.toFixed(1)}, ${subjectResolved.bbox.y.toFixed(1)}) page ${subjectResolved.bbox.page}, ` +
             `Object bbox: (${objectResolved.bbox.x.toFixed(1)}, ${objectResolved.bbox.y.toFixed(1)}) page ${objectResolved.bbox.page}`,
           );
