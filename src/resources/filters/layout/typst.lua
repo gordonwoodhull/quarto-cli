@@ -2,14 +2,12 @@
 -- Copyright (C) 2023 Posit Software, PBC
 
 -- Full-width column class mapping for wideblock
+-- Note: screen-inset classes are handled separately with column-screen-inset function
 local widthClassToSide = {
   ["column-page-right"] = "outer",
   ["column-page-left"] = "inner",
   ["column-page"] = "both",
   ["column-screen"] = "both",
-  ["column-screen-inset"] = "both",
-  ["column-screen-inset-left"] = "inner",
-  ["column-screen-inset-right"] = "outer",
   ["column-screen-left"] = "inner",
   ["column-screen-right"] = "outer",
 }
@@ -25,6 +23,50 @@ function getWideblockSide(classes)
     end
   end
   return nil, nil
+end
+
+-- Intermediate width classes map to Typst functions with side parameter
+local intermediateWidthClasses = {
+  ["column-body-outset"] = { func = "column-body-outset", side = "both" },
+  ["column-body-outset-left"] = { func = "column-body-outset", side = "inner" },
+  ["column-body-outset-right"] = { func = "column-body-outset", side = "outer" },
+  ["column-page-inset"] = { func = "column-page-inset", side = "both" },
+  ["column-page-inset-left"] = { func = "column-page-inset", side = "inner" },
+  ["column-page-inset-right"] = { func = "column-page-inset", side = "outer" },
+  ["column-screen-inset"] = { func = "column-screen-inset", side = "both" },
+  ["column-screen-inset-left"] = { func = "column-screen-inset", side = "inner" },
+  ["column-screen-inset-right"] = { func = "column-screen-inset", side = "outer" },
+  ["column-screen-inset-shaded"] = { func = "column-screen-inset-shaded", side = nil },
+}
+
+-- Check if element has an intermediate width class
+function getIntermediateWidthClass(classes)
+  if classes == nil then
+    return nil, nil
+  end
+  for clz, info in pairs(intermediateWidthClasses) do
+    if classes:includes(clz) then
+      return info, clz
+    end
+  end
+  return nil, nil
+end
+
+-- Wrap content in intermediate width block
+function make_typst_intermediate_width(tbl)
+  local content = tbl.content or pandoc.Blocks({})
+  local func = tbl.func
+  local side = tbl.side
+
+  local result = pandoc.Blocks({})
+  if side then
+    result:insert(pandoc.RawBlock("typst", '#' .. func .. '(side: "' .. side .. '")['))
+  else
+    result:insert(pandoc.RawBlock("typst", '#' .. func .. '['))
+  end
+  result:extend(quarto.utils.as_blocks(content))
+  result:insert(pandoc.RawBlock("typst", ']\n\n'))
+  return result
 end
 
 -- Wrap content in a wideblock for full-width layout

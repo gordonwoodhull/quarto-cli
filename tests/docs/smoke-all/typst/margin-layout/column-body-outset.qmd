@@ -1,0 +1,30 @@
+---
+title: "Column Body Outset Test"
+papersize: us-letter
+format:
+  html: default
+  typst:
+    keep-typ: true
+_quarto:
+  tests:
+    typst:
+      ensureTypstFileRegexMatches:
+        - ['#column-body-outset']
+        - []
+      ensurePdfRegexMatches:
+        - ['OUTSET-CONTENT']
+        - []
+      noErrors: default
+---
+
+## Column Body Outset Test
+
+This tests the `.column-body-outset` class which extends content slightly beyond the body column.
+
+::: {.column-body-outset}
+OUTSET-CONTENT: This content should extend slightly beyond the normal body width, creating a subtle visual emphasis without going full-width.
+:::
+
+Regular text for comparison.
+
+In HTML, body-outset provides a middle ground between body width and page width.

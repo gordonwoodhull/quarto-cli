@@ -121,7 +121,7 @@ function render_typst()
           local content = pandoc.utils.blocks_to_inlines(n.content)
 
           local result = pandoc.Inlines({})
-          result:insert(pandoc.RawInline("typst", "#quarto-sidenote["))
+          result:insert(pandoc.RawInline("typst", "#column-sidenote["))
           result:extend(content)
           result:insert(pandoc.RawInline("typst", "]"))
           return result
@@ -139,9 +139,9 @@ function render_typst()
           end
           local keyStr = table.concat(keys, ", ")
 
-          -- Emit: quarto-margin-cite which renders inline cite + full cite in margin
+          -- Emit: column-margin-cite which renders inline cite + full cite in margin
           local result = pandoc.Inlines({})
-          result:insert(pandoc.RawInline("typst", "#quarto-margin-cite(" .. keyStr .. ")"))
+          result:insert(pandoc.RawInline("typst", "#column-margin-cite(" .. keyStr .. ")"))
           return result
         end
       end,

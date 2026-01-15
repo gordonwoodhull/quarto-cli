@@ -11,7 +11,7 @@ _quarto:
   tests:
     typst:
       ensureTypstFileRegexMatches:
-        - ['quarto-margin-cite']
+        - ['column-margin-cite']
         - []
       ensurePdfRegexMatches:
         - ['FIRST-CITE-MARKER', 'SECOND-CITE-MARKER', 'MULTI-CITE-MARKER', 'Vindication']

@@ -112,6 +112,17 @@ local function def_columns()
           side = side,
         }
       end
+      -- Handle intermediate width classes (body-outset, page-inset, screen-inset)
+      local intermediateInfo, intermediateClz = getIntermediateWidthClass(el.classes)
+      if intermediateInfo then
+        noteHasColumns()  -- Ensure margin layout is activated
+        el.classes = el.classes:filter(function(c) return c ~= intermediateClz end)
+        return make_typst_intermediate_width {
+          content = el.content,
+          func = intermediateInfo.func,
+          side = intermediateInfo.side,
+        }
+      end
       -- Handle margin figures/tables: propagate .column-margin class to FloatRefTarget
       -- so they render with notefigure() instead of being wrapped in #note()
       if hasMarginColumn(el) then

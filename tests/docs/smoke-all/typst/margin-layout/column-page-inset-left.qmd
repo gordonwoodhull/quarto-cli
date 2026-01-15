@@ -1,0 +1,28 @@
+---
+title: "Column Page Inset Left Test"
+papersize: us-letter
+format:
+  html: default
+  typst:
+    keep-typ: true
+_quarto:
+  tests:
+    typst:
+      ensureTypstFileRegexMatches:
+        - ['#column-page-inset\(side: "inner"']
+        - []
+      ensurePdfRegexMatches:
+        - ['PAGE-INSET-LEFT-CONTENT']
+        - []
+      noErrors: default
+---
+
+## Column Page Inset Left Test
+
+This tests the `.column-page-inset-left` class which extends to the left with an inset.
+
+::: {.column-page-inset-left}
+PAGE-INSET-LEFT-CONTENT: This content should extend toward the left page edge with a small inset, while keeping the right edge aligned with the body column.
+:::
+
+Regular text for comparison.

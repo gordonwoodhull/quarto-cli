@@ -1,0 +1,30 @@
+---
+title: "Column Screen Inset Shaded Test"
+papersize: us-letter
+format:
+  html: default
+  typst:
+    keep-typ: true
+_quarto:
+  tests:
+    typst:
+      ensureTypstFileRegexMatches:
+        - ['#column-screen-inset-shaded', 'fill:']
+        - []
+      ensurePdfRegexMatches:
+        - ['SHADED-CONTENT']
+        - []
+      noErrors: default
+---
+
+## Column Screen Inset Shaded Test
+
+This tests the `.column-screen-inset-shaded` class which spans screen width with a shaded background.
+
+::: {.column-screen-inset-shaded}
+SHADED-CONTENT: This content should span the full width with a light gray/shaded background. The shading helps visually distinguish this section from regular content. In HTML, this creates a full-width band with a subtle background color.
+:::
+
+Regular text for comparison (no shading).
+
+The shaded variant is useful for callouts, asides, or sections that need visual emphasis.

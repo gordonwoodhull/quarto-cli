@@ -183,6 +183,86 @@
     )
 }
 
+$if(margin-layout)$
+// Margin layout support using marginalia package
+#import "@preview/marginalia:0.3.1" as marginalia: note, notefigure, wideblock
+
+// Render footnote as margin note using standard footnote counter
+// This is consistent with LaTeX's sidenotes package behavior
+#let column-sidenote(body) = {
+  counter(footnote).step()
+  context {
+    let num = counter(footnote).display("1")
+    // Superscript mark in text
+    super(num)
+    // Content in margin with matching number
+    note(
+      alignment: "baseline",
+      shift: auto,
+      counter: none,  // We display our own number from footnote counter
+    )[
+      #super(num) #body
+    ]
+  }
+}
+
+// Margin citation - inline citation + full bibliographic entry in margin
+// Each citation key gets the inline citation, with full entry appearing in margin
+#let column-margin-cite(..labels) = {
+  // Render inline citations
+  for label in labels.pos() {
+    cite(label)
+  }
+  // Full citation entries in margin
+  note(
+    alignment: "baseline",
+    shift: auto,
+    counter: none,
+  )[
+    #set text(size: 0.85em)
+    #for label in labels.pos() [
+      #cite(label, form: "full")
+    ]
+  ]
+}
+
+// Utility: compute padding for each side based on side parameter
+#let side-pad(side, left-amount, right-amount) = {
+  let l = if side == "both" or side == "left" or side == "inner" { left-amount } else { 0pt }
+  let r = if side == "both" or side == "right" or side == "outer" { right-amount } else { 0pt }
+  (left: l, right: r)
+}
+
+// body-outset: extends ~15% into margin area
+#let column-body-outset(side: "both", body) = context {
+  let r = marginalia.get-right()
+  let out = 0.15 * (r.sep + r.width)
+  pad(..side-pad(side, -out, -out), body)
+}
+
+// page-inset: wideblock minus ~15% of margin width
+#let column-page-inset(side: "both", body) = context {
+  let r = marginalia.get-right()
+  let inset = r.far + 0.15 * r.width
+  wideblock(side: side)[#pad(..side-pad(side, inset, inset), body)]
+}
+
+// screen-inset: full width minus `far` distance from edges
+#let column-screen-inset(side: "both", body) = context {
+  let l = marginalia.get-left()
+  let r = marginalia.get-right()
+  wideblock(side: side)[#pad(..side-pad(side, l.far, r.far), body)]
+}
+
+// screen-inset-shaded: screen-inset with gray background
+#let column-screen-inset-shaded(body) = context {
+  let l = marginalia.get-left()
+  wideblock(side: "both")[
+    #block(fill: luma(245), width: 100%, inset: (x: l.far, y: 1em), body)
+  ]
+}
+$endif$
+
 $if(highlighting-definitions)$
 // syntax highlighting functions from skylighting:
 $highlighting-definitions$

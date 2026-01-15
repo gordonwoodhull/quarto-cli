@@ -1,0 +1,30 @@
+---
+title: "Column Page Inset Test"
+papersize: us-letter
+format:
+  html: default
+  typst:
+    keep-typ: true
+_quarto:
+  tests:
+    typst:
+      ensureTypstFileRegexMatches:
+        - ['#column-page-inset']
+        - []
+      ensurePdfRegexMatches:
+        - ['PAGE-INSET-CONTENT']
+        - []
+      noErrors: default
+---
+
+## Column Page Inset Test
+
+This tests the `.column-page-inset` class which spans page width but with a small inset from edges.
+
+::: {.column-page-inset}
+PAGE-INSET-CONTENT: This content should span nearly the full page width but maintain a small margin from the page edges. It's wider than column-page but not full bleed like column-screen.
+:::
+
+Regular text for comparison.
+
+The inset provides a visual buffer from the page edges while still being wider than the body column.
