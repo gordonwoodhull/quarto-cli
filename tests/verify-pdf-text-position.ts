@@ -20,8 +20,8 @@
  * - ConTeXt: Pandoc supports +tagging extension, but Quarto's context
  *   format doesn't compile to PDF.
  *
- * SPECIAL TYPES:
- * - type: "Decoration" - Use for untagged page elements like headers, footers,
+ * SPECIAL ROLES:
+ * - role: "Decoration" - Use for untagged page elements like headers, footers,
  *   page numbers, and other decorations. These use text item bounds directly
  *   instead of requiring MCID/structure tree support.
  *
@@ -42,7 +42,7 @@ import { ExecuteOutput, Verify } from "./test.ts";
 // 2. Even if IDs were present, pdf.js doesn't expose /ID through getStructTree()
 interface TextSelector {
   text: string;
-  type?: string;  // PDF 1.4 tag: P, H1, H2, Figure, Table, Span, etc.
+  role?: string;  // PDF 1.4 structure role: P, H1, H2, Figure, Table, Span, etc.
 }
 
 // Assertion format
@@ -334,7 +334,7 @@ export const ensurePdfTextPositions = (
         tolerance: a.tolerance ?? DEFAULT_ALIGNMENT_TOLERANCE,
       }));
 
-      // Track search texts and their selectors (to know if Decoration type is requested)
+      // Track search texts and their selectors (to know if Decoration role is requested)
       const searchTexts = new Set<string>();
       const textToSelectors = new Map<string, TextSelector[]>();
 
@@ -357,7 +357,7 @@ export const ensurePdfTextPositions = (
       // Helper: check if any selector for this text is a Decoration (untagged content)
       const isDecoration = (text: string): boolean => {
         const selectors = textToSelectors.get(text) ?? [];
-        return selectors.some((s) => s.type === "Decoration");
+        return selectors.some((s) => s.role === "Decoration");
       };
 
       // Stage 2: Load PDF with pdfjs-dist
@@ -410,7 +410,7 @@ export const ensurePdfTextPositions = (
         if (matches.length === 1) {
           foundTexts.set(searchText, matches[0]);
         } else if (matches.length > 1) {
-          // Decoration types (headers, footers) naturally repeat on each page - allow first match
+          // Decoration role (headers, footers) naturally repeat on each page - allow first match
           if (isDecoration(searchText)) {
             foundTexts.set(searchText, matches[0]);
           } else {
@@ -435,7 +435,7 @@ export const ensurePdfTextPositions = (
         let structNode: StructTreeNode | null = null;
         let bbox: BBox;
 
-        // Decoration type: use text item bounds directly (for headers, footers, page decorations)
+        // Decoration role: use text item bounds directly (for headers, footers, page decorations)
         if (isDecoration(searchText)) {
           bbox = {
             x: textItem.x,
@@ -446,7 +446,7 @@ export const ensurePdfTextPositions = (
           };
         } else if (!textItem.mcid) {
           errors.push(
-            `Text "${searchText}" has no MCID - PDF may not be tagged. Use type: "Decoration" for untagged page elements like headers/footers.`,
+            `Text "${searchText}" has no MCID - PDF may not be tagged. Use role: "Decoration" for untagged page elements like headers/footers.`,
           );
           continue;
         } else {
@@ -480,15 +480,15 @@ export const ensurePdfTextPositions = (
         });
       }
 
-      // Validate type and id assertions
+      // Validate role assertions
       for (const a of normalizedAssertions) {
         const resolved = resolvedSelectors.get(a.subject.text);
         if (!resolved) continue;
 
-        if (a.subject.type && resolved.structNode) {
-          if (resolved.structNode.role !== a.subject.type) {
+        if (a.subject.role && resolved.structNode) {
+          if (resolved.structNode.role !== a.subject.role) {
             errors.push(
-              `Tag type mismatch for "${a.subject.text}": expected ${a.subject.type}, got ${resolved.structNode.role}`,
+              `Role mismatch for "${a.subject.text}": expected ${a.subject.role}, got ${resolved.structNode.role}`,
             );
           }
         }
@@ -497,10 +497,10 @@ export const ensurePdfTextPositions = (
           const resolvedObj = resolvedSelectors.get(a.object.text);
           if (!resolvedObj) continue;
 
-          if (a.object.type && resolvedObj.structNode) {
-            if (resolvedObj.structNode.role !== a.object.type) {
+          if (a.object.role && resolvedObj.structNode) {
+            if (resolvedObj.structNode.role !== a.object.role) {
               errors.push(
-                `Tag type mismatch for "${a.object.text}": expected ${a.object.type}, got ${resolvedObj.structNode.role}`,
+                `Role mismatch for "${a.object.text}": expected ${a.object.role}, got ${resolvedObj.structNode.role}`,
               );
             }
           }

@@ -18,7 +18,7 @@ _quarto:
             relation: above
             object:
               text: "catastrophic backtracking"
-              type: Decoration
+              role: Decoration
         - []
       noErrors: default
 ---

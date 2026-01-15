@@ -61,10 +61,10 @@ testQuartoCmd("render", [fixtureQmd, "--to", "typst"], [], {
  */
 async function runPositiveTests() {
   // Test 1: Basic vertical ordering (header < title < h1 < body < footer)
-  // Note: Headers and footers are page decorations without MCIDs, use type: "Decoration"
+  // Note: Headers and footers are page decorations without MCIDs, use role: "Decoration"
   const verticalOrdering = ensurePdfTextPositions(fixturePdf, [
     {
-      subject: { text: "FIXTURE_HEADER_TEXT", type: "Decoration" },
+      subject: { text: "FIXTURE_HEADER_TEXT", role: "Decoration" },
       relation: "above",
       object: "FIXTURE_TITLE_TEXT",
     },
@@ -73,7 +73,7 @@ async function runPositiveTests() {
     {
       subject: "FIXTURE_BODY_P1_TEXT",
       relation: "above",
-      object: { text: "FIXTURE_FOOTER_TEXT", type: "Decoration" },
+      object: { text: "FIXTURE_FOOTER_TEXT", role: "Decoration" },
     },
   ]);
   await verticalOrdering.verify([]);
@@ -153,9 +153,9 @@ async function runExpectedFailureTests() {
       const predicate = ensurePdfTextPositions(fixturePdf, [
         // Footer is BELOW header, not above (both are Decorations)
         {
-          subject: { text: "FIXTURE_FOOTER_TEXT", type: "Decoration" },
+          subject: { text: "FIXTURE_FOOTER_TEXT", role: "Decoration" },
           relation: "above",
-          object: { text: "FIXTURE_HEADER_TEXT", type: "Decoration" },
+          object: { text: "FIXTURE_HEADER_TEXT", role: "Decoration" },
         },
       ]);
       await predicate.verify([]);
@@ -181,36 +181,36 @@ async function runExpectedFailureTests() {
     "Negative assertion unexpectedly true error",
   );
 
-  // Error 6: Tag type mismatch (wrong semantic type)
+  // Error 6: Role mismatch (wrong semantic role)
   await assertThrowsWithPattern(
     async () => {
       const predicate = ensurePdfTextPositions(fixturePdf, [
         // H1 is not a Figure
-        { subject: { text: "FIXTURE_H1_TEXT", type: "Figure" }, relation: "above", object: "FIXTURE_BODY_P1_TEXT" },
+        { subject: { text: "FIXTURE_H1_TEXT", role: "Figure" }, relation: "above", object: "FIXTURE_BODY_P1_TEXT" },
       ]);
       await predicate.verify([]);
     },
-    /Tag type mismatch.*FIXTURE_H1_TEXT.*expected Figure.*got H1/,
-    "Tag type mismatch error",
+    /Role mismatch.*FIXTURE_H1_TEXT.*expected Figure.*got H1/,
+    "Role mismatch error",
   );
 }
 
 /**
- * Test semantic tag type assertions
+ * Test semantic role assertions
  */
 async function runSemanticTagTests() {
-  // Test: Correct semantic types should pass
-  const correctTypes = ensurePdfTextPositions(fixturePdf, [
+  // Test: Correct semantic roles should pass
+  const correctRoles = ensurePdfTextPositions(fixturePdf, [
     {
-      subject: { text: "FIXTURE_H1_TEXT", type: "H1" },
+      subject: { text: "FIXTURE_H1_TEXT", role: "H1" },
       relation: "above",
-      object: { text: "FIXTURE_BODY_P1_TEXT", type: "P" },
+      object: { text: "FIXTURE_BODY_P1_TEXT", role: "P" },
     },
     {
-      subject: { text: "FIXTURE_H2_TEXT", type: "H2" },
+      subject: { text: "FIXTURE_H2_TEXT", role: "H2" },
       relation: "above",
-      object: { text: "FIXTURE_H3_TEXT", type: "H3" },
+      object: { text: "FIXTURE_H3_TEXT", role: "H3" },
     },
   ]);
-  await correctTypes.verify([]);
+  await correctRoles.verify([]);
 }
