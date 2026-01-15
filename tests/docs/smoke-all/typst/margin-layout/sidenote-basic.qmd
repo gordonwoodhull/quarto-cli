@@ -3,6 +3,7 @@ title: "Basic Sidenote Test"
 papersize: us-letter
 reference-location: margin
 format:
+  html: default
   typst:
     keep-typ: true
 _quarto:

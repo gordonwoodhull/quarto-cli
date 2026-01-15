@@ -5,6 +5,7 @@ grid:
   margin-width: 3.5in
   gutter-width: 0.25in
 format:
+  html: default
   typst:
     keep-typ: true
 _quarto:

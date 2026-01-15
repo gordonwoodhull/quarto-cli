@@ -6,6 +6,7 @@ papersize: us-letter
 citation-location: margin
 bibliography: borges-refs.bib
 format:
+  html: default
   typst:
     keep-typ: true
 _quarto:

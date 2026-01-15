@@ -2,6 +2,7 @@
 title: "Margin Table with great_tables (Fenced Div)"
 papersize: us-letter
 format:
+  html: default
   typst:
     keep-typ: true
 _quarto:

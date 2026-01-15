@@ -2,6 +2,7 @@
 title: "Collision Avoidance Test"
 papersize: us-letter
 format:
+  html: default
   typst:
     keep-typ: true
 _quarto:

@@ -5,6 +5,7 @@ grid:
   margin-width: 2in
   gutter-width: 0.25in
 format:
+  html: default
   typst:
     keep-typ: true
     include-in-header:

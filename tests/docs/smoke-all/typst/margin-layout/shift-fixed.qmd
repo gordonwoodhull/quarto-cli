@@ -2,6 +2,7 @@
 title: "Shift Fixed Test"
 papersize: us-letter
 format:
+  html: default
   typst:
     keep-typ: true
 _quarto:

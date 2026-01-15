@@ -2,6 +2,7 @@
 title: "Margin Table Direct Class Test"
 papersize: us-letter
 format:
+  html: default
   typst:
     keep-typ: true
 _quarto:

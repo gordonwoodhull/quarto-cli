@@ -2,6 +2,7 @@
 title: "Typst Margin Geometry Test"
 papersize: us-letter
 format:
+  html: default
   typst:
     keep-typ: true
 _quarto:
