@@ -276,12 +276,14 @@ function resolveTestSpecs(
                 throw new Error(`Using ensureLatexFileRegexMatches requires setting 'keep-tex: true' in file ${input}`);
               }
             }
-            
+
+            // keep-typ/keep-tex files are alongside source, so pass input path
+            const needsInputPath = key === "ensureTypstFileRegexMatches" || key === "ensureLatexFileRegexMatches";
             if (typeof value === "object" && Array.isArray(value)) {
               // Only use spread operator for arrays
-              verifyFns.push(verifyMap[key](outputFile.outputPath, ...value));
+              verifyFns.push(verifyMap[key](outputFile.outputPath, ...value, needsInputPath ? input : undefined));
             } else {
-              verifyFns.push(verifyMap[key](outputFile.outputPath, value));
+              verifyFns.push(verifyMap[key](outputFile.outputPath, value, undefined, needsInputPath ? input : undefined));
             }
           } else {
             throw new Error(`Unknown verify function used: ${key} in file ${input} for format ${format}`) ;
