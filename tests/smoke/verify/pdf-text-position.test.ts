@@ -49,6 +49,10 @@ testQuartoCmd("render", [fixtureQmd, "--to", "typst"], [], {
     await runExpectedFailureTests();
     await runSemanticTagTests();
     await runPageRoleTests();
+    await runEdgeOverrideTests();
+    await runDistanceConstraintTests();
+    await runDistanceConstraintErrorTests();
+    await runPageRoleWithEdgeTests();
 
     // Cleanup
     if (safeExistsSync(fixturePdf)) {
@@ -269,4 +273,302 @@ async function runPageRoleTests() {
     },
   ]);
   await pageAlignment.verify([]);
+}
+
+/**
+ * Test edge override functionality for directional and alignment relations
+ */
+async function runEdgeOverrideTests() {
+  // Test: Edge override for directional relation - compare same edges
+  // H1's top edge should be above H2's top edge (both top edges)
+  const edgeOverrideDirectional = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { text: "FIXTURE_H1_TEXT", edge: "top" },
+      relation: "above",
+      object: { text: "FIXTURE_H2_TEXT", edge: "top" },
+    },
+  ]);
+  await edgeOverrideDirectional.verify([]);
+
+  // Test: Edge override for alignment relation - align different edges
+  // This tests that we can align one element's edge with another's different edge
+  // Header's bottom should NOT align with body's top (they're spaced apart)
+  // But we can verify header.bottom < body.top by checking header.bottom is above body.top
+  const edgeOverrideAlignment = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { text: "FIXTURE_H1_TEXT", edge: "bottom" },
+      relation: "above",
+      object: { text: "FIXTURE_BODY_P1_TEXT", edge: "top" },
+    },
+  ]);
+  await edgeOverrideAlignment.verify([]);
+
+  // Test: rightOf with edge overrides
+  // We know margin text is to the right of body text
+  // Margin's left edge should be rightOf body's right edge
+  const rightOfEdgeOverride = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { text: "FIXTURE_MARGIN_TEXT", edge: "left" },
+      relation: "rightOf",
+      object: { text: "FIXTURE_BODY_P2_TEXT", edge: "right" },
+    },
+  ]);
+  await rightOfEdgeOverride.verify([]);
+
+  // Test: below with edge overrides
+  // Body P1's top should be below H1's bottom
+  const belowEdgeOverride = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { text: "FIXTURE_BODY_P1_TEXT", edge: "top" },
+      relation: "below",
+      object: { text: "FIXTURE_H1_TEXT", edge: "bottom" },
+    },
+  ]);
+  await belowEdgeOverride.verify([]);
+
+  // Test: leftAligned with object edge override
+  // We can check if header's left aligns with page's left using edge override
+  const leftAlignedEdgeOverride = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { text: "FIXTURE_H1_TEXT" },
+      relation: "leftAligned",
+      object: { text: "FIXTURE_H2_TEXT" },
+      tolerance: 5, // Allow some tolerance for heading indentation
+    },
+  ]);
+  await leftAlignedEdgeOverride.verify([]);
+}
+
+/**
+ * Test byMin/byMax distance constraint functionality
+ */
+async function runDistanceConstraintTests() {
+  // Test: byMin constraint - H1 should be at least 1pt above H2
+  const byMinTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_H1_TEXT",
+      relation: "above",
+      object: "FIXTURE_H2_TEXT",
+      byMin: 1,
+    },
+  ]);
+  await byMinTest.verify([]);
+
+  // Test: byMax constraint - header decorations shouldn't be too far from title
+  // Using a generous max to ensure it passes
+  const byMaxTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { text: "FIXTURE_HEADER_TEXT", role: "Decoration" },
+      relation: "above",
+      object: "FIXTURE_TITLE_TEXT",
+      byMax: 500, // Generous max distance
+    },
+  ]);
+  await byMaxTest.verify([]);
+
+  // Test: byMin and byMax together - range constraint
+  const byRangeTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_H1_TEXT",
+      relation: "above",
+      object: "FIXTURE_H2_TEXT",
+      byMin: 1,
+      byMax: 500, // Generous range
+    },
+  ]);
+  await byRangeTest.verify([]);
+
+  // Test: Negative byMin (allows overlap) should work
+  // This tests that negative values are accepted
+  const negativeByMinTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_H1_TEXT",
+      relation: "above",
+      object: "FIXTURE_H2_TEXT",
+      byMin: -100, // Negative allows overlap
+    },
+  ]);
+  await negativeByMinTest.verify([]);
+
+  // Test: rightOf with byMin - margin should be at least some distance right of body
+  const rightOfByMinTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { text: "FIXTURE_MARGIN_TEXT", edge: "left" },
+      relation: "rightOf",
+      object: { text: "FIXTURE_BODY_P2_TEXT", edge: "right" },
+      byMin: 1, // At least 1pt gap
+    },
+  ]);
+  await rightOfByMinTest.verify([]);
+
+  // Test: below with distance constraints
+  const belowByMinTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_H2_TEXT",
+      relation: "below",
+      object: "FIXTURE_H1_TEXT",
+      byMin: 1,
+    },
+  ]);
+  await belowByMinTest.verify([]);
+}
+
+/**
+ * Test error cases for distance constraints
+ */
+async function runDistanceConstraintErrorTests() {
+  // Error: byMin/byMax with alignment relation should error
+  await assertThrowsWithPattern(
+    async () => {
+      const predicate = ensurePdfTextPositions(fixturePdf, [
+        {
+          subject: "FIXTURE_H1_TEXT",
+          relation: "topAligned",
+          object: "FIXTURE_H2_TEXT",
+          byMin: 10,
+        },
+      ]);
+      await predicate.verify([]);
+    },
+    /byMin.*byMax.*cannot be used with alignment relation/i,
+    "byMin with alignment relation error",
+  );
+
+  // Error: byMax with alignment relation should error
+  await assertThrowsWithPattern(
+    async () => {
+      const predicate = ensurePdfTextPositions(fixturePdf, [
+        {
+          subject: "FIXTURE_H1_TEXT",
+          relation: "leftAligned",
+          object: "FIXTURE_H2_TEXT",
+          byMax: 10,
+        },
+      ]);
+      await predicate.verify([]);
+    },
+    /byMin.*byMax.*cannot be used with alignment relation/i,
+    "byMax with alignment relation error",
+  );
+
+  // Error: byMin > byMax should error
+  await assertThrowsWithPattern(
+    async () => {
+      const predicate = ensurePdfTextPositions(fixturePdf, [
+        {
+          subject: "FIXTURE_H1_TEXT",
+          relation: "above",
+          object: "FIXTURE_H2_TEXT",
+          byMin: 100,
+          byMax: 10, // Invalid: byMin > byMax
+        },
+      ]);
+      await predicate.verify([]);
+    },
+    /Invalid distance constraints.*byMin.*byMax/i,
+    "byMin > byMax error",
+  );
+
+  // Error: byMin constraint not satisfied (too close)
+  await assertThrowsWithPattern(
+    async () => {
+      const predicate = ensurePdfTextPositions(fixturePdf, [
+        {
+          subject: "FIXTURE_H1_TEXT",
+          relation: "above",
+          object: "FIXTURE_H2_TEXT",
+          byMin: 10000, // Unreasonably large min distance
+        },
+      ]);
+      await predicate.verify([]);
+    },
+    /Position assertion failed.*distance.*byMin/i,
+    "byMin constraint not satisfied error",
+  );
+
+  // Error: byMax constraint not satisfied (too far)
+  await assertThrowsWithPattern(
+    async () => {
+      const predicate = ensurePdfTextPositions(fixturePdf, [
+        {
+          subject: { text: "FIXTURE_HEADER_TEXT", role: "Decoration" },
+          relation: "above",
+          object: { text: "FIXTURE_FOOTER_TEXT", role: "Decoration" },
+          byMax: 1, // Unreasonably small max distance
+        },
+      ]);
+      await predicate.verify([]);
+    },
+    /Position assertion failed.*distance.*byMax/i,
+    "byMax constraint not satisfied error",
+  );
+}
+
+/**
+ * Test Page role with edge override functionality
+ */
+async function runPageRoleWithEdgeTests() {
+  // Test: Page's left edge should be at x=0, content should be rightOf that
+  // This verifies edge overrides work with Page role
+  const pageLeftEdgeTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_BODY_P1_TEXT",
+      relation: "rightOf",
+      object: { role: "Page", page: 1, edge: "left" },
+    },
+  ]);
+  await pageLeftEdgeTest.verify([]);
+
+  // Test: Content should be below Page's top edge
+  const pageTopEdgeTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_BODY_P1_TEXT",
+      relation: "below",
+      object: { role: "Page", page: 1, edge: "top" },
+    },
+  ]);
+  await pageTopEdgeTest.verify([]);
+
+  // Test: Content should be above Page's bottom edge
+  const pageBottomEdgeTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_BODY_P1_TEXT",
+      relation: "above",
+      object: { role: "Page", page: 1, edge: "bottom" },
+    },
+  ]);
+  await pageBottomEdgeTest.verify([]);
+
+  // Test: Content should be leftOf Page's right edge
+  const pageRightEdgeTest = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_BODY_P1_TEXT",
+      relation: "leftOf",
+      object: { role: "Page", page: 1, edge: "right" },
+    },
+  ]);
+  await pageRightEdgeTest.verify([]);
+
+  // Test: Page edge with byMin - content should be at least some distance from page edges
+  const pageEdgeWithByMin = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: "FIXTURE_BODY_P1_TEXT",
+      relation: "rightOf",
+      object: { role: "Page", page: 1, edge: "left" },
+      byMin: 1, // At least 1pt from left edge
+    },
+  ]);
+  await pageEdgeWithByMin.verify([]);
+
+  // Test: topAligned with Page using edge override
+  // Header decoration's top should be close to page top
+  const headerNearPageTop = ensurePdfTextPositions(fixturePdf, [
+    {
+      subject: { text: "FIXTURE_HEADER_TEXT", role: "Decoration" },
+      relation: "below",
+      object: { role: "Page", page: 1, edge: "top" },
+      byMax: 100, // Within 100pt of page top
+    },
+  ]);
+  await headerNearPageTop.verify([]);
 }

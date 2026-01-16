@@ -38,6 +38,9 @@ import { ExecuteOutput, Verify } from "./test.ts";
 // Type Definitions
 // ============================================================================
 
+// Edge type for precise bbox edge selection
+type Edge = "left" | "right" | "top" | "bottom";
+
 // Extended subject/object selector
 // Note: Label/ID checking is not supported because:
 // 1. Typst does not write labels to PDF StructElem /ID attributes (labels become
@@ -47,6 +50,7 @@ interface TextSelector {
   text?: string;  // Text to search for (ignored for role: "Page")
   role?: string;  // PDF 1.4 structure role: P, H1, H2, Figure, Table, Span, etc.
   page?: number;  // Page number (1-indexed), required for role: "Page"
+  edge?: Edge;    // Which edge to use for comparison (overrides relation default)
 }
 
 // Assertion format
@@ -54,7 +58,9 @@ export interface PdfTextPositionAssertion {
   subject: string | TextSelector;
   relation?: string;           // Optional for tag-only assertions
   object?: string | TextSelector;  // Optional for tag-only assertions
-  tolerance?: number;          // Default: 2pt
+  tolerance?: number;          // Default: 2pt (alignment relations only)
+  byMin?: number;              // Minimum distance between edges (directional relations only)
+  byMax?: number;              // Maximum distance between edges (directional relations only)
 }
 
 // Computed bounding box
@@ -122,25 +128,155 @@ interface ResolvedSelector {
 const DEFAULT_ALIGNMENT_TOLERANCE = 2;
 
 // ============================================================================
-// Relation Predicates
+// Relation Predicates and Edge Logic
 // ============================================================================
 
 // Coordinate system: origin at top-left, y increases downward
-type RelationFn = (a: BBox, b: BBox, tolerance: number) => boolean;
 
-const pdfPositionRelations: Record<string, RelationFn> = {
-  // Directional predicates (tolerance not used)
-  leftOf: (a, b) => a.x + a.width < b.x,
-  rightOf: (a, b) => a.x > b.x + b.width,
-  above: (a, b) => a.y + a.height < b.y,
-  below: (a, b) => a.y > b.y + b.height,
+// Relation types
+type DirectionalRelation = "leftOf" | "rightOf" | "above" | "below";
+type AlignmentRelation = "leftAligned" | "rightAligned" | "topAligned" | "bottomAligned";
+type Relation = DirectionalRelation | AlignmentRelation;
 
-  // Alignment predicates (use tolerance)
-  leftAligned: (a, b, tol) => Math.abs(a.x - b.x) <= tol,
-  rightAligned: (a, b, tol) => Math.abs((a.x + a.width) - (b.x + b.width)) <= tol,
-  topAligned: (a, b, tol) => Math.abs(a.y - b.y) <= tol,
-  bottomAligned: (a, b, tol) => Math.abs((a.y + a.height) - (b.y + b.height)) <= tol,
+const directionalRelations = new Set<string>(["leftOf", "rightOf", "above", "below"]);
+const alignmentRelations = new Set<string>(["leftAligned", "rightAligned", "topAligned", "bottomAligned"]);
+
+// Default edges for each relation (from spec table)
+const relationDefaults: Record<Relation, { subject: Edge; object: Edge }> = {
+  leftOf: { subject: "right", object: "left" },
+  rightOf: { subject: "left", object: "right" },
+  above: { subject: "bottom", object: "top" },
+  below: { subject: "top", object: "bottom" },
+  leftAligned: { subject: "left", object: "left" },
+  rightAligned: { subject: "right", object: "right" },
+  topAligned: { subject: "top", object: "top" },
+  bottomAligned: { subject: "bottom", object: "bottom" },
 };
+
+// Extract edge value from bbox
+function getEdgeValue(bbox: BBox, edge: Edge): number {
+  switch (edge) {
+    case "left":
+      return bbox.x;
+    case "right":
+      return bbox.x + bbox.width;
+    case "top":
+      return bbox.y;
+    case "bottom":
+      return bbox.y + bbox.height;
+  }
+}
+
+// Evaluate directional relation with edge overrides and distance constraints
+interface DirectionalResult {
+  passed: boolean;
+  subjectEdge: Edge;
+  objectEdge: Edge;
+  subjectValue: number;
+  objectValue: number;
+  distance: number;
+  failureReason?: string;
+}
+
+function evaluateDirectionalRelation(
+  relation: DirectionalRelation,
+  subjectBBox: BBox,
+  objectBBox: BBox,
+  subjectEdgeOverride?: Edge,
+  objectEdgeOverride?: Edge,
+  byMin?: number,
+  byMax?: number,
+): DirectionalResult {
+  const defaults = relationDefaults[relation];
+  const subjectEdge = subjectEdgeOverride ?? defaults.subject;
+  const objectEdge = objectEdgeOverride ?? defaults.object;
+
+  const subjectValue = getEdgeValue(subjectBBox, subjectEdge);
+  const objectValue = getEdgeValue(objectBBox, objectEdge);
+
+  // Distance calculation depends on relation direction
+  // For leftOf/above: distance = objectEdge - subjectEdge (positive when relation holds)
+  // For rightOf/below: distance = subjectEdge - objectEdge (positive when relation holds)
+  let distance: number;
+  let directionPassed: boolean;
+
+  if (relation === "leftOf" || relation === "above") {
+    distance = objectValue - subjectValue;
+    directionPassed = subjectValue < objectValue;
+  } else {
+    // rightOf or below
+    distance = subjectValue - objectValue;
+    directionPassed = subjectValue > objectValue;
+  }
+
+  const result: DirectionalResult = {
+    passed: true,
+    subjectEdge,
+    objectEdge,
+    subjectValue,
+    objectValue,
+    distance,
+  };
+
+  // Check directional constraint
+  if (!directionPassed) {
+    result.passed = false;
+    result.failureReason = "directional constraint not satisfied";
+    return result;
+  }
+
+  // Check byMin constraint
+  if (byMin !== undefined && distance < byMin) {
+    result.passed = false;
+    result.failureReason = `distance ${distance.toFixed(1)}pt < byMin ${byMin}pt`;
+    return result;
+  }
+
+  // Check byMax constraint
+  if (byMax !== undefined && distance > byMax) {
+    result.passed = false;
+    result.failureReason = `distance ${distance.toFixed(1)}pt > byMax ${byMax}pt`;
+    return result;
+  }
+
+  return result;
+}
+
+// Evaluate alignment relation with edge overrides
+interface AlignmentResult {
+  passed: boolean;
+  subjectEdge: Edge;
+  objectEdge: Edge;
+  subjectValue: number;
+  objectValue: number;
+  difference: number;
+}
+
+function evaluateAlignmentRelation(
+  relation: AlignmentRelation,
+  subjectBBox: BBox,
+  objectBBox: BBox,
+  tolerance: number,
+  subjectEdgeOverride?: Edge,
+  objectEdgeOverride?: Edge,
+): AlignmentResult {
+  const defaults = relationDefaults[relation];
+  const subjectEdge = subjectEdgeOverride ?? defaults.subject;
+  const objectEdge = objectEdgeOverride ?? defaults.object;
+
+  const subjectValue = getEdgeValue(subjectBBox, subjectEdge);
+  const objectValue = getEdgeValue(objectBBox, objectEdge);
+  const difference = Math.abs(subjectValue - objectValue);
+
+  return {
+    passed: difference <= tolerance,
+    subjectEdge,
+    objectEdge,
+    subjectValue,
+    objectValue,
+    difference,
+  };
+}
 
 // ============================================================================
 // Helper Functions
@@ -329,6 +465,8 @@ export const ensurePdfTextPositions = (
         relation: a.relation,
         object: a.object ? normalizeSelector(a.object) : undefined,
         tolerance: a.tolerance ?? DEFAULT_ALIGNMENT_TOLERANCE,
+        byMin: a.byMin,
+        byMax: a.byMax,
       }));
 
       const normalizedNoMatch = noMatchAssertions?.map((a) => ({
@@ -336,6 +474,8 @@ export const ensurePdfTextPositions = (
         relation: a.relation,
         object: a.object ? normalizeSelector(a.object) : undefined,
         tolerance: a.tolerance ?? DEFAULT_ALIGNMENT_TOLERANCE,
+        byMin: a.byMin,
+        byMax: a.byMax,
       }));
 
       // Track search texts and their selectors (to know if Decoration role is requested)
@@ -581,10 +721,28 @@ export const ensurePdfTextPositions = (
           continue; // Error already recorded
         }
 
-        const relationFn = pdfPositionRelations[a.relation];
-        if (!relationFn) {
+        // Validate relation type
+        const isDirectional = directionalRelations.has(a.relation);
+        const isAlignment = alignmentRelations.has(a.relation);
+
+        if (!isDirectional && !isAlignment) {
           errors.push(
-            `Unknown relation "${a.relation}". Valid relations: ${Object.keys(pdfPositionRelations).join(", ")}`,
+            `Unknown relation "${a.relation}". Valid relations: ${[...directionalRelations, ...alignmentRelations].join(", ")}`,
+          );
+          continue;
+        }
+
+        // Validate byMin/byMax constraints
+        if (isAlignment && (a.byMin !== undefined || a.byMax !== undefined)) {
+          errors.push(
+            `byMin/byMax cannot be used with alignment relation "${a.relation}". Use 'tolerance' instead.`,
+          );
+          continue;
+        }
+
+        if (a.byMin !== undefined && a.byMax !== undefined && a.byMin > a.byMax) {
+          errors.push(
+            `Invalid distance constraints: byMin (${a.byMin}) > byMax (${a.byMax})`,
           );
           continue;
         }
@@ -598,15 +756,50 @@ export const ensurePdfTextPositions = (
           continue;
         }
 
-        // Evaluate relation
-        if (!relationFn(subjectResolved.bbox, objectResolved.bbox, a.tolerance)) {
-          errors.push(
-            `Position assertion failed: "${subjectKey}" is NOT ${a.relation} "${objectKey}". ` +
-            `Subject bbox: (${subjectResolved.bbox.x.toFixed(1)}, ${subjectResolved.bbox.y.toFixed(1)}, ` +
-            `w=${subjectResolved.bbox.width.toFixed(1)}, h=${subjectResolved.bbox.height.toFixed(1)}) page ${subjectResolved.bbox.page}, ` +
-            `Object bbox: (${objectResolved.bbox.x.toFixed(1)}, ${objectResolved.bbox.y.toFixed(1)}, ` +
-            `w=${objectResolved.bbox.width.toFixed(1)}, h=${objectResolved.bbox.height.toFixed(1)}) page ${objectResolved.bbox.page}`,
+        // Evaluate relation based on type
+        if (isDirectional) {
+          const result = evaluateDirectionalRelation(
+            a.relation as DirectionalRelation,
+            subjectResolved.bbox,
+            objectResolved.bbox,
+            a.subject.edge,
+            a.object.edge,
+            a.byMin,
+            a.byMax,
           );
+
+          if (!result.passed) {
+            const distanceInfo = a.byMin !== undefined || a.byMax !== undefined
+              ? ` Distance: ${result.distance.toFixed(1)}pt` +
+                (a.byMin !== undefined ? ` (required >= ${a.byMin}pt)` : "") +
+                (a.byMax !== undefined ? ` (required <= ${a.byMax}pt)` : "")
+              : "";
+            errors.push(
+              `Position assertion failed: "${subjectKey}" is NOT ${a.relation} "${objectKey}".` +
+              ` Subject.${result.subjectEdge}=${result.subjectValue.toFixed(1)},` +
+              ` Object.${result.objectEdge}=${result.objectValue.toFixed(1)}.${distanceInfo}` +
+              (result.failureReason ? ` (${result.failureReason})` : ""),
+            );
+          }
+        } else {
+          // Alignment relation
+          const result = evaluateAlignmentRelation(
+            a.relation as AlignmentRelation,
+            subjectResolved.bbox,
+            objectResolved.bbox,
+            a.tolerance,
+            a.subject.edge,
+            a.object.edge,
+          );
+
+          if (!result.passed) {
+            errors.push(
+              `Position assertion failed: "${subjectKey}" is NOT ${a.relation} "${objectKey}".` +
+              ` Subject.${result.subjectEdge}=${result.subjectValue.toFixed(1)},` +
+              ` Object.${result.objectEdge}=${result.objectValue.toFixed(1)}.` +
+              ` Difference: ${result.difference.toFixed(1)}pt (tolerance: ${a.tolerance}pt)`,
+            );
+          }
         }
       }
 
@@ -627,19 +820,69 @@ export const ensurePdfTextPositions = (
           continue; // Assertion trivially doesn't hold
         }
 
-        const relationFn = pdfPositionRelations[a.relation];
-        if (!relationFn) {
+        // Validate relation type
+        const isDirectional = directionalRelations.has(a.relation);
+        const isAlignment = alignmentRelations.has(a.relation);
+
+        if (!isDirectional && !isAlignment) {
           errors.push(
             `Unknown relation "${a.relation}" in negative assertion`,
           );
           continue;
         }
 
-        if (relationFn(subjectResolved.bbox, objectResolved.bbox, a.tolerance)) {
+        // Validate byMin/byMax constraints for negative assertions too
+        if (isAlignment && (a.byMin !== undefined || a.byMax !== undefined)) {
+          errors.push(
+            `byMin/byMax cannot be used with alignment relation "${a.relation}" in negative assertion`,
+          );
+          continue;
+        }
+
+        if (a.byMin !== undefined && a.byMax !== undefined && a.byMin > a.byMax) {
+          errors.push(
+            `Invalid distance constraints in negative assertion: byMin (${a.byMin}) > byMax (${a.byMax})`,
+          );
+          continue;
+        }
+
+        // Evaluate relation based on type
+        let passed: boolean;
+        let resultInfo: string;
+
+        if (isDirectional) {
+          const result = evaluateDirectionalRelation(
+            a.relation as DirectionalRelation,
+            subjectResolved.bbox,
+            objectResolved.bbox,
+            a.subject.edge,
+            a.object.edge,
+            a.byMin,
+            a.byMax,
+          );
+          passed = result.passed;
+          resultInfo = `Subject.${result.subjectEdge}=${result.subjectValue.toFixed(1)}, ` +
+            `Object.${result.objectEdge}=${result.objectValue.toFixed(1)}, ` +
+            `distance=${result.distance.toFixed(1)}pt`;
+        } else {
+          const result = evaluateAlignmentRelation(
+            a.relation as AlignmentRelation,
+            subjectResolved.bbox,
+            objectResolved.bbox,
+            a.tolerance,
+            a.subject.edge,
+            a.object.edge,
+          );
+          passed = result.passed;
+          resultInfo = `Subject.${result.subjectEdge}=${result.subjectValue.toFixed(1)}, ` +
+            `Object.${result.objectEdge}=${result.objectValue.toFixed(1)}, ` +
+            `difference=${result.difference.toFixed(1)}pt`;
+        }
+
+        if (passed) {
           errors.push(
             `Negative assertion failed: "${subjectKey}" IS ${a.relation} "${objectKey}" (expected NOT to be). ` +
-            `Subject bbox: (${subjectResolved.bbox.x.toFixed(1)}, ${subjectResolved.bbox.y.toFixed(1)}) page ${subjectResolved.bbox.page}, ` +
-            `Object bbox: (${objectResolved.bbox.x.toFixed(1)}, ${objectResolved.bbox.y.toFixed(1)}) page ${objectResolved.bbox.page}`,
+            resultInfo,
           );
         }
       }
