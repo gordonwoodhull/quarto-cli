@@ -128,7 +128,7 @@ async function runExpectedFailureTests() {
     "Ambiguous text error",
   );
 
-  // Error 2: Unknown relation
+  // Error 2: Unknown relation (Zod validation error)
   await assertThrowsWithPattern(
     async () => {
       const predicate = ensurePdfTextPositions(fixturePdf, [
@@ -137,7 +137,7 @@ async function runExpectedFailureTests() {
       ]);
       await predicate.verify([]);
     },
-    /Unknown relation.*invalidRelation/,
+    /Assertion.*is invalid/,
     "Unknown relation error",
   );
 
@@ -418,7 +418,7 @@ async function runDistanceConstraintTests() {
  * Test error cases for distance constraints
  */
 async function runDistanceConstraintErrorTests() {
-  // Error: byMin/byMax with alignment relation should error
+  // Error: byMin/byMax with alignment relation should error (Zod .strict() catches extra keys)
   // Use type assertion to test runtime error handling for invalid YAML input
   await assertThrowsWithPattern(
     async () => {
@@ -432,11 +432,11 @@ async function runDistanceConstraintErrorTests() {
       ]);
       await predicate.verify([]);
     },
-    /byMin.*byMax.*cannot be used with alignment relation/i,
+    /Assertion.*is invalid/,
     "byMin with alignment relation error",
   );
 
-  // Error: byMax with alignment relation should error
+  // Error: byMax with alignment relation should error (Zod .strict() catches extra keys)
   // Use type assertion to test runtime error handling for invalid YAML input
   await assertThrowsWithPattern(
     async () => {
@@ -450,11 +450,11 @@ async function runDistanceConstraintErrorTests() {
       ]);
       await predicate.verify([]);
     },
-    /byMin.*byMax.*cannot be used with alignment relation/i,
+    /Assertion.*is invalid/,
     "byMax with alignment relation error",
   );
 
-  // Error: byMin > byMax should error
+  // Error: byMin > byMax should error (caught by Zod .refine())
   await assertThrowsWithPattern(
     async () => {
       const predicate = ensurePdfTextPositions(fixturePdf, [
@@ -468,7 +468,7 @@ async function runDistanceConstraintErrorTests() {
       ]);
       await predicate.verify([]);
     },
-    /Invalid distance constraints.*byMin.*byMax/i,
+    /byMin must be <= byMax/i,
     "byMin > byMax error",
   );
 

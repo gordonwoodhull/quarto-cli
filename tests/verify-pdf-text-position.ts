@@ -32,71 +32,89 @@
  */
 
 import { assert } from "testing/asserts";
+import { z } from "zod";
 import { ExecuteOutput, Verify } from "./test.ts";
 
 // ============================================================================
-// Type Definitions
+// Zod Schemas and Type Definitions
 // ============================================================================
 
-// Edge type for precise bbox edge selection
-export type Edge = "left" | "right" | "top" | "bottom";
+// Edge schema for precise bbox edge selection
+export const EdgeSchema = z.enum(["left", "right", "top", "bottom"]);
+export type Edge = z.infer<typeof EdgeSchema>;
 
-// Relation types
-export type DirectionalRelation = "leftOf" | "rightOf" | "above" | "below";
-export type AlignmentRelation = "leftAligned" | "rightAligned" | "topAligned" | "bottomAligned";
-export type Relation = DirectionalRelation | AlignmentRelation;
+// Relation schemas
+export const DirectionalRelationSchema = z.enum(["leftOf", "rightOf", "above", "below"]);
+export const AlignmentRelationSchema = z.enum(["leftAligned", "rightAligned", "topAligned", "bottomAligned"]);
+export const RelationSchema = z.union([DirectionalRelationSchema, AlignmentRelationSchema]);
 
-// Extended subject/object selector
+export type DirectionalRelation = z.infer<typeof DirectionalRelationSchema>;
+export type AlignmentRelation = z.infer<typeof AlignmentRelationSchema>;
+export type Relation = z.infer<typeof RelationSchema>;
+
+// Text selector schema
 // Note: Label/ID checking is not supported because:
 // 1. Typst does not write labels to PDF StructElem /ID attributes (labels become
 //    named destinations for links, but not structure element identifiers)
 // 2. Even if IDs were present, pdf.js doesn't expose /ID through getStructTree()
-export interface TextSelector {
-  text?: string;  // Text to search for (ignored for role: "Page")
-  role?: string;  // PDF 1.4 structure role: P, H1, H2, Figure, Table, Span, etc.
-  page?: number;  // Page number (1-indexed), required for role: "Page"
-  edge?: Edge;    // Which edge to use for comparison (overrides relation default)
-}
+export const TextSelectorSchema = z.object({
+  text: z.string().optional(),   // Text to search for (ignored for role: "Page")
+  role: z.string().optional(),   // PDF 1.4 structure role: P, H1, H2, Figure, Table, Span, etc.
+  page: z.number().optional(),   // Page number (1-indexed), required for role: "Page"
+  edge: EdgeSchema.optional(),   // Which edge to use for comparison (overrides relation default)
+});
+export type TextSelector = z.infer<typeof TextSelectorSchema>;
+
+// Subject/object can be a string or a TextSelector
+const SubjectObjectSchema = z.union([z.string(), TextSelectorSchema]);
 
 // Tag-only assertion: validates semantic role without position comparison
-export interface TagOnlyAssertion {
-  subject: string | TextSelector;
-}
+export const TagOnlyAssertionSchema = z.object({
+  subject: SubjectObjectSchema,
+}).strict();
+export type TagOnlyAssertion = z.infer<typeof TagOnlyAssertionSchema>;
 
 // Directional assertion: leftOf, rightOf, above, below with optional distance constraints
-export interface DirectionalAssertion {
-  subject: string | TextSelector;
-  relation: DirectionalRelation;
-  object: string | TextSelector;
-  byMin?: number;  // Minimum distance between edges
-  byMax?: number;  // Maximum distance between edges
-}
+export const DirectionalAssertionSchema = z.object({
+  subject: SubjectObjectSchema,
+  relation: DirectionalRelationSchema,
+  object: SubjectObjectSchema,
+  byMin: z.number().optional(),  // Minimum distance between edges
+  byMax: z.number().optional(),  // Maximum distance between edges
+}).refine(
+  (data) => data.byMin === undefined || data.byMax === undefined || data.byMin <= data.byMax,
+  { message: "byMin must be <= byMax" }
+);
+export type DirectionalAssertion = z.infer<typeof DirectionalAssertionSchema>;
 
 // Alignment assertion: leftAligned, rightAligned, topAligned, bottomAligned with tolerance
-export interface AlignmentAssertion {
-  subject: string | TextSelector;
-  relation: AlignmentRelation;
-  object: string | TextSelector;
-  tolerance?: number;  // Default: 2pt
-}
+export const AlignmentAssertionSchema = z.object({
+  subject: SubjectObjectSchema,
+  relation: AlignmentRelationSchema,
+  object: SubjectObjectSchema,
+  tolerance: z.number().optional(),  // Default: 2pt
+}).strict();
+export type AlignmentAssertion = z.infer<typeof AlignmentAssertionSchema>;
 
 // Union of all assertion types
-export type PdfTextPositionAssertion = TagOnlyAssertion | DirectionalAssertion | AlignmentAssertion;
+export const PdfTextPositionAssertionSchema = z.union([
+  DirectionalAssertionSchema,
+  AlignmentAssertionSchema,
+  TagOnlyAssertionSchema,
+]);
+export type PdfTextPositionAssertion = z.infer<typeof PdfTextPositionAssertionSchema>;
 
-// Type guards for assertion discrimination
-const directionalRelationValues: DirectionalRelation[] = ["leftOf", "rightOf", "above", "below"];
-const alignmentRelationValues: AlignmentRelation[] = ["leftAligned", "rightAligned", "topAligned", "bottomAligned"];
-
-export function isDirectionalAssertion(a: PdfTextPositionAssertion): a is DirectionalAssertion {
-  return "relation" in a && directionalRelationValues.includes((a as DirectionalAssertion).relation);
+// Type guards for assertion discrimination (using Zod safeParse)
+export function isDirectionalAssertion(a: unknown): a is DirectionalAssertion {
+  return DirectionalAssertionSchema.safeParse(a).success;
 }
 
-export function isAlignmentAssertion(a: PdfTextPositionAssertion): a is AlignmentAssertion {
-  return "relation" in a && alignmentRelationValues.includes((a as AlignmentAssertion).relation);
+export function isAlignmentAssertion(a: unknown): a is AlignmentAssertion {
+  return AlignmentAssertionSchema.safeParse(a).success;
 }
 
-export function isTagOnlyAssertion(a: PdfTextPositionAssertion): a is TagOnlyAssertion {
-  return !("relation" in a);
+export function isTagOnlyAssertion(a: unknown): a is TagOnlyAssertion {
+  return TagOnlyAssertionSchema.safeParse(a).success;
 }
 
 // Computed bounding box
@@ -169,8 +187,9 @@ const DEFAULT_ALIGNMENT_TOLERANCE = 2;
 
 // Coordinate system: origin at top-left, y increases downward
 
-const directionalRelations: Set<Relation> = new Set(["leftOf", "rightOf", "above", "below"]);
-const alignmentRelations: Set<Relation> = new Set(["leftAligned", "rightAligned", "topAligned", "bottomAligned"]);
+// Derive relation sets from Zod schemas
+const directionalRelations: Set<Relation> = new Set(DirectionalRelationSchema.options);
+const alignmentRelations: Set<Relation> = new Set(AlignmentRelationSchema.options);
 
 // Default edges for each relation (from spec table)
 const relationDefaults: Record<Relation, { subject: Edge; object: Edge }> = {
@@ -500,62 +519,58 @@ export const ensurePdfTextPositions = (
         byMax?: number;
       };
 
-      // Normalize an assertion to internal format
-      // deno-lint-ignore no-explicit-any
-      const normalizeAssertion = (a: PdfTextPositionAssertion): NormalizedAssertion => {
-        // Check for relation property (handles invalid relations from YAML at runtime)
-        const hasRelation = "relation" in a;
-        // deno-lint-ignore no-explicit-any
-        const relationValue = hasRelation ? (a as any).relation : undefined;
-        // deno-lint-ignore no-explicit-any
-        const objectValue = "object" in a ? (a as any).object : undefined;
-        // deno-lint-ignore no-explicit-any
-        const byMinValue = "byMin" in a ? (a as any).byMin : undefined;
-        // deno-lint-ignore no-explicit-any
-        const byMaxValue = "byMax" in a ? (a as any).byMax : undefined;
-        // deno-lint-ignore no-explicit-any
-        const toleranceValue = "tolerance" in a ? (a as any).tolerance : undefined;
-
-        if (isDirectionalAssertion(a)) {
+      // Validate and normalize an assertion using Zod
+      const normalizeAssertion = (a: unknown, index: number): NormalizedAssertion | null => {
+        // Try parsing as each type in order of specificity
+        const directionalResult = DirectionalAssertionSchema.safeParse(a);
+        if (directionalResult.success) {
+          const d = directionalResult.data;
           return {
-            subject: normalizeSelector(a.subject),
-            relation: a.relation,
-            object: normalizeSelector(a.object),
+            subject: normalizeSelector(d.subject),
+            relation: d.relation,
+            object: normalizeSelector(d.object),
             tolerance: DEFAULT_ALIGNMENT_TOLERANCE,
-            byMin: a.byMin,
-            byMax: a.byMax,
+            byMin: d.byMin,
+            byMax: d.byMax,
           };
-        } else if (isAlignmentAssertion(a)) {
+        }
+
+        const alignmentResult = AlignmentAssertionSchema.safeParse(a);
+        if (alignmentResult.success) {
+          const al = alignmentResult.data;
           return {
-            subject: normalizeSelector(a.subject),
-            relation: a.relation,
-            object: normalizeSelector(a.object),
-            tolerance: a.tolerance ?? DEFAULT_ALIGNMENT_TOLERANCE,
-            byMin: byMinValue,  // Pass through for runtime validation error
-            byMax: byMaxValue,  // Pass through for runtime validation error
+            subject: normalizeSelector(al.subject),
+            relation: al.relation,
+            object: normalizeSelector(al.object),
+            tolerance: al.tolerance ?? DEFAULT_ALIGNMENT_TOLERANCE,
           };
-        } else if (hasRelation) {
-          // Has relation but not a valid one - pass through for error reporting
+        }
+
+        const tagOnlyResult = TagOnlyAssertionSchema.safeParse(a);
+        if (tagOnlyResult.success) {
           return {
-            subject: normalizeSelector(a.subject),
-            relation: relationValue as Relation,
-            object: objectValue ? normalizeSelector(objectValue) : undefined,
-            tolerance: toleranceValue ?? DEFAULT_ALIGNMENT_TOLERANCE,
-            byMin: byMinValue,
-            byMax: byMaxValue,
-          };
-        } else {
-          // Tag-only assertion
-          return {
-            subject: normalizeSelector(a.subject),
+            subject: normalizeSelector(tagOnlyResult.data.subject),
             tolerance: DEFAULT_ALIGNMENT_TOLERANCE,
           };
         }
+
+        // None of the schemas matched - report validation error
+        const fullResult = PdfTextPositionAssertionSchema.safeParse(a);
+        if (!fullResult.success) {
+          const zodErrors = fullResult.error.errors.map(e => `${e.path.join(".")}: ${e.message}`).join("; ");
+          errors.push(`Assertion ${index + 1} is invalid: ${zodErrors}`);
+        }
+        return null;
       };
 
-      // Stage 1: Parse assertions and gather search texts
-      const normalizedAssertions = assertions.map(normalizeAssertion);
-      const normalizedNoMatch = noMatchAssertions?.map(normalizeAssertion);
+      // Stage 1: Parse and validate assertions
+      const normalizedAssertions = assertions
+        .map((a, i) => normalizeAssertion(a, i))
+        .filter((a): a is NormalizedAssertion => a !== null);
+
+      const normalizedNoMatch = noMatchAssertions
+        ?.map((a, i) => normalizeAssertion(a, i + assertions.length))
+        .filter((a): a is NormalizedAssertion => a !== null);
 
       // Track search texts and their selectors (to know if Decoration role is requested)
       // Page role selectors are tracked separately since they don't need text search
@@ -785,6 +800,10 @@ export const ensurePdfTextPositions = (
       }
 
       // Stage 8: Evaluate position assertions
+      // Note: Zod validation in Stage 1 already handles:
+      // - Unknown relations
+      // - byMin/byMax with alignment relations (via .strict())
+      // - byMin > byMax (via .refine())
       for (const a of normalizedAssertions) {
         // Tag-only assertions (no relation/object)
         if (!a.relation || !a.object) {
@@ -800,32 +819,6 @@ export const ensurePdfTextPositions = (
           continue; // Error already recorded
         }
 
-        // Validate relation type
-        const isDirectional = directionalRelations.has(a.relation);
-        const isAlignment = alignmentRelations.has(a.relation);
-
-        if (!isDirectional && !isAlignment) {
-          errors.push(
-            `Unknown relation "${a.relation}". Valid relations: ${[...directionalRelations, ...alignmentRelations].join(", ")}`,
-          );
-          continue;
-        }
-
-        // Validate byMin/byMax constraints
-        if (isAlignment && (a.byMin !== undefined || a.byMax !== undefined)) {
-          errors.push(
-            `byMin/byMax cannot be used with alignment relation "${a.relation}". Use 'tolerance' instead.`,
-          );
-          continue;
-        }
-
-        if (a.byMin !== undefined && a.byMax !== undefined && a.byMin > a.byMax) {
-          errors.push(
-            `Invalid distance constraints: byMin (${a.byMin}) > byMax (${a.byMax})`,
-          );
-          continue;
-        }
-
         // Check same page
         if (subjectResolved.bbox.page !== objectResolved.bbox.page) {
           errors.push(
@@ -835,7 +828,8 @@ export const ensurePdfTextPositions = (
           continue;
         }
 
-        // Evaluate relation based on type
+        // Evaluate relation based on type (Zod guarantees valid relation type)
+        const isDirectional = directionalRelations.has(a.relation);
         if (isDirectional) {
           const result = evaluateDirectionalRelation(
             a.relation as DirectionalRelation,
@@ -883,6 +877,7 @@ export const ensurePdfTextPositions = (
       }
 
       // Evaluate negative assertions
+      // Note: Zod validation already handled in Stage 1
       for (const a of normalizedNoMatch ?? []) {
         if (!a.relation || !a.object) continue;
 
@@ -899,33 +894,8 @@ export const ensurePdfTextPositions = (
           continue; // Assertion trivially doesn't hold
         }
 
-        // Validate relation type
+        // Evaluate relation based on type (Zod guarantees valid relation type)
         const isDirectional = directionalRelations.has(a.relation);
-        const isAlignment = alignmentRelations.has(a.relation);
-
-        if (!isDirectional && !isAlignment) {
-          errors.push(
-            `Unknown relation "${a.relation}" in negative assertion`,
-          );
-          continue;
-        }
-
-        // Validate byMin/byMax constraints for negative assertions too
-        if (isAlignment && (a.byMin !== undefined || a.byMax !== undefined)) {
-          errors.push(
-            `byMin/byMax cannot be used with alignment relation "${a.relation}" in negative assertion`,
-          );
-          continue;
-        }
-
-        if (a.byMin !== undefined && a.byMax !== undefined && a.byMin > a.byMax) {
-          errors.push(
-            `Invalid distance constraints in negative assertion: byMin (${a.byMin}) > byMax (${a.byMax})`,
-          );
-          continue;
-        }
-
-        // Evaluate relation based on type
         let passed: boolean;
         let resultInfo: string;
 
