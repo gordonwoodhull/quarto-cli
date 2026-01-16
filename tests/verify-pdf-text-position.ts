@@ -39,28 +39,64 @@ import { ExecuteOutput, Verify } from "./test.ts";
 // ============================================================================
 
 // Edge type for precise bbox edge selection
-type Edge = "left" | "right" | "top" | "bottom";
+export type Edge = "left" | "right" | "top" | "bottom";
+
+// Relation types
+export type DirectionalRelation = "leftOf" | "rightOf" | "above" | "below";
+export type AlignmentRelation = "leftAligned" | "rightAligned" | "topAligned" | "bottomAligned";
+export type Relation = DirectionalRelation | AlignmentRelation;
 
 // Extended subject/object selector
 // Note: Label/ID checking is not supported because:
 // 1. Typst does not write labels to PDF StructElem /ID attributes (labels become
 //    named destinations for links, but not structure element identifiers)
 // 2. Even if IDs were present, pdf.js doesn't expose /ID through getStructTree()
-interface TextSelector {
+export interface TextSelector {
   text?: string;  // Text to search for (ignored for role: "Page")
   role?: string;  // PDF 1.4 structure role: P, H1, H2, Figure, Table, Span, etc.
   page?: number;  // Page number (1-indexed), required for role: "Page"
   edge?: Edge;    // Which edge to use for comparison (overrides relation default)
 }
 
-// Assertion format
-export interface PdfTextPositionAssertion {
+// Tag-only assertion: validates semantic role without position comparison
+export interface TagOnlyAssertion {
   subject: string | TextSelector;
-  relation?: string;           // Optional for tag-only assertions
-  object?: string | TextSelector;  // Optional for tag-only assertions
-  tolerance?: number;          // Default: 2pt (alignment relations only)
-  byMin?: number;              // Minimum distance between edges (directional relations only)
-  byMax?: number;              // Maximum distance between edges (directional relations only)
+}
+
+// Directional assertion: leftOf, rightOf, above, below with optional distance constraints
+export interface DirectionalAssertion {
+  subject: string | TextSelector;
+  relation: DirectionalRelation;
+  object: string | TextSelector;
+  byMin?: number;  // Minimum distance between edges
+  byMax?: number;  // Maximum distance between edges
+}
+
+// Alignment assertion: leftAligned, rightAligned, topAligned, bottomAligned with tolerance
+export interface AlignmentAssertion {
+  subject: string | TextSelector;
+  relation: AlignmentRelation;
+  object: string | TextSelector;
+  tolerance?: number;  // Default: 2pt
+}
+
+// Union of all assertion types
+export type PdfTextPositionAssertion = TagOnlyAssertion | DirectionalAssertion | AlignmentAssertion;
+
+// Type guards for assertion discrimination
+const directionalRelationValues: DirectionalRelation[] = ["leftOf", "rightOf", "above", "below"];
+const alignmentRelationValues: AlignmentRelation[] = ["leftAligned", "rightAligned", "topAligned", "bottomAligned"];
+
+export function isDirectionalAssertion(a: PdfTextPositionAssertion): a is DirectionalAssertion {
+  return "relation" in a && directionalRelationValues.includes((a as DirectionalAssertion).relation);
+}
+
+export function isAlignmentAssertion(a: PdfTextPositionAssertion): a is AlignmentAssertion {
+  return "relation" in a && alignmentRelationValues.includes((a as AlignmentAssertion).relation);
+}
+
+export function isTagOnlyAssertion(a: PdfTextPositionAssertion): a is TagOnlyAssertion {
+  return !("relation" in a);
 }
 
 // Computed bounding box
@@ -133,13 +169,8 @@ const DEFAULT_ALIGNMENT_TOLERANCE = 2;
 
 // Coordinate system: origin at top-left, y increases downward
 
-// Relation types
-type DirectionalRelation = "leftOf" | "rightOf" | "above" | "below";
-type AlignmentRelation = "leftAligned" | "rightAligned" | "topAligned" | "bottomAligned";
-type Relation = DirectionalRelation | AlignmentRelation;
-
-const directionalRelations = new Set<string>(["leftOf", "rightOf", "above", "below"]);
-const alignmentRelations = new Set<string>(["leftAligned", "rightAligned", "topAligned", "bottomAligned"]);
+const directionalRelations: Set<Relation> = new Set(["leftOf", "rightOf", "above", "below"]);
+const alignmentRelations: Set<Relation> = new Set(["leftAligned", "rightAligned", "topAligned", "bottomAligned"]);
 
 // Default edges for each relation (from spec table)
 const relationDefaults: Record<Relation, { subject: Edge; object: Edge }> = {
@@ -459,24 +490,72 @@ export const ensurePdfTextPositions = (
     verify: async (_output: ExecuteOutput[]) => {
       const errors: string[] = [];
 
-      // Stage 1: Parse assertions and gather search texts
-      const normalizedAssertions = assertions.map((a) => ({
-        subject: normalizeSelector(a.subject),
-        relation: a.relation,
-        object: a.object ? normalizeSelector(a.object) : undefined,
-        tolerance: a.tolerance ?? DEFAULT_ALIGNMENT_TOLERANCE,
-        byMin: a.byMin,
-        byMax: a.byMax,
-      }));
+      // Internal normalized assertion type for processing
+      type NormalizedAssertion = {
+        subject: TextSelector;
+        relation?: Relation;
+        object?: TextSelector;
+        tolerance: number;
+        byMin?: number;
+        byMax?: number;
+      };
 
-      const normalizedNoMatch = noMatchAssertions?.map((a) => ({
-        subject: normalizeSelector(a.subject),
-        relation: a.relation,
-        object: a.object ? normalizeSelector(a.object) : undefined,
-        tolerance: a.tolerance ?? DEFAULT_ALIGNMENT_TOLERANCE,
-        byMin: a.byMin,
-        byMax: a.byMax,
-      }));
+      // Normalize an assertion to internal format
+      // deno-lint-ignore no-explicit-any
+      const normalizeAssertion = (a: PdfTextPositionAssertion): NormalizedAssertion => {
+        // Check for relation property (handles invalid relations from YAML at runtime)
+        const hasRelation = "relation" in a;
+        // deno-lint-ignore no-explicit-any
+        const relationValue = hasRelation ? (a as any).relation : undefined;
+        // deno-lint-ignore no-explicit-any
+        const objectValue = "object" in a ? (a as any).object : undefined;
+        // deno-lint-ignore no-explicit-any
+        const byMinValue = "byMin" in a ? (a as any).byMin : undefined;
+        // deno-lint-ignore no-explicit-any
+        const byMaxValue = "byMax" in a ? (a as any).byMax : undefined;
+        // deno-lint-ignore no-explicit-any
+        const toleranceValue = "tolerance" in a ? (a as any).tolerance : undefined;
+
+        if (isDirectionalAssertion(a)) {
+          return {
+            subject: normalizeSelector(a.subject),
+            relation: a.relation,
+            object: normalizeSelector(a.object),
+            tolerance: DEFAULT_ALIGNMENT_TOLERANCE,
+            byMin: a.byMin,
+            byMax: a.byMax,
+          };
+        } else if (isAlignmentAssertion(a)) {
+          return {
+            subject: normalizeSelector(a.subject),
+            relation: a.relation,
+            object: normalizeSelector(a.object),
+            tolerance: a.tolerance ?? DEFAULT_ALIGNMENT_TOLERANCE,
+            byMin: byMinValue,  // Pass through for runtime validation error
+            byMax: byMaxValue,  // Pass through for runtime validation error
+          };
+        } else if (hasRelation) {
+          // Has relation but not a valid one - pass through for error reporting
+          return {
+            subject: normalizeSelector(a.subject),
+            relation: relationValue as Relation,
+            object: objectValue ? normalizeSelector(objectValue) : undefined,
+            tolerance: toleranceValue ?? DEFAULT_ALIGNMENT_TOLERANCE,
+            byMin: byMinValue,
+            byMax: byMaxValue,
+          };
+        } else {
+          // Tag-only assertion
+          return {
+            subject: normalizeSelector(a.subject),
+            tolerance: DEFAULT_ALIGNMENT_TOLERANCE,
+          };
+        }
+      };
+
+      // Stage 1: Parse assertions and gather search texts
+      const normalizedAssertions = assertions.map(normalizeAssertion);
+      const normalizedNoMatch = noMatchAssertions?.map(normalizeAssertion);
 
       // Track search texts and their selectors (to know if Decoration role is requested)
       // Page role selectors are tracked separately since they don't need text search

@@ -8,7 +8,7 @@
  */
 
 import { testQuartoCmd } from "../../test.ts";
-import { ensurePdfTextPositions } from "../../verify-pdf-text-position.ts";
+import { ensurePdfTextPositions, PdfTextPositionAssertion } from "../../verify-pdf-text-position.ts";
 import { assert, AssertionError } from "testing/asserts";
 import { join } from "../../../src/deno_ral/path.ts";
 import { safeRemoveSync, safeExistsSync } from "../../../src/core/path.ts";
@@ -132,7 +132,8 @@ async function runExpectedFailureTests() {
   await assertThrowsWithPattern(
     async () => {
       const predicate = ensurePdfTextPositions(fixturePdf, [
-        { subject: "FIXTURE_H1_TEXT", relation: "invalidRelation", object: "FIXTURE_BODY_P1_TEXT" },
+        // Use type assertion for intentionally invalid relation to test error handling
+        { subject: "FIXTURE_H1_TEXT", relation: "invalidRelation", object: "FIXTURE_BODY_P1_TEXT" } as PdfTextPositionAssertion,
       ]);
       await predicate.verify([]);
     },
@@ -418,6 +419,7 @@ async function runDistanceConstraintTests() {
  */
 async function runDistanceConstraintErrorTests() {
   // Error: byMin/byMax with alignment relation should error
+  // Use type assertion to test runtime error handling for invalid YAML input
   await assertThrowsWithPattern(
     async () => {
       const predicate = ensurePdfTextPositions(fixturePdf, [
@@ -426,7 +428,7 @@ async function runDistanceConstraintErrorTests() {
           relation: "topAligned",
           object: "FIXTURE_H2_TEXT",
           byMin: 10,
-        },
+        } as PdfTextPositionAssertion,
       ]);
       await predicate.verify([]);
     },
@@ -435,6 +437,7 @@ async function runDistanceConstraintErrorTests() {
   );
 
   // Error: byMax with alignment relation should error
+  // Use type assertion to test runtime error handling for invalid YAML input
   await assertThrowsWithPattern(
     async () => {
       const predicate = ensurePdfTextPositions(fixturePdf, [
@@ -443,7 +446,7 @@ async function runDistanceConstraintErrorTests() {
           relation: "leftAligned",
           object: "FIXTURE_H2_TEXT",
           byMax: 10,
-        },
+        } as PdfTextPositionAssertion,
       ]);
       await predicate.verify([]);
     },
