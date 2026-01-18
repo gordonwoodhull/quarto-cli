@@ -13,18 +13,18 @@ _quarto:
         - ['#show figure.caption:', 'note\(', 'kind: "quarto-float-lst"']
         - []
       ensurePdfRegexMatches:
-        - ['Listing 1', 'MARGINCAP-SQL-QUERY', 'Listing 2', 'MARGINCAP-PYTHON-FUNC']
+        - ['Listing 1', 'MARGINCAPSQL', 'Listing 2', 'MARGINCAPPYTHON']
         - []
       ensurePdfTextPositions:
-        - - subject: "MARGINCAP-SQL-QUERY"
+        - - subject: "MARGINCAPSQL"
             relation: rightOf
             object: "SELECT"
-          - subject: "MARGINCAP-PYTHON-FUNC"
+          - subject: "MARGINCAPPYTHON"
             relation: rightOf
             object: "calculate_statistics"
-          - subject: "MARGINCAP-SQL-QUERY"
+          - subject: "MARGINCAPSQL"
             relation: above
-            object: "MARGINCAP-PYTHON-FUNC"
+            object: "MARGINCAPPYTHON"
         - []
       noErrors: default
 ---
@@ -33,7 +33,7 @@ This tests code listings with captions placed in the margin.
 
 ## SQL Query with Margin Caption
 
-```{#lst-margincap-sql .sql lst-cap="MARGINCAP-SQL-QUERY" .margin-caption}
+```{#lst-margincap-sql .sql lst-cap="MARGINCAPSQL" .margin-caption}
 SELECT customers.id, customers.name, orders.total
 FROM customers
 INNER JOIN orders ON customers.id = orders.customer_id
@@ -46,7 +46,7 @@ See @lst-margincap-sql for the SQL query with its caption in the margin.
 
 ## Python Function with Margin Caption
 
-```{#lst-margincap-python .python lst-cap="MARGINCAP-PYTHON-FUNC" .margin-caption}
+```{#lst-margincap-python .python lst-cap="MARGINCAPPYTHON" .margin-caption}
 def calculate_statistics(data):
     """Calculate basic statistics."""
     mean = sum(data) / len(data)

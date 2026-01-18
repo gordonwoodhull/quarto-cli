@@ -25,7 +25,7 @@ _quarto:
             object: "Third note"
           - subject: "Third note"
             relation: above
-            object: "Fourth note"
+            object: "NOTE4"
           # Line 5 should be top-aligned with its margin note (enough space)
           - subject: "Line 5"
             relation: topAligned
@@ -39,7 +39,7 @@ This tests that multiple notes on nearby lines stack properly without overlappin
 Line 1 [First margin note with longer content that takes up multiple lines in the narrow margin column to test stacking]{.column-margin}.
 Line 2 [Second note should shift down to avoid the first]{.column-margin}.
 Line 3 [Third note shifts further down]{.column-margin}.
-Line 4 [Fourth note continues the stack]{.column-margin}.
+Line 4 [NOTE4 margin content]{.column-margin}.
 
 ## About Tufte Layout
 

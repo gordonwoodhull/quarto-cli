@@ -15,7 +15,7 @@ _quarto:
         # Verify user overrides are applied
         - ['width: 3in', 'clearance: 16pt']
         # Verify computed defaults are preserved for non-overridden values
-        - ['width: 2\\.067in']  # This should NOT match since we override to 3in
+        - ['width: 1\\.62']  # This should NOT match since we override to 3in
       noErrors: default
 ---
 
@@ -27,6 +27,6 @@ This test verifies that users can override specific margin-geometry values while
 This margin note triggers margin layout.
 :::
 
-The outer.width is overridden to 3in (computed default would be ~2.067in).
-The clearance is overridden to 16pt (default is 8pt).
+The outer.width is overridden to 3in (computed default would be ~1.62in).
+The clearance is overridden to 16pt (default is 12pt).
 Other values like outer.far, outer.separation, inner.* should use computed defaults.

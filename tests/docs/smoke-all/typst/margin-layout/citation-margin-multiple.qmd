@@ -17,8 +17,8 @@ _quarto:
         - ['FIRST-CITE-MARKER', 'SECOND-CITE-MARKER', 'MULTI-CITE-MARKER', 'Vindication']
         - []
       ensurePdfTextPositions:
-        - # Citation in margin (rightOf body text) - "Some hexagon" only in @vindication1738 citation
-          - subject: "Some hexagon"
+        - # Citation in margin - "1738" is the unique year from @vindication1738
+          - subject: "1738"
             relation: rightOf
             object: "FIRST-CITE-MARKER"
         - []

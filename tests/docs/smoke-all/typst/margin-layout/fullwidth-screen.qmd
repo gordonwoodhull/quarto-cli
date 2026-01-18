@@ -14,10 +14,10 @@ _quarto:
         - []
       ensurePdfTextPositions:
         - # Aside is above wideblock content (wideblock spans full page)
-          - subject: "haunts Stack Overflow"
+          - subject: "haunts"
             relation: above
             object:
-              text: "catastrophic backtracking"
+              text: "catastrophic"
               role: Decoration
         - []
       noErrors: default

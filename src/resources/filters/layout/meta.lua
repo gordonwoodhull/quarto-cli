@@ -421,30 +421,54 @@ function parseCssLength(value)
 end
 
 -- Compute Typst geometry from paper width for marginalia package
--- Same ratios as LaTeX: 2/3 text, 1/3 margin
--- marginalia uses inner/outer with far+width+sep for each side
+-- Uses marginalia's recommended proportions (from A4 example: 16:40:8 for outer, 16:20:8 for inner)
+-- Total: inner 21% + outer 30.5% + body 48.5% = 100%
 -- marginOptions: table with left, right keys (user margin overrides)
 -- gridOptions: table with margin-width, gutter-width keys (user grid overrides)
 function typstGeometryFromPaperWidth(paperWidth, marginOptions, gridOptions)
-  -- Start with auto-computed defaults from papersize
-  local innerSep = left(paperWidth)       -- left margin
-  local outerFar = left(paperWidth)       -- right padding (symmetric by default)
-  local outerWidth = marginParWidth(paperWidth)  -- note column
-  local outerSep = marginParSep(paperWidth)      -- gutter
+  -- Marginalia proportions (from A4 example)
+  -- inner: (far: 16mm, width: 20mm, sep: 8mm) = 44mm = 21% of 210mm
+  -- outer: (far: 16mm, width: 40mm, sep: 8mm) = 64mm = 30.5% of 210mm
+  -- body: 102mm = 48.5% of 210mm
 
-  -- Apply margin.left override → inner.sep
-  if marginOptions and marginOptions.left then
-    local parsed = parseCssLength(marginOptions.left)
-    if parsed then innerSep = parsed end
+  -- Base proportions (relative to page width)
+  local innerTotal = 0.21 * paperWidth   -- 21% of page
+  local outerTotal = 0.305 * paperWidth  -- 30.5% of page
+  -- body = 48.5% of page (remainder)
+
+  -- Apply inner ratio 2:2.5:1 = far:width:sep
+  -- Sum = 5.5, so: far=2/5.5, width=2.5/5.5, sep=1/5.5
+  local innerFar = innerTotal * (2 / 5.5)
+  local innerWidth = innerTotal * (2.5 / 5.5)
+  local innerSep = innerTotal * (1 / 5.5)
+
+  -- Apply outer ratio 2:5:1 = far:width:sep
+  -- Sum = 8, so: far=2/8, width=5/8, sep=1/8
+  local outerFar = outerTotal * (2 / 8)
+  local outerWidth = outerTotal * (5 / 8)
+  local outerSep = outerTotal * (1 / 8)
+
+  -- Track if user specified margin.left (affects gutter-width logic)
+  local marginLeftSpecified = false
+
+  -- Apply user overrides from margin options
+  -- margin.left -> inner.sep (separation between body and inner margin column)
+  -- margin.right -> outer.far (distance from outer page edge)
+  if marginOptions then
+    if marginOptions.left then
+      local parsed = parseCssLength(marginOptions.left)
+      if parsed then
+        innerSep = parsed
+        marginLeftSpecified = true
+      end
+    end
+    if marginOptions.right then
+      local parsed = parseCssLength(marginOptions.right)
+      if parsed then outerFar = parsed end
+    end
   end
 
-  -- Apply margin.right override → outer.far
-  if marginOptions and marginOptions.right then
-    local parsed = parseCssLength(marginOptions.right)
-    if parsed then outerFar = parsed end
-  end
-
-  -- Apply grid overrides
+  -- Apply user overrides from grid options
   if gridOptions then
     if gridOptions["margin-width"] then
       local parsed = parseCssLength(gridOptions["margin-width"])
@@ -452,24 +476,29 @@ function typstGeometryFromPaperWidth(paperWidth, marginOptions, gridOptions)
     end
     if gridOptions["gutter-width"] then
       local parsed = parseCssLength(gridOptions["gutter-width"])
-      if parsed then outerSep = parsed end
+      if parsed then
+        -- gutter-width sets outer.sep always
+        outerSep = parsed
+        -- gutter-width sets inner.sep only if margin.left wasn't specified
+        if not marginLeftSpecified then
+          innerSep = parsed
+        end
+      end
     end
-    -- body-width: if specified, could be used to validate or adjust,
-    -- but typically we let it be computed as the remainder
   end
 
   return {
     inner = {
-      far = string.format("%.3fin", outerSep),  -- page gutter (same as column gutter)
-      width = "0in",  -- no margin notes on inner side
-      separation = string.format("%.3fin", innerSep - outerSep),  -- remaining body margin
+      far = string.format("%.3fin", innerFar),
+      width = string.format("%.3fin", innerWidth),
+      separation = string.format("%.3fin", innerSep),
     },
     outer = {
       far = string.format("%.3fin", outerFar),
       width = string.format("%.3fin", outerWidth),
       separation = string.format("%.3fin", outerSep),
     },
-    clearance = "8pt",
+    clearance = "12pt",  -- Match marginalia default
   }
 end
 

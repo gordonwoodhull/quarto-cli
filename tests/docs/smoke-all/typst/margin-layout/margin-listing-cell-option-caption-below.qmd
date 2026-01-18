@@ -16,11 +16,11 @@ _quarto:
         - ['#notefigure\(', 'kind: "quarto-float-lst"', 'position: bottom']
         - []
       ensurePdfRegexMatches:
-        - ['Listing 1', 'MARGIN-LISTING-BELOW']
+        - ['Listing 1', 'MARGINLISTBELOW']
         - []
       ensurePdfTextPositions:
         - # Listing in margin, right of body text - "World" unique string in code
-          - subject: "MARGIN-LISTING-BELOW"
+          - subject: "MARGINLISTBELOW"
             relation: rightOf
             object: "This tests"
           - subject: "World"
@@ -29,7 +29,7 @@ _quarto:
           # Caption BELOW code (lst-cap-location: bottom)
           - subject: "World"
             relation: above
-            object: "MARGIN-LISTING-BELOW"
+            object: "MARGINLISTBELOW"
         - []
       noErrors: default
 ---
@@ -39,7 +39,7 @@ This tests a code listing in the margin with caption below using `cap-location: 
 ```{python}
 #| column: margin
 #| label: lst-margin-below
-#| lst-cap: "MARGIN-LISTING-BELOW"
+#| lst-cap: "MARGINLISTBELOW"
 #| lst-cap-location: bottom
 #| echo: true
 #| eval: false

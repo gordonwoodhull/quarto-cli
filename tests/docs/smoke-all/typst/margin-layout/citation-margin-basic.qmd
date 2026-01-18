@@ -17,8 +17,8 @@ _quarto:
         - ['Library', 'Borges', 'hexagon', 'infinite']
         - []
       ensurePdfTextPositions:
-        - # Citation in margin (rightOf body text) - "Editorial Sur" only in citation
-          - subject: "Editorial Sur"
+        - # Citation in margin (rightOf body text) - "bifurcan" from booktitle only in citation
+          - subject: "bifurcan"
             relation: rightOf
             object: "hexagonal galleries"
         - []

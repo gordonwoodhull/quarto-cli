@@ -13,18 +13,18 @@ _quarto:
         - ['#notefigure\(', 'kind: "quarto-float-lst"']
         - []
       ensurePdfRegexMatches:
-        - ['Listing 1', 'MARGIN-SQL-QUERY']
+        - ['Listing 1', 'SQLCAP1']
         - []
       ensurePdfTextPositions:
         - # Margin content should be right of body text
-          - subject: "MARGIN-SQL-QUERY"
+          - subject: "SQLCAP1"
             relation: rightOf
             object: "This tests"
           - subject: "SELECT"
             relation: rightOf
             object: "This tests"
           # Caption above code (caption position: top)
-          - subject: "MARGIN-SQL-QUERY"
+          - subject: "SQLCAP1"
             relation: above
             object: "SELECT"
           # Body text vertical ordering
@@ -39,7 +39,7 @@ This tests code listings placed in the margin.
 
 ::: {.column-margin}
 
-```{#lst-margin-sql .sql lst-cap="MARGIN-SQL-QUERY"}
+```{#lst-margin-sql .sql lst-cap="SQLCAP1"}
 SELECT id, name
 FROM users
 WHERE active = true
