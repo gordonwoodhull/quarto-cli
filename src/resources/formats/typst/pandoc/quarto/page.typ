@@ -1,6 +1,6 @@
 #set page(
   paper: $if(papersize)$"$papersize$"$else$"us-letter"$endif$,
-$if(margin-layout)$
+$if(margin-geometry)$
   // Margins handled by marginalia.setup below
 $elseif(margin)$
   margin: ($for(margin/pairs)$$margin.key$: $margin.value$,$endfor$),
@@ -13,12 +13,12 @@ $endif$
 $if(logo)$
 #set page(background: align($logo.location$, box(inset: $logo.inset$, image("$logo.path$", width: $logo.width$$if(logo.alt)$, alt: "$logo.alt$"$endif$))))
 $endif$
-$if(margin-layout)$
+$if(margin-geometry)$
 // Configure marginalia page geometry (functions defined in definitions.typ)
 #show: marginalia.setup.with(
   inner: (
-    far: 0in,
-    width: 0in,
+    far: $margin-geometry.inner-far$,
+    width: $margin-geometry.inner-width$,
     sep: $margin-geometry.inner-sep$,
   ),
   outer: (
@@ -29,6 +29,6 @@ $if(margin-layout)$
   top: $if(margin.top)$$margin.top$$else$1.25in$endif$,
   bottom: $if(margin.bottom)$$margin.bottom$$else$1.25in$endif$,
   book: false,
-  clearance: 8pt,
+  clearance: $margin-geometry.clearance$,
 )
 $endif$

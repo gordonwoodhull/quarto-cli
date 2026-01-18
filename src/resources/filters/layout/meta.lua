@@ -189,8 +189,11 @@ function layout_meta_inject_latex_packages()
             }
           end
 
-          meta["margin-layout"] = true
-          meta["margin-geometry"] = typstGeometryFromPaperWidth(paperWidth, marginOptions, gridOptions)
+          -- Compute default geometry from paper size and grid options
+          local computedGeometry = typstGeometryFromPaperWidth(paperWidth, marginOptions, gridOptions)
+
+          -- Merge with any user-specified margin-geometry overrides
+          meta["margin-geometry"] = mergeMarginGeometry(computedGeometry, meta["margin-geometry"])
         end
 
         -- Suppress bibliography when using margin citations (consistent with HTML behavior)
@@ -456,12 +459,35 @@ function typstGeometryFromPaperWidth(paperWidth, marginOptions, gridOptions)
   end
 
   return {
-    -- Inner (left) margin - no notes
-    ["inner-sep"] = string.format("%.3fin", innerSep),
+    -- Inner (left) margin - no notes, but with page gutter
+    ["inner-far"] = string.format("%.3fin", outerSep),  -- page gutter (same as column gutter)
+    ["inner-width"] = "0in",  -- no margin notes on inner side
+    ["inner-sep"] = string.format("%.3fin", innerSep - outerSep),  -- remaining body margin
     -- Outer (right) margin - notes column
     ["outer-far"] = string.format("%.3fin", outerFar),
     ["outer-width"] = string.format("%.3fin", outerWidth),
     ["outer-sep"] = string.format("%.3fin", outerSep),
+    -- Note spacing
+    clearance = "8pt",
   }
+end
+
+-- Merge two flat tables, with overrides taking precedence
+-- Only merges non-nil values from overrides
+function mergeMarginGeometry(defaults, overrides)
+  if overrides == nil then return defaults end
+
+  local result = {}
+  -- Copy all defaults
+  for k, v in pairs(defaults) do
+    result[k] = v
+  end
+  -- Override with user values
+  for k, v in pairs(overrides) do
+    if v ~= nil then
+      result[k] = pandoc.utils.stringify(v)
+    end
+  end
+  return result
 end
 

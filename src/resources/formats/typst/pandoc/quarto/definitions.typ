@@ -183,7 +183,7 @@
     )
 }
 
-$if(margin-layout)$
+$if(margin-geometry)$
 // Margin layout support using marginalia package
 #import "@preview/marginalia:0.3.1" as marginalia: note, notefigure, wideblock
 
@@ -240,11 +240,14 @@ $if(margin-layout)$
   pad(..side-pad(side, -out, -out), body)
 }
 
-// page-inset: wideblock minus ~15% of margin width
+// page-inset: wideblock minus small inset from page boundary
 #let column-page-inset(side: "both", body) = context {
+  let l = marginalia.get-left()
   let r = marginalia.get-right()
-  let inset = r.far + 0.15 * r.width
-  wideblock(side: side)[#pad(..side-pad(side, inset, inset), body)]
+  // Inset is a small fraction of the extension area (wideblock stops at far)
+  let left-inset = 0.15 * l.sep
+  let right-inset = 0.15 * (r.sep + r.width)
+  wideblock(side: side)[#pad(..side-pad(side, left-inset, right-inset), body)]
 }
 
 // screen-inset: full width minus `far` distance from edges
