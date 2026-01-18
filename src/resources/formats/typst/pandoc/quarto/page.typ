@@ -17,14 +17,14 @@ $if(margin-geometry)$
 // Configure marginalia page geometry (functions defined in definitions.typ)
 #show: marginalia.setup.with(
   inner: (
-    far: $margin-geometry.inner-far$,
-    width: $margin-geometry.inner-width$,
-    sep: $margin-geometry.inner-sep$,
+    far: $margin-geometry.inner.far$,
+    width: $margin-geometry.inner.width$,
+    sep: $margin-geometry.inner.separation$,
   ),
   outer: (
-    far: $margin-geometry.outer-far$,
-    width: $margin-geometry.outer-width$,
-    sep: $margin-geometry.outer-sep$,
+    far: $margin-geometry.outer.far$,
+    width: $margin-geometry.outer.width$,
+    sep: $margin-geometry.outer.separation$,
   ),
   top: $if(margin.top)$$margin.top$$else$1.25in$endif$,
   bottom: $if(margin.bottom)$$margin.bottom$$else$1.25in$endif$,

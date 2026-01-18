@@ -459,35 +459,60 @@ function typstGeometryFromPaperWidth(paperWidth, marginOptions, gridOptions)
   end
 
   return {
-    -- Inner (left) margin - no notes, but with page gutter
-    ["inner-far"] = string.format("%.3fin", outerSep),  -- page gutter (same as column gutter)
-    ["inner-width"] = "0in",  -- no margin notes on inner side
-    ["inner-sep"] = string.format("%.3fin", innerSep - outerSep),  -- remaining body margin
-    -- Outer (right) margin - notes column
-    ["outer-far"] = string.format("%.3fin", outerFar),
-    ["outer-width"] = string.format("%.3fin", outerWidth),
-    ["outer-sep"] = string.format("%.3fin", outerSep),
-    -- Note spacing
+    inner = {
+      far = string.format("%.3fin", outerSep),  -- page gutter (same as column gutter)
+      width = "0in",  -- no margin notes on inner side
+      separation = string.format("%.3fin", innerSep - outerSep),  -- remaining body margin
+    },
+    outer = {
+      far = string.format("%.3fin", outerFar),
+      width = string.format("%.3fin", outerWidth),
+      separation = string.format("%.3fin", outerSep),
+    },
     clearance = "8pt",
   }
 end
 
--- Merge two flat tables, with overrides taking precedence
+-- Deep merge margin geometry tables, with overrides taking precedence
 -- Only merges non-nil values from overrides
 function mergeMarginGeometry(defaults, overrides)
   if overrides == nil then return defaults end
 
   local result = {}
-  -- Copy all defaults
-  for k, v in pairs(defaults) do
-    result[k] = v
+
+  -- Merge inner
+  result.inner = {}
+  for k, v in pairs(defaults.inner) do
+    result.inner[k] = v
   end
-  -- Override with user values
-  for k, v in pairs(overrides) do
-    if v ~= nil then
-      result[k] = pandoc.utils.stringify(v)
+  if overrides.inner then
+    for k, v in pairs(overrides.inner) do
+      if v ~= nil then
+        result.inner[k] = pandoc.utils.stringify(v)
+      end
     end
   end
+
+  -- Merge outer
+  result.outer = {}
+  for k, v in pairs(defaults.outer) do
+    result.outer[k] = v
+  end
+  if overrides.outer then
+    for k, v in pairs(overrides.outer) do
+      if v ~= nil then
+        result.outer[k] = pandoc.utils.stringify(v)
+      end
+    end
+  end
+
+  -- Merge clearance
+  if overrides.clearance ~= nil then
+    result.clearance = pandoc.utils.stringify(overrides.clearance)
+  else
+    result.clearance = defaults.clearance
+  end
+
   return result
 end
 

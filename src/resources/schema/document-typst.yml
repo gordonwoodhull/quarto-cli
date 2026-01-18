@@ -10,24 +10,12 @@
     object:
       closed: true
       properties:
-        inner-far:
-          string:
-            description: "Distance from inner (left) page edge to wideblock boundary."
-        inner-width:
-          string:
-            description: "Width of inner margin note column (typically 0 for no notes on left)."
-        inner-sep:
-          string:
-            description: "Gap between inner margin and body text."
-        outer-far:
-          string:
-            description: "Distance from outer (right) page edge to wideblock boundary."
-        outer-width:
-          string:
-            description: "Width of outer margin note column."
-        outer-sep:
-          string:
-            description: "Gap between body text and outer margin notes."
+        inner:
+          ref: marginalia-side-geometry
+          description: "Inner (left) margin geometry."
+        outer:
+          ref: marginalia-side-geometry
+          description: "Outer (right) margin geometry."
         clearance:
           string:
             description: "Minimum vertical spacing between margin notes (default: 8pt)."
