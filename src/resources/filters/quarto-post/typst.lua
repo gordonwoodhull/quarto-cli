@@ -120,16 +120,22 @@ function render_typst()
         if marginCitations() then
           noteHasColumns()  -- Activate margin layout
 
-          -- Build citation keys for Typst labels
-          local keys = pandoc.List({})
+          -- Build margin note content with full citations (no locators - those stay inline)
+          local margin_entries = pandoc.List({})
           for _, c in ipairs(cite.citations) do
-            keys:insert("<" .. c.id .. ">")
+            margin_entries:insert("#cite(<" .. c.id .. ">, form: \"full\")")
           end
-          local keyStr = table.concat(keys, ", ")
 
-          -- Emit: column-margin-cite which renders inline cite + full cite in margin
+          -- Keep original Cite element (Pandoc renders it as Typst citation with locator inline)
+          -- Append margin note with full bibliographic entries only
           local result = pandoc.Inlines({})
-          result:insert(pandoc.RawInline("typst", "#column-margin-cite(" .. keyStr .. ")"))
+          result:insert(cite)  -- Original Cite element - Pandoc converts to @key[locator]
+          result:insert(pandoc.RawInline("typst",
+            "#note(alignment: \"baseline\", shift: auto, counter: none)[" ..
+            "#set text(size: 0.85em)\n" ..
+            table.concat(margin_entries, "\n") ..
+            "]"
+          ))
           return result
         end
       end,

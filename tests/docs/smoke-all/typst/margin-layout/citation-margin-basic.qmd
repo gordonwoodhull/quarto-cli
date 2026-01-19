@@ -11,7 +11,8 @@ _quarto:
   tests:
     typst:
       ensureTypstFileRegexMatches:
-        - ['column-margin-cite', 'note\(', 'form: "full"']
+        # Margin citations emit note() with cite(form: "full") directly
+        - ['#note\(', 'form: "full"']
         - []
       ensurePdfRegexMatches:
         - ['Library', 'Borges', 'hexagon', 'infinite']

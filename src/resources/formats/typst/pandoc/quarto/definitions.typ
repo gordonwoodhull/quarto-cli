@@ -206,25 +206,8 @@ $if(margin-geometry)$
   }
 }
 
-// Margin citation - inline citation + full bibliographic entry in margin
-// Each citation key gets the inline citation, with full entry appearing in margin
-#let column-margin-cite(..labels) = {
-  // Render inline citations
-  for label in labels.pos() {
-    cite(label)
-  }
-  // Full citation entries in margin
-  note(
-    alignment: "baseline",
-    shift: auto,
-    counter: none,
-  )[
-    #set text(size: 0.85em)
-    #for label in labels.pos() [
-      #cite(label, form: "full")
-    ]
-  ]
-}
+// Note: Margin citations are now emitted directly from Lua as #note() calls
+// with #cite(form: "full") + locator text, preserving citation locators.
 
 // Utility: compute padding for each side based on side parameter
 #let side-pad(side, left-amount, right-amount) = {
