@@ -280,8 +280,11 @@ function resolveTestSpecs(
             // keep-typ/keep-tex files are alongside source, so pass input path
             const needsInputPath = key === "ensureTypstFileRegexMatches" || key === "ensureLatexFileRegexMatches";
             if (typeof value === "object" && Array.isArray(value)) {
-              // Only use spread operator for arrays
-              verifyFns.push(verifyMap[key](outputFile.outputPath, ...value, needsInputPath ? input : undefined));
+              // value is [matches, noMatches?] - ensure inputFile goes in the right position
+              const matches = value[0];
+              const noMatches = value[1];
+              const inputFile = needsInputPath ? input : undefined;
+              verifyFns.push(verifyMap[key](outputFile.outputPath, matches, noMatches, inputFile));
             } else {
               verifyFns.push(verifyMap[key](outputFile.outputPath, value, undefined, needsInputPath ? input : undefined));
             }
