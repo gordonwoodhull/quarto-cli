@@ -5,6 +5,7 @@ author: "A Hexagon Dweller"
 papersize: us-letter
 citation-location: margin
 bibliography: borges-refs.bib
+citeproc: true
 format:
   html: default
   typst:
@@ -13,26 +14,26 @@ _quarto:
   tests:
     typst:
       ensureTypstFileRegexMatches:
-        # Margin citations emit note() with cite(form: "full") directly
-        - ['#note\(', 'form: "full"']
-        - []
+        # With citeproc, margin notes contain pre-rendered bibliography text
+        - ['#note\(', 'Borges.*1941', 'Bifurcan']
+        - ['#cite\(<[^>]+>, form: "full"\)']  # Should NOT have native Typst cite calls
       ensurePdfRegexMatches:
         - - 'Universe'
           - 'Library'
           - 'hexagon'
           - 'Vindication'
           - 'Borges'
-          # Locators appear inline
-          - '\[1, p\. 51\]'
-          - '\[2, ch\. 1\]'
-          # Author-suppressed shows just year
-          - '\(1936\)'
-          # Suffix appears inline
-          - 'and throughout'
+          # Locators appear inline (citeproc drops "p." prefix)
+          - '1941, 51'
+          - 'ch\. 1'
+          # Author-suppressed shows year + locator
+          - '1936, 12'
+          # Suffix appears inline (may be line-wrapped)
+          - 'throughout'
         - []
       ensurePdfTextPositions:
         - # Citations appear in margin (rightOf body text)
-          - subject: "bifurcan"
+          - subject: "Bifurcan"
             relation: rightOf
             object: "ventilation shaft"
           - subject: "Ficciones"
@@ -41,13 +42,14 @@ _quarto:
           # Sequential citations are stacked vertically in margin
           - subject: "Ficciones"
             relation: below
-            object: "bifurcan"
-          - subject: "Universalbib"
+            object: "Bifurcan"
+          - subject: "Universalbibliothek"
             relation: below
             object: "Ficciones"
+          # "Siamese Press" is unique to Quain citation in margin
           - subject: "Siamese Press"
             relation: below
-            object: "Universalbib"
+            object: "Universalbibliothek"
         - []
       noErrors: default
 ---

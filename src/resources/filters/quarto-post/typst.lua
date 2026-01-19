@@ -5,7 +5,7 @@
 
 -- FIXME Ideally this would go directly on init.lua, but
 -- the module path set up doesn't appear to be working there.
- 
+
 local typst = require("modules/typst")
 _quarto.format.typst = typst
 
@@ -19,6 +19,10 @@ local function formatShiftParam(shift)
   end
 end
 
+-- Lookup table for citeproc-rendered bibliography entries
+-- Maps citation_id -> Inlines (formatted bibliography entry)
+local citeprocBibliography = {}
+
 function render_typst()
   if not _quarto.format.isTypstOutput() then
     return {}
@@ -27,6 +31,40 @@ function render_typst()
   local number_depth
 
   return {
+    -- Pass 0: Pre-process citeproc to build bibliography lookup table
+    -- This must run before the Cite handler so entries are available
+    {
+      Pandoc = function(doc)
+        -- Only build lookup if using citeproc AND margin citations
+        if marginCitations() and quarto.doc.cite_method() == 'citeproc' then
+          -- Run citeproc on a copy to get formatted bibliography
+          local processed = pandoc.utils.citeproc(doc)
+
+          -- Find the refs div and extract entries
+          processed:walk({
+            Div = function(div)
+              -- Each bibliography entry has id like "ref-citationkey"
+              local match = div.identifier:match("^ref%-(.+)$")
+              if match then
+                -- Extract the formatted content (typically a Para inside the div)
+                -- Flatten to Inlines for use in margin notes
+                local inlines = pandoc.Inlines({})
+                for _, block in ipairs(div.content) do
+                  if block.t == "Para" or block.t == "Plain" then
+                    if #inlines > 0 then
+                      inlines:insert(pandoc.Space())
+                    end
+                    inlines:extend(block.content)
+                  end
+                end
+                citeprocBibliography[match] = inlines
+              end
+            end
+          })
+        end
+        return nil  -- Don't modify the document
+      end
+    },
     {
       Meta = function(m)
         -- This should be a number, but we must represent it as a string,
@@ -120,22 +158,36 @@ function render_typst()
         if marginCitations() then
           noteHasColumns()  -- Activate margin layout
 
-          -- Build margin note content with full citations (no locators - those stay inline)
-          local margin_entries = pandoc.List({})
+          local use_citeproc = quarto.doc.cite_method() == 'citeproc'
+
+          -- Keep original Cite element (Pandoc renders it with locator inline)
+          -- Append margin note with full bibliographic entries
+          local result = pandoc.Inlines({})
+          result:insert(cite)
+
+          -- Open margin note
+          result:insert(pandoc.RawInline("typst",
+            "#note(alignment: \"baseline\", shift: auto, counter: none)[#set text(size: 0.85em)\n"))
+
+          -- Add bibliography entries for each citation
+          local first = true
           for _, c in ipairs(cite.citations) do
-            margin_entries:insert("#cite(<" .. c.id .. ">, form: \"full\")")
+            if not first then
+              result:insert(pandoc.RawInline("typst", "\n"))
+            end
+            first = false
+
+            if use_citeproc and citeprocBibliography[c.id] then
+              -- Use pre-rendered citeproc content (Pandoc will convert to Typst)
+              result:extend(citeprocBibliography[c.id])
+            else
+              -- Use native Typst citation
+              result:insert(pandoc.RawInline("typst", "#cite(<" .. c.id .. ">, form: \"full\")"))
+            end
           end
 
-          -- Keep original Cite element (Pandoc renders it as Typst citation with locator inline)
-          -- Append margin note with full bibliographic entries only
-          local result = pandoc.Inlines({})
-          result:insert(cite)  -- Original Cite element - Pandoc converts to @key[locator]
-          result:insert(pandoc.RawInline("typst",
-            "#note(alignment: \"baseline\", shift: auto, counter: none)[" ..
-            "#set text(size: 0.85em)\n" ..
-            table.concat(margin_entries, "\n") ..
-            "]"
-          ))
+          -- Close margin note
+          result:insert(pandoc.RawInline("typst", "]"))
           return result
         end
       end,
