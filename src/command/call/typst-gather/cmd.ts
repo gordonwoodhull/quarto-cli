@@ -11,6 +11,7 @@ import { architectureToolsPath } from "../../../core/resources.ts";
 import { execProcess } from "../../../core/process.ts";
 import { dirname, join, relative } from "../../../deno_ral/path.ts";
 import { existsSync } from "../../../deno_ral/fs.ts";
+import { isWindows } from "../../../deno_ral/platform.ts";
 import { expandGlobSync } from "../../../core/deno/expand-glob.ts";
 import { readYaml } from "../../../core/yaml.ts";
 
@@ -447,8 +448,9 @@ export const typstGatherCommand = new Command()
       // Find typst-gather binary
       // First try architecture-specific path, then fall back to PATH
       let typstGatherBinary: string;
+      const binaryName = isWindows ? "typst-gather.exe" : "typst-gather";
 
-      const archPath = architectureToolsPath("typst-gather");
+      const archPath = architectureToolsPath(binaryName);
       if (existsSync(archPath)) {
         typstGatherBinary = archPath;
       } else {
@@ -457,7 +459,8 @@ export const typstGatherCommand = new Command()
         if (quartoRoot) {
           const devPath = join(
             quartoRoot,
-            "package/typst-gather/target/release/typst-gather",
+            "package/typst-gather/target/release",
+            binaryName,
           );
           if (existsSync(devPath)) {
             typstGatherBinary = devPath;

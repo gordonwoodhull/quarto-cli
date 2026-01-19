@@ -7,6 +7,7 @@
 import { Command } from "cliffy/command/mod.ts";
 import { error, info } from "../../../deno_ral/log.ts";
 import { join } from "../../../deno_ral/path.ts";
+import { isWindows } from "../../../deno_ral/platform.ts";
 
 export const typstGatherCommand = new Command()
   .name("typst-gather")
@@ -33,9 +34,11 @@ export const typstGatherCommand = new Command()
     );
 
     // Path to the typst-gather binary
+    const binaryName = isWindows ? "typst-gather.exe" : "typst-gather";
     const typstGatherBinary = join(
       quartoRoot,
-      "package/typst-gather/target/release/typst-gather",
+      "package/typst-gather/target/release",
+      binaryName,
     );
 
     // Check if binary exists
