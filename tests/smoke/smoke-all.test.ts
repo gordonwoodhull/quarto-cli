@@ -281,7 +281,13 @@ function resolveTestSpecs(
             }
 
             // keep-typ/keep-tex files are alongside source, so pass input path
-            const needsInputPath = key === "ensureTypstFileRegexMatches" || key === "ensureLatexFileRegexMatches";
+            // But output-ext: typ puts files in output directory, so don't pass input path
+            const usesKeepTyp = key === "ensureTypstFileRegexMatches" &&
+              (metadata.format?.typst?.['keep-typ'] || metadata['keep-typ']) &&
+              !(metadata.format?.typst?.['output-ext'] === 'typ' || metadata['output-ext'] === 'typ');
+            const usesKeepTex = key === "ensureLatexFileRegexMatches" &&
+              (metadata.format?.pdf?.['keep-tex'] || metadata['keep-tex']);
+            const needsInputPath = usesKeepTyp || usesKeepTex;
             if (typeof value === "object" && Array.isArray(value)) {
               // value is [matches, noMatches?] - ensure inputFile goes in the right position
               const matches = value[0];
