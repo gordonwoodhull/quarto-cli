@@ -188,9 +188,9 @@ $if(margin-geometry)$
 #import "@preview/marginalia:0.3.1" as marginalia: note, notefigure, wideblock
 
 // Render footnote as margin note using standard footnote counter
-// This is consistent with LaTeX's sidenotes package behavior
+// Used via show rule: #show footnote: it => column-sidenote(it.body)
+// The footnote element already steps the counter, so we just display it
 #let column-sidenote(body) = {
-  counter(footnote).step()
   context {
     let num = counter(footnote).display("1")
     // Superscript mark in text

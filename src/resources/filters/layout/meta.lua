@@ -201,6 +201,14 @@ function layout_meta_inject_latex_packages()
         if marginCitations() then
           meta["suppress-bibliography"] = true
         end
+
+        -- Add show rule to transform footnotes to sidenotes when reference-location: margin
+        if marginReferences() then
+          quarto.doc.include_text('in-header',
+            '// Transform footnotes to sidenotes\n' ..
+            '#show footnote: it => column-sidenote(it.body)\n' ..
+            '#show footnote.entry: none\n')
+        end
       end
 
       return meta

@@ -1,5 +1,5 @@
 ---
-title: "Basic Sidenote Test"
+title: "Sidenote with Code Block"
 papersize: us-letter
 reference-location: margin
 format:
@@ -14,16 +14,25 @@ _quarto:
         - ['#show footnote:', 'column-sidenote', '#footnote']
         - []
       ensurePdfRegexMatches:
-        - ['SIDENOTE-CONTENT', 'Main text']
+        - ['CODE-NOTE', 'def hello']
         - []
       ensurePdfTextPositions:
-        - - subject: "SIDENOTE-CONTENT"
+        - - subject: "CODE-NOTE"
             relation: rightOf
             object: "Main text"
         - []
       noErrors: default
 ---
 
-Main text with a sidenote^[SIDENOTE-CONTENT should appear in margin.].
+Main text with a footnote containing code[^code].
+
+[^code]: CODE-NOTE: Here is some Python code:
+
+    ```python
+    def hello():
+        return "world"
+    ```
+
+    The code block should appear in the margin sidenote.
 
 More main text continues here after the sidenote.

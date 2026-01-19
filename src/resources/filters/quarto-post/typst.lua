@@ -112,21 +112,9 @@ function render_typst()
           return result
         end
       end,
-      Note = function(n)
-        -- Convert footnotes to sidenotes when reference-location: margin
-        if marginReferences() then
-          noteHasColumns()  -- Activate margin layout
-
-          -- Convert blocks to inlines for margin note
-          local content = pandoc.utils.blocks_to_inlines(n.content)
-
-          local result = pandoc.Inlines({})
-          result:insert(pandoc.RawInline("typst", "#column-sidenote["))
-          result:extend(content)
-          result:insert(pandoc.RawInline("typst", "]"))
-          return result
-        end
-      end,
+      -- Note: footnotes with reference-location: margin are handled via Typst show rule
+      -- (see definitions.typ) rather than intercepting here, so Pandoc's native
+      -- block-to-Typst conversion is preserved for complex footnote content.
       Cite = function(cite)
         -- Show full citations in margin when citation-location: margin
         if marginCitations() then
