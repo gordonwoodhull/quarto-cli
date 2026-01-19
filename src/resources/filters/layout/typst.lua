@@ -82,16 +82,6 @@ function make_typst_wideblock(tbl)
   return result
 end
 
--- Helper to format shift parameter for marginalia
--- auto/true/false are unquoted, "avoid"/"ignore" are quoted strings
-local function formatShiftParam(shift)
-  if shift == "true" or shift == "false" or shift == "auto" then
-    return shift
-  else
-    return '"' .. shift .. '"'
-  end
-end
-
 -- Render a figure in the margin using marginalia's notefigure
 function make_typst_margin_figure(tbl)
   local content = tbl.content or pandoc.Div({})
@@ -110,7 +100,7 @@ function make_typst_margin_figure(tbl)
   -- Include kind and supplement to share counter with regular figures
   result:insert(pandoc.RawBlock("typst",
     '#notefigure(alignment: "' .. alignment .. '", dy: ' .. dy ..
-    ', shift: ' .. formatShiftParam(shift) .. ', counter: none' ..
+    ', shift: ' .. _quarto.format.typst.format_shift_param(shift) .. ', counter: none' ..
     ', kind: "' .. kind .. '", supplement: "' .. supplement .. '", '))
 
   -- Add figure content
@@ -355,7 +345,7 @@ end, function(layout)
       local dy = layout.float.attributes and layout.float.attributes["dy"] or "0pt"
       result:insert(pandoc.RawBlock("typst",
         '#note(counter: none, alignment: "' .. alignment .. '", dy: ' .. dy ..
-        ', shift: ' .. formatShiftParam(shift) .. ')['))
+        ', shift: ' .. _quarto.format.typst.format_shift_param(shift) .. ')['))
       result:insert(super_call)
       result:insert(pandoc.RawBlock("typst", ']\n\n'))
     else
