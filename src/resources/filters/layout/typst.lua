@@ -322,6 +322,7 @@ end, function(layout)
     end)
   end)
   cells:insert(pandoc.RawInline("typst", ")\n"))
+
   local has_subfloats = layout.float.has_subfloats
   -- count any remaining figures (with no / bad ids) as floats
   if not has_subfloats then
@@ -331,8 +332,12 @@ end, function(layout)
       end
     })
   end
+
+  -- Check if this is a margin panel (has .column-margin or .aside class)
+  local is_margin = hasMarginColumn(layout.float)
+
   if has_subfloats then
-    result:insert(_quarto.format.typst.function_call("quarto_super", {
+    local super_call = _quarto.format.typst.function_call("quarto_super", {
       {"kind", kind},
       {"caption", _quarto.format.typst.as_typst_content(layout.float.caption_long)},
       {"label", pandoc.RawInline("typst", "<" .. layout.float.identifier .. ">")},
@@ -341,17 +346,45 @@ end, function(layout)
       {"subrefnumbering", "1a"},
       {"subcapnumbering", "(a)"},
       _quarto.format.typst.as_typst_content(cells)
-    }, false))
+    }, false)
+    if is_margin then
+      -- Wrap quarto_super in note() for margin placement
+      -- counter: none disables the note marker (blue dot)
+      local shift = layout.float.attributes and layout.float.attributes["shift"] or "auto"
+      local alignment = layout.float.attributes and layout.float.attributes["alignment"] or "baseline"
+      local dy = layout.float.attributes and layout.float.attributes["dy"] or "0pt"
+      result:insert(pandoc.RawBlock("typst",
+        '#note(counter: none, alignment: "' .. alignment .. '", dy: ' .. dy ..
+        ', shift: ' .. formatShiftParam(shift) .. ')['))
+      result:insert(super_call)
+      result:insert(pandoc.RawBlock("typst", ']\n\n'))
+    else
+      result:insert(super_call)
+    end
   else
-    result:extend(make_typst_figure {
-      content = cells,
-      caption_location = caption_location,
-      caption = layout.float.caption_long,
-      kind = kind,
-      supplement = titleString(ref, info.prefix),
-      numbering = info.numbering,
-      identifier = layout.float.identifier
-    })
+    if is_margin then
+      result:extend(make_typst_margin_figure {
+        content = cells,
+        caption = layout.float.caption_long,
+        caption_location = caption_location,
+        identifier = layout.float.identifier,
+        shift = layout.float.attributes and layout.float.attributes["shift"] or "auto",
+        alignment = layout.float.attributes and layout.float.attributes["alignment"] or "baseline",
+        dy = layout.float.attributes and layout.float.attributes["dy"] or "0pt",
+        kind = kind,
+        supplement = supplement
+      })
+    else
+      result:extend(make_typst_figure {
+        content = cells,
+        caption_location = caption_location,
+        caption = layout.float.caption_long,
+        kind = kind,
+        supplement = titleString(ref, info.prefix),
+        numbering = info.numbering,
+        identifier = layout.float.identifier
+      })
+    end
   end
   return result
 end)
