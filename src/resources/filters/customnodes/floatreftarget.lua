@@ -977,7 +977,8 @@ end, function(float)
   local supplement = titleString(ref, info.name)
 
   -- Check if this is a margin figure (has .column-margin or .aside class)
-  if hasMarginColumn(float) then
+  -- Skip margin handling for subfloats - the parent handles margin placement
+  if hasMarginColumn(float) and not float.parent_id then
     local content = quarto.utils.as_blocks(float.content or {})
 
     -- Get optional attributes
