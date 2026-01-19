@@ -15,6 +15,12 @@ import { isWindows } from "../../../deno_ral/platform.ts";
 import { expandGlobSync } from "../../../core/deno/expand-glob.ts";
 import { readYaml } from "../../../core/yaml.ts";
 
+// Convert path to use forward slashes for TOML compatibility
+// TOML treats backslash as escape character, so Windows paths must use forward slashes
+function toTomlPath(p: string): string {
+  return p.replace(/\\/g, "/");
+}
+
 interface ExtensionYml {
   contributes?: {
     formats?: {
@@ -487,12 +493,13 @@ export const typstGatherCommand = new Command()
       } else {
         // Create a temporary TOML config file for auto-detected config
         tempConfig = Deno.makeTempFileSync({ suffix: ".toml" });
-        const discoverArray = config.discover.map((p) => `"${p}"`).join(", ");
+        const discoverArray = config.discover.map((p) => `"${toTomlPath(p)}"`)
+          .join(", ");
         let tomlContent = "";
         if (config.rootdir) {
-          tomlContent += `rootdir = "${config.rootdir}"\n`;
+          tomlContent += `rootdir = "${toTomlPath(config.rootdir)}"\n`;
         }
-        tomlContent += `destination = "${config.destination}"\n`;
+        tomlContent += `destination = "${toTomlPath(config.destination)}"\n`;
         tomlContent += `discover = [${discoverArray}]\n`;
         Deno.writeTextFileSync(tempConfig, tomlContent);
         configFileToUse = tempConfig;
