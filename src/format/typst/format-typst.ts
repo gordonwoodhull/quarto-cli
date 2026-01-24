@@ -70,7 +70,7 @@ export function typstFormat(): Format {
       _libDir: string,
       _services: RenderServices,
       _offset?: string,
-      project?: ProjectContext,
+      _project?: ProjectContext,
     ): Promise<FormatExtras> => {
       const pandoc: FormatPandoc = {};
       const metadata: Metadata = {};

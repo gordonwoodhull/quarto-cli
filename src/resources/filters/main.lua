@@ -32,6 +32,10 @@ import("./common/debug.lua")
 import("./common/error.lua")
 import("./common/figures.lua")
 import("./common/filemetadata.lua")
+
+-- Expose file metadata to extension filters.
+quarto.doc.file_metadata = currentFileMetadataState
+
 import("./common/floats.lua")
 import("./common/format.lua")
 import("./common/latex.lua")
@@ -688,7 +692,7 @@ tappend(quarto_filter_list, quarto_pre_filters)
 if enableCrossRef then
   tappend(quarto_filter_list, quarto_crossref_filters)
 end
-table.insert(quarto_filter_list, { name = "post-quarto", filter = {} }) -- entry point for user filters
+table.insert(quarto_filter_list, { name = "post-quarto", filter = file_metadata() }) -- entry point for user filters
 table.insert(quarto_filter_list, { name = "pre-render", filter = {} }) -- entry point for user filters
 tappend(quarto_filter_list, quarto_layout_filters)
 tappend(quarto_filter_list, quarto_post_filters)

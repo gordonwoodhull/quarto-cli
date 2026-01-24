@@ -22,7 +22,25 @@
         shortcodes:
           arrayOf: path
         filters:
-          arrayOf: path
+          arrayOf:
+            anyOf:
+              - path
+              - object:
+                  properties:
+                    path:
+                      schema: path
+                    at:
+                      enum:
+                        - pre-ast
+                        - post-ast
+                        - pre-quarto
+                        - post-quarto
+                        - pre-render
+                        - post-render
+                        - pre-finalize
+                        - post-finalize
+                  required:
+                    - path
         formats:
           schema: object
         engines:
