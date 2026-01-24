@@ -103,38 +103,8 @@ function book_numbering()
             end
           end
 
-          -- handle typst "part" and "appendix" headers
-          if el.level == 1 and _quarto.format.isTypstOutput() then
-            if bookItemType == "part" then
-              -- Emit #part() function call (imported from orange-book)
-              local partBlock = pandoc.RawBlock('typst', '#part[' .. pandoc.utils.stringify(el.content) .. ']')
-              return partBlock
-            elseif bookItemType == "appendix" then
-              -- Switch to appendix mode with alphabetic numbering
-              -- First appendix triggers the show rule with localized "Appendices" title
-              if file.bookItemNumber == 1 or file.bookItemNumber == nil then
-                local language = param("language", nil)
-                local appendicesTitle = language and language["section-title-appendices"] or "Appendices"
-                -- Use hide-parent: true to work around orange-book bug where unnumbered headings
-                -- (like Bibliography) trigger duplicate "Appendices" TOC entries.
-                -- See plans/orange-emitting-multiple-appendices.md for details.
-                local appendixStart = pandoc.RawBlock('typst',
-                  '#show: appendices.with("' .. appendicesTitle .. '", hide-parent: true)')
-
-                -- If this is the synthetic "Appendices" divider heading (has .unnumbered class),
-                -- emit our own Appendices heading for TOC display (since hide-parent: true
-                -- means orange-book won't add one automatically).
-                if el.classes:includes("unnumbered") then
-                  local appendicesHeading = pandoc.RawBlock('typst',
-                    '#heading(level: 1, numbering: none)[' .. appendicesTitle .. ']')
-                  return {appendixStart, appendicesHeading}
-                end
-
-                return {appendixStart, el}
-              end
-              return el
-            end
-          end
+          -- Typst part/appendix handling is delegated to book extensions
+          -- (each Typst book package has different syntax for parts and appendices)
 
           -- mark appendix chapters for epub
           if el.level == 1 and _quarto.format.isEpubOutput() then
