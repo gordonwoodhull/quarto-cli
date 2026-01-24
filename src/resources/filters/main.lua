@@ -208,6 +208,10 @@ quarto.utils.combineFilters = combineFilters
 -- Returns the current file metadata state (file, appendix, include_directory)
 quarto.doc.file_metadata = currentFileMetadataState
 
+-- Expose crossref categories to extensions via quarto.doc.crossref
+-- Provides access to all crossref category definitions (figures, tables, callouts, custom types)
+quarto.doc.crossref.categories = crossref.categories
+
 initCrossrefIndex()
 
 initShortcodeHandlers()
