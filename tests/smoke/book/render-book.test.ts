@@ -156,7 +156,7 @@ const verifyTypst = [
     "#ref\\(<eq-newton>, supplement: \\[Equation\\]\\)",     // equation reference
     "#ref\\(<eq-quadratic>, supplement: \\[Equation\\]\\)",  // equation reference
     "#ref\\(<eq-pythagorean>, supplement: \\[Equation\\]\\)", // appendix equation reference
-    // Equation numbering uses template variable (defined in book-template.typ)
+    // Equation numbering uses template variable (defined by book extension)
     'math\\.equation\\(block: true, numbering: quarto-equation-numbering',
     // Math equation counter reset at chapter boundaries
     'counter\\(math\\.equation\\)\\.update\\(0\\)',

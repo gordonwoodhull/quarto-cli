@@ -118,34 +118,21 @@ export function typstFormat(): Format {
       }
 
       // Provide a template and partials
+      // For Typst books, a book extension overrides these partials
       const templateDir = formatResourcePath("typst", join("pandoc", "quarto"));
 
-      // Check if we're in a book project
-      const isBook = project?.config?.project?.type === "book";
-
-      const templateContext = isBook
-        ? {
-          template: join(templateDir, "book-template.typ"),
-          partials: [
-            "book-numbering.typ",
-            "definitions.typ",
-            "book-typst-show.typ",
-            "notes.typ",
-            "biblio.typ",
-          ].map((partial) => join(templateDir, partial)),
-        }
-        : {
-          template: join(templateDir, "template.typ"),
-          partials: [
-            "numbering.typ",
-            "definitions.typ",
-            "typst-template.typ",
-            "page.typ",
-            "typst-show.typ",
-            "notes.typ",
-            "biblio.typ",
-          ].map((partial) => join(templateDir, partial)),
-        };
+      const templateContext = {
+        template: join(templateDir, "template.typ"),
+        partials: [
+          "numbering.typ",
+          "definitions.typ",
+          "typst-template.typ",
+          "page.typ",
+          "typst-show.typ",
+          "notes.typ",
+          "biblio.typ",
+        ].map((partial) => join(templateDir, partial)),
+      };
 
       return {
         pandoc,

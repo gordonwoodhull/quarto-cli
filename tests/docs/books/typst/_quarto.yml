@@ -29,6 +29,6 @@ crossref:
       reference-prefix: Dinosaur
 
 format:
-  typst:
+  orange-book-typst:
     keep-typ: true
     toc-depth: 17
