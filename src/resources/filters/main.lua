@@ -197,6 +197,17 @@ import("./quarto-init/metainit.lua")
 
 -- [/import]
 
+-- Expose filter utilities to extensions via quarto.utils
+-- file_metadata_filter() returns a filter that parses book metadata markers during traversal
+-- combineFilters() merges multiple filters into one for a single traversal
+-- Usage: return quarto.utils.combineFilters({quarto.utils.file_metadata_filter(), yourFilter})
+quarto.utils.file_metadata_filter = file_metadata
+quarto.utils.combineFilters = combineFilters
+
+-- Expose file_metadata state reader to extensions via quarto.doc API
+-- Returns the current file metadata state (file, appendix, include_directory)
+quarto.doc.file_metadata = currentFileMetadataState
+
 initCrossrefIndex()
 
 initShortcodeHandlers()
