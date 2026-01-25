@@ -102,9 +102,11 @@ _quarto:
           - "#ref\\(<eq-pythagorean>, supplement: \\[Equation\\]\\)"
           - 'math\.equation\(block: true, numbering: quarto-equation-numbering'
           - 'counter\(math\.equation\)\.update\(0\)'
-          - "#import \"@preview/theorion:0\\.4\\.1\": make-frame"
+          - "#import \"@preview/theorion:0\\.4\\.1\": make-frame, cosmos"
+          - "#import cosmos\\.fancy: fancy-box"
           - '#show: show-theorem'
           - 'make-frame\(\s*"theorem"'
+          - 'render: fancy-box\.with\('
           - "<thm-pythagorean>"
           - "<lem-triangle>"
           - "<thm-calculus>"
