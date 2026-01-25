@@ -3,7 +3,7 @@ keep-typ: true
 _quarto:
   render-project: true
   tests:
-    orange-book-typst:
+    typst:
       ensureTypstFileRegexMatches:
         - # matches array (first positional argument)
           - "test book for Typst output format"

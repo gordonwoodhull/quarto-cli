@@ -31,7 +31,7 @@ crossref:
       reference-prefix: Dinosaur
 
 format:
-  orange-book-typst:
+  typst:
     keep-typ: true
     toc-depth: 17
     theorem-appearance: fancy
