@@ -248,6 +248,12 @@ _quarto:
           - "McCarthy \\(1960\\) inspired this classification"
           - "Codd \\(1970\\) informs our approach"
           - "Lamport \\(1978\\) for temporal considerations"
+      ensurePdfTextPositions:
+        - # Code listings should be left-aligned with body text, not centered
+          - subject: "hello():"
+            relation: leftAligned
+            object: "LISTING_BODY_ALIGN_TEST"
+            tolerance: 25
 ---
 
 # Preface {.unnumbered}

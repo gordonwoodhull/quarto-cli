@@ -88,6 +88,8 @@ See @lem-triangle for the inequality.
 
 ## Code Listings {#sec-code-listings}
 
+LISTING_BODY_ALIGN_TEST is body text that should left-align with code listings.
+
 ```{#lst-hello .python lst-cap="Hello World in Python"}
 def hello():
     print("Hello, World!")
