@@ -1017,7 +1017,6 @@ end, function(float)
         {"label", pandoc.RawInline("typst", "<" .. float.identifier .. ">")},
         {"position", pandoc.RawInline("typst", caption_location)},
         {"supplement", supplement},
-        {"subrefnumbering", "1a"},
         {"subcapnumbering", "(a)"},
         _quarto.modules.typst.as_typst_content(content)
       }, false))
