@@ -1,3 +1,8 @@
+---
+_quarto:
+  tests: {}
+---
+
 # Introduction {#sec-intro}
 
 This is the first chapter of the book. The foundations of modern computing draw from seminal work by @turing1950 on machine intelligence.
