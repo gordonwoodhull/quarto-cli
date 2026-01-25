@@ -40,8 +40,8 @@ _quarto:
           - "#ref\\(<sec-methods>, supplement: \\[Chapter\\]\\)"
           - "A plot of the cars dataset"
           - "Sample data table"
-          - "#cite\\(<knuth84>"
-          - '#bibliography\(\("references\.bib"\)\)'
+          # With citeproc: true, Pandoc handles citations instead of Typst's native #cite()
+          # so we don't test for #cite or #bibliography in the .typ file
           - "#part\\[Part I: Getting Started\\]"
           - "#part\\[Part II: Advanced Topics\\]"
           - '#show: appendices\.with\("Appendices", hide-parent: true\)'
@@ -239,10 +239,15 @@ _quarto:
           - "See Listing 2\\.1 for an efficient sorting algorithm"
           - "See Listing A\\.1 for an appendix code example"
           - "See Listing 1\\.1 and Listing 1\\.2 from Chapter 1\\."
-          # Bibliography aggregation tests - verify references from across chapters appear in order
-          - "\\[4\\].*J\\. McCarthy.*Recursive Functions"
-          - "\\[8\\].*E\\. F\\. Codd.*Relational Model"
-          - "\\[17\\].*L\\. Lamport.*Time, Clocks"
+          # Bibliography aggregation tests - with citeproc, uses author-date format
+          - "McCarthy, John.*1960.*Recursive Functions"
+          - "Codd, Edgar F.*1970.*Relational Model"
+          - "Lamport, Leslie.*1978.*Time, Clocks"
+          # Inline citation tests - citeproc renders as Author (Year)
+          - "Turing \\(1950\\) on machine intelligence"
+          - "McCarthy \\(1960\\) inspired this classification"
+          - "Codd \\(1970\\) informs our approach"
+          - "Lamport \\(1978\\) for temporal considerations"
 ---
 
 # Preface {.unnumbered}

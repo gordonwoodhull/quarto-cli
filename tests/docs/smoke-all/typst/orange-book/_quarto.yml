@@ -21,6 +21,7 @@ book:
     - appendix-b.qmd
 
 bibliography: references.bib
+citeproc: true
 
 crossref:
   custom:
