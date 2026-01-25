@@ -19,6 +19,7 @@ book:
   appendices:
     - appendix.qmd
     - appendix-b.qmd
+  references: references.qmd
 
 bibliography: references.bib
 citeproc: true
