@@ -102,9 +102,9 @@ _quarto:
           - "#ref\\(<eq-pythagorean>, supplement: \\[Equation\\]\\)"
           - 'math\.equation\(block: true, numbering: quarto-equation-numbering'
           - 'counter\(math\.equation\)\.update\(0\)'
-          - "#import \"@preview/ctheorems:1\\.1\\.3\""
-          - "#show: thmrules"
-          - 'thmbox\("theorem".*\.\.quarto-thmbox-args'
+          - "#import \"@preview/theorion:0\\.4\\.1\": make-frame"
+          - '#show: show-theorem'
+          - 'make-frame\(\s*"theorem"'
           - "<thm-pythagorean>"
           - "<lem-triangle>"
           - "<thm-calculus>"
@@ -223,6 +223,11 @@ _quarto:
           - "See Theorem 2\\.1"
           - "See Definition 2\\.1 for the definition"
           - "Recall Theorem 1\\.1 and Lemma 1\\.1 from Chapter 1\\."
+          # Critical: Appendix theorem should be A.1, not continuing from chapters
+          - "Theorem A\\.1.*Example Appendix Theorem"
+          # Critical: Appendix references to earlier chapter theorems should show original numbering
+          # This tests the fix for ctheorems bug where cross-refs resolved at reference time
+          - "Reference Theorem 1\\.1 from Chapter 1\\.\\s+and Theorem 2\\.1\\s+from Chapter 2\\."
           - "Listing 1\\.1.*Hello World"
           - "Listing 1\\.2.*Fibonacci"
           - "Listing 2\\.1.*Quicksort"

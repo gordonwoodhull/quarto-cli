@@ -19,9 +19,9 @@ _quarto:
         - []
     typst:
       ensureTypstFileRegexMatches:
-        - 
+        -
           - "#ref\\(<thm-line>, supplement: \\[Theorem\\]\\)"
-          - "#theorem\\(\"Line\"\\)"
+          - "#theorem\\(title: \"Line\"\\)"
         - []
     markdown:
       ensureFileRegexMatches:

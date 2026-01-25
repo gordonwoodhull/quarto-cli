@@ -98,16 +98,24 @@ local letted_typst_theorem = {}
 local function ensure_typst_theorems(reftype)
   if not included_typst_theorems then
     included_typst_theorems = true
-    quarto.doc.include_text("in-header", "#import \"@preview/ctheorems:1.1.3\": *")
-    quarto.doc.include_text("in-header", "#show: thmrules")
+    quarto.doc.include_text("in-header", "#import \"@preview/theorion:0.4.1\": make-frame")
   end
   if not letted_typst_theorem[reftype] then
     letted_typst_theorem[reftype] = true
     local theorem_type = theorem_types[reftype]
-    -- Use quarto-thmbox-args defined in template
-    -- (empty dict for articles, (base: "heading", base_level: 1) for books)
-    quarto.doc.include_text("in-header", "#let " .. theorem_type.env .. " = thmbox(\"" ..
-     theorem_type.env .. "\", \"" .. titleString(reftype, theorem_type.title) .. "\", ..quarto-thmbox-args)")
+    local title = titleString(reftype, theorem_type.title)
+    -- Use theorion's make-frame function
+    -- quarto-theorem-inherited-levels is defined in numbering.typ (0 for articles, 1 for most books, 2 for min-book)
+    -- quarto-theorem-render is defined in numbering.typ for custom styling
+    quarto.doc.include_text("in-header", "#let (" .. theorem_type.env .. "-counter, " .. theorem_type.env .. "-box, " ..
+      theorem_type.env .. ", show-" .. theorem_type.env .. ") = make-frame(\n" ..
+      "  \"" .. theorem_type.env .. "\",\n" ..
+      "  text(weight: \"bold\")[" .. title .. "],\n" ..
+      "  inherited-levels: quarto-theorem-inherited-levels,\n" ..
+      "  numbering: quarto-theorem-numbering,\n" ..
+      "  render: quarto-theorem-render,\n" ..
+      ")")
+    quarto.doc.include_text("in-header", "#show: show-" .. theorem_type.env)
   end
 end
 
@@ -166,7 +174,7 @@ end, function(thm)
     ensure_typst_theorems(type)
     local preamble = pandoc.Plain({pandoc.RawInline("typst", "#" .. theorem_type.env .. "(")})
     if name and #name > 0 then
-      preamble.content:insert(pandoc.RawInline("typst", '"'))
+      preamble.content:insert(pandoc.RawInline("typst", 'title: "'))
       tappend(preamble.content, name)
       preamble.content:insert(pandoc.RawInline("typst", '"'))
     end

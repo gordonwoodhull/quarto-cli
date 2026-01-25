@@ -8,7 +8,7 @@ local function is_typst_book()
          file_state.file ~= nil
 end
 
-return {
+local header_filter = {
   Header = function(el)
     local file_state = quarto.doc.file_metadata()
 
@@ -36,8 +36,8 @@ return {
     if bookItemType == "appendix" then
       -- First appendix triggers the show rule with localized "Appendices" title
       if file.bookItemNumber == 1 or file.bookItemNumber == nil then
-        -- Get localized title from language settings (param is available via _G in extension filters)
-        local language = _G.param and _G.param("language", nil) or nil
+        -- Get localized title from language settings
+        local language = quarto.doc.language
         local appendicesTitle = (language and language["section-title-appendices"]) or "Appendices"
 
         -- Use hide-parent: true to work around orange-book bug where unnumbered headings
@@ -60,3 +60,10 @@ return {
     return nil
   end
 }
+
+-- Combine with file_metadata_filter so book metadata markers are parsed
+-- during this filter's document traversal (needed for bookItemType, etc.)
+return quarto.utils.combineFilters({
+  quarto.utils.file_metadata_filter(),
+  header_filter
+})
