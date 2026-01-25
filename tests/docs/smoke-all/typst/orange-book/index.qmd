@@ -250,10 +250,10 @@ _quarto:
           - "Lamport \\(1978\\) for temporal considerations"
       ensurePdfTextPositions:
         - # Code listings should be left-aligned with body text, not centered
-          - subject: "hello():"
+          - subject: "ALIGNTEST_MARKER"
             relation: leftAligned
             object: "LISTING_BODY_ALIGN_TEST"
-            tolerance: 25
+            tolerance: 15
 ---
 
 # Preface {.unnumbered}
