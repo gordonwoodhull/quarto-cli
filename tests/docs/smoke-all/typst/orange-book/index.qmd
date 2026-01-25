@@ -100,7 +100,7 @@ _quarto:
           - "#ref\\(<eq-newton>, supplement: \\[Equation\\]\\)"
           - "#ref\\(<eq-quadratic>, supplement: \\[Equation\\]\\)"
           - "#ref\\(<eq-pythagorean>, supplement: \\[Equation\\]\\)"
-          - 'math\.equation\(block: true, numbering: quarto-equation-numbering'
+          - 'math\.equation\(block: true, numbering: equation-numbering'
           - 'counter\(math\.equation\)\.update\(0\)'
           - "#import \"@preview/theorion:0\\.4\\.1\": make-frame, cosmos"
           - "#import cosmos\\.fancy: fancy-box"

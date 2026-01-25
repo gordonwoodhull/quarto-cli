@@ -92,7 +92,7 @@
       {
         show figure.where(kind: kind): set figure(numbering: _ => {
           let subfloat-idx = quartosubfloatcounter.get().first() + 1
-          quarto-subfloat-numbering(n-super, subfloat-idx)
+          subfloat-numbering(n-super, subfloat-idx)
         })
         show figure.where(kind: kind): set figure.caption(position: position)
 

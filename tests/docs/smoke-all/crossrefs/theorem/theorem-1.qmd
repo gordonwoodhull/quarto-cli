@@ -23,7 +23,7 @@ _quarto:
           - "#ref\\(<thm-line>, supplement: \\[Theorem\\]\\)"
           - "#theorem\\(title: \"Line\"\\)"
           - "#import \"@preview/theorion:0\\.4\\.1\": make-frame"
-          - "quarto-simple-theorem-render"
+          - "simple-theorem-render"
         -
           - "cosmos"
           - "fancy-box"

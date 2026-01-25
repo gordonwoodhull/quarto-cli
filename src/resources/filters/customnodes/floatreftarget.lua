@@ -1108,7 +1108,7 @@ end, function(float)
   end
 
   if float.has_subfloats then
-    -- subrefnumbering defaults to quarto-subfloat-numbering in quarto_super
+    -- subrefnumbering defaults to subfloat-numbering in quarto_super
     -- (simple "1a" for articles, chapter-based "1.1a" for books)
     return _quarto.format.typst.function_call("quarto_super", {
       {"kind", kind},

@@ -220,10 +220,10 @@ function make_typst_figure(tbl)
     pandoc.RawInline("typst", "]), "),
     pandoc.RawInline("typst", "kind: \"" .. kind .. "\", "),
     pandoc.RawInline("typst", supplement and ("supplement: \"" .. supplement .. "\", ") or ""),
-    -- For callouts, use quarto-callout-numbering variable defined in template
+    -- For callouts, use callout-numbering variable defined in template
     -- (simple "1" for articles, chapter-based "1.1" with appendix support for books)
     pandoc.RawInline("typst", (kind and kind:find("^quarto%-callout%-")) and
-      "numbering: quarto-callout-numbering, " or
+      "numbering: callout-numbering, " or
       (numbering and ("numbering: \"" .. numbering .. "\", ") or "")),
     pandoc.RawInline("typst", ")"),
     pandoc.RawInline("typst", identifier and ("<" .. identifier .. ">") or ""),
@@ -331,7 +331,7 @@ end, function(layout)
   local is_margin = hasMarginColumn(layout.float)
 
   if has_subfloats then
-    -- subrefnumbering defaults to quarto-subfloat-numbering in quarto_super
+    -- subrefnumbering defaults to subfloat-numbering in quarto_super
     -- (simple "1a" for articles, chapter-based "1.1a" for books)
     local super_call = _quarto.format.typst.function_call("quarto_super", {
       {"kind", kind},

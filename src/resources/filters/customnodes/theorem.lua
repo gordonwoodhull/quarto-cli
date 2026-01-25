@@ -149,7 +149,7 @@ local function ensure_typst_theorems(reftype)
 #import "@preview/theorion:0.4.1": make-frame
 
 // Simple theorem render: bold title with period, italic body
-#let quarto-simple-theorem-render(prefix: none, title: "", full-title: auto, body) = {
+#let simple-theorem-render(prefix: none, title: "", full-title: auto, body) = {
   if full-title != "" and full-title != auto and full-title != none {
     strong[#full-title.]
     h(0.5em)
@@ -188,7 +188,7 @@ local function ensure_typst_theorems(reftype)
       local color = theme_colors[reftype] or "gray"
       render_code = "  render: rainbow-render.with(fill: " .. color .. ".darken(20%)),\n"
     else -- simple
-      render_code = "  render: quarto-simple-theorem-render,\n"
+      render_code = "  render: simple-theorem-render,\n"
     end
 
     -- Use theorion's make-frame with appropriate render
@@ -196,8 +196,8 @@ local function ensure_typst_theorems(reftype)
       theorem_type.env .. ", show-" .. theorem_type.env .. ") = make-frame(\n" ..
       "  \"" .. theorem_type.env .. "\",\n" ..
       "  text(weight: \"bold\")[" .. title .. "],\n" ..
-      "  inherited-levels: quarto-theorem-inherited-levels,\n" ..
-      "  numbering: quarto-theorem-numbering,\n" ..
+      "  inherited-levels: theorem-inherited-levels,\n" ..
+      "  numbering: theorem-numbering,\n" ..
       render_code ..
       ")")
     quarto.doc.include_text("in-header", "#show: show-" .. theorem_type.env)
