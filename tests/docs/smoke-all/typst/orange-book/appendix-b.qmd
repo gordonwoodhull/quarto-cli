@@ -1,6 +1,6 @@
 # Supplementary Data {#sec-supplementary}
 
-This is the second appendix containing supplementary data and additional examples.
+This is the second appendix containing supplementary data and additional examples. The tidy data approach of @wickham2014 provides a practical foundation.
 
 ## Additional Figures {#sec-additional-figures}
 

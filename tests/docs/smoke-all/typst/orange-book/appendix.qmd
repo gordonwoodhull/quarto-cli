@@ -1,6 +1,6 @@
 # Additional Resources {#sec-resources}
 
-This appendix contains additional resources and supplementary material.
+This appendix contains additional resources and supplementary material. The random forests approach of @breiman2001 offers fresh insights.
 
 ## Data Sources {#sec-data-sources}
 
@@ -33,7 +33,7 @@ A panel of sub-figures in the appendix demonstrating letter-based numbering.
 
 ::: {#wrn-appendix .callout-warning}
 ## Appendix Warning
-This is a warning callout in the appendix. It should be numbered Warning A.1, not Warning 1.1 or Warning 4.1. See @wrn-appendix to reference this appendix warning.
+This is a warning callout in the appendix. It should be numbered Warning A.1, not Warning 1.1 or Warning 4.1. See @wrn-appendix to reference this appendix warning. The time series approach of @box1976 is also relevant.
 :::
 
 ::: {#tip-appendix .callout-tip}
@@ -63,7 +63,7 @@ $$
 a^2 + b^2 = c^2
 $$ {#eq-pythagorean}
 
-See @eq-pythagorean for right triangles. This should be Equation A.1.
+See @eq-pythagorean for right triangles. This should be Equation A.1. The FFT foundations are explored in @cooley1965.
 
 Cross-chapter reference: Recall @eq-einstein from @sec-intro and @eq-quadratic from @sec-methods.
 

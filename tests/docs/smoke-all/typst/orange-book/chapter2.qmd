@@ -1,6 +1,6 @@
 # Methods {#sec-methods}
 
-This is the second chapter of the book. As discussed in @sec-intro, we now present our methods.
+This is the second chapter of the book. As discussed in @sec-intro, we now present our methods. The relational model described by @codd1970 informs our approach.
 
 The fundamental problem with any bureaucratic methodology is that it must, by its very nature, assume that the person filling out the forms is lying. This is not because bureaucrats are inherently suspicious people, but because the forms themselves were designed by committees who assumed that clarity was a luxury that could not be afforded in these troubled times.
 
@@ -21,11 +21,11 @@ Some content in @sec-tables. See @tbl-data for sample data.
 
 ## Cross-references {#sec-cross-references}
 
-Some content in @sec-cross-references. Refer back to @fig-cars and @tbl-data.
+Some content in @sec-cross-references. Refer back to @fig-cars and @tbl-data. As @breiman2001b observed, there are two cultures in statistical modeling.
 
 ## Sub-figures {#sec-sub-figures}
 
-See @fig-panel for a panel of sub-figures, or @fig-panel-a and @fig-panel-b individually.
+See @fig-panel for a panel of sub-figures, or @fig-panel-a and @fig-panel-b individually. Local regression techniques are explored in @cleveland1988.
 
 ::: {#fig-panel layout-ncol=2}
 
@@ -61,7 +61,7 @@ Vogon poetry is of course, the third worst in the universe. See @nte-vogon to re
 ::: {#dino-raptor}
 **Velociraptor**
 
-This dinosaur demonstrates clever pack hunting behavior. See @dino-raptor to self-reference.
+This dinosaur demonstrates clever pack hunting behavior, reminiscent of @hoare1978's communicating processes. See @dino-raptor to self-reference.
 :::
 
 We can also reference dinosaurs from the previous chapter: see @dino-steg and @dino-trex from @sec-intro.
@@ -74,7 +74,7 @@ $$
 x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
 $$ {#eq-quadratic}
 
-Use @eq-quadratic to solve quadratic equations. This should be Equation 2.1.
+Use @eq-quadratic to solve quadratic equations. This should be Equation 2.1. The resampling elegance here echoes @efron1979's bootstrap methods.
 
 Cross-chapter reference: Recall @eq-einstein from @sec-intro and @eq-newton.
 
@@ -107,6 +107,6 @@ def quicksort(arr):
     return quicksort(left) + middle + quicksort(right)
 ```
 
-See @lst-quicksort for an efficient sorting algorithm. This should be Listing 2.1.
+See @lst-quicksort for an efficient sorting algorithm. This should be Listing 2.1. Modern implementations benefit from regularization insights in @tibshirani1996.
 
 Cross-chapter references: See @lst-hello and @lst-fibonacci from @sec-intro.

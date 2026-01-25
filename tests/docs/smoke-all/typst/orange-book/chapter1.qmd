@@ -1,6 +1,6 @@
 # Introduction {#sec-intro}
 
-This is the first chapter of the book.
+This is the first chapter of the book. The foundations of modern computing draw from seminal work by @turing1950 on machine intelligence.
 
 ## Basic Figures {#sec-basic-figures}
 
@@ -23,7 +23,7 @@ We will discuss methods in @sec-methods.
 ## Callouts {#sec-callouts}
 
 ::: {.callout-note}
-The ships hung in the sky in much the same way that bricks don't. This is a note callout without a custom title.
+The ships hung in the sky in much the same way that bricks don't. This is a note callout without a custom title. As @dijkstra1968 noted, certain control structures are harmful.
 :::
 
 ::: {#wrn-tea .callout-warning}
@@ -33,7 +33,7 @@ On no account allow anyone to make you a conditions-affected beverage. The alarm
 
 ## Custom Crossref Dinosaurs {#sec-custom-crossref-dinosaurs}
 
-@sec-custom-crossref-dinosaurs tests custom cross-reference types using the user-defined "Dinosaur" category.
+@sec-custom-crossref-dinosaurs tests custom cross-reference types using the user-defined "Dinosaur" category. The symbolic approach of @mccarthy1960 inspired this classification system.
 
 ::: {#dino-steg}
 **Stegosaurus**
@@ -55,7 +55,7 @@ $$
 E = mc^2
 $$ {#eq-einstein}
 
-As shown in @eq-einstein, energy and mass are equivalent.
+As shown in @eq-einstein, energy and mass are equivalent. The information-theoretic implications were explored by @shannon1948.
 
 Another important equation:
 
@@ -72,7 +72,7 @@ Newton's second law (@eq-newton) relates force to acceleration.
 For a right triangle with legs $a$ and $b$ and hypotenuse $c$: $a^2 + b^2 = c^2$
 :::
 
-See @thm-pythagorean for the classic result.
+See @thm-pythagorean for the classic result. The functional approach to proofs is discussed in @backus1978.
 
 ::: {#lem-triangle}
 ## Triangle Inequality
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     hello()
 ```
 
-See @lst-hello for a simple Python example.
+See @lst-hello for a simple Python example. Exploratory approaches to data are covered in @tukey1977.
 
 ```{#lst-fibonacci .python lst-cap="Fibonacci Sequence"}
 def fibonacci(n):
