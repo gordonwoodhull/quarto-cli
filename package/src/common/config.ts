@@ -7,6 +7,7 @@
 
 import { join } from "../../../src/deno_ral/path.ts";
 import { info } from "../../../src/deno_ral/log.ts";
+import { existsSync } from "../../../src/deno_ral/fs.ts";
 
 import { getEnv } from "../util/utils.ts";
 
@@ -58,6 +59,20 @@ export function readConfiguration(
 
   const root = getEnv("QUARTO_ROOT");
   const src = getEnv("QUARTO_SRC_PATH");
+
+  // If version is incomplete (e.g., "1.9" from configuration file),
+  // try to read the full version from version.txt
+  if (version && version.split(".").length < 3) {
+    const versionTxtPath = join(root, "version.txt");
+    if (existsSync(versionTxtPath)) {
+      const versionTxt = Deno.readTextFileSync(versionTxtPath).trim();
+      // Only use version.txt if it starts with the same major.minor
+      // (e.g., version="1.9" and versionTxt="1.9.17")
+      if (versionTxt.startsWith(version + ".")) {
+        version = versionTxt;
+      }
+    }
+  }
 
   const pkg = getEnv("QUARTO_PACKAGE_PATH") || "package";
   const out = join(pkg, getEnv("QUARTO_OUT_DIR") || "out");
