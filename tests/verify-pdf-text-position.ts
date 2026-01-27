@@ -848,7 +848,7 @@ export const ensurePdfTextPositions = (
                 (a.byMax !== undefined ? ` (required <= ${a.byMax}pt)` : "")
               : "";
             errors.push(
-              `Position assertion failed: "${subjectKey}" is NOT ${a.relation} "${objectKey}".` +
+              `Position assertion failed (page ${subjectResolved.bbox.page}): "${subjectKey}" is NOT ${a.relation} "${objectKey}".` +
               ` Subject.${result.subjectEdge}=${result.subjectValue.toFixed(1)},` +
               ` Object.${result.objectEdge}=${result.objectValue.toFixed(1)}.${distanceInfo}` +
               (result.failureReason ? ` (${result.failureReason})` : ""),
@@ -867,7 +867,7 @@ export const ensurePdfTextPositions = (
 
           if (!result.passed) {
             errors.push(
-              `Position assertion failed: "${subjectKey}" is NOT ${a.relation} "${objectKey}".` +
+              `Position assertion failed (page ${subjectResolved.bbox.page}): "${subjectKey}" is NOT ${a.relation} "${objectKey}".` +
               ` Subject.${result.subjectEdge}=${result.subjectValue.toFixed(1)},` +
               ` Object.${result.objectEdge}=${result.objectValue.toFixed(1)}.` +
               ` Difference: ${result.difference.toFixed(1)}pt (tolerance: ${a.tolerance}pt)`,
@@ -930,7 +930,7 @@ export const ensurePdfTextPositions = (
 
         if (passed) {
           errors.push(
-            `Negative assertion failed: "${subjectKey}" IS ${a.relation} "${objectKey}" (expected NOT to be). ` +
+            `Negative assertion failed (page ${subjectResolved.bbox.page}): "${subjectKey}" IS ${a.relation} "${objectKey}" (expected NOT to be). ` +
             resultInfo,
           );
         }
