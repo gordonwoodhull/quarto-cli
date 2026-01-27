@@ -5,7 +5,9 @@
  * Extracts and displays the PDF structure tree (tag hierarchy) with MCIDs.
  * Useful for debugging ensurePdfTextPositions issues.
  *
- * Usage: deno run --allow-read --allow-env tools/pdf-tag-tree.ts <pdf-file> [search-text]
+ * Usage: quarto run tools/pdf-tag-tree.ts <pdf-file> <search-text>
+ *
+ * The search-text is required and determines which page's structure tree to display.
  */
 
 import * as pdfjsLib from "npm:pdfjs-dist@4.4.168/legacy/build/pdf.mjs";
@@ -73,7 +75,12 @@ function buildMcidPaths(
 }
 
 // Pretty print the structure tree
-function printStructTree(node: StructTreeNode, indent: number = 0, maxDepth: number = 10): void {
+function printStructTree(
+  node: StructTreeNode,
+  indent: number = 0,
+  maxDepth: number = 10,
+  highlightMcids: Set<string> = new Set()
+): void {
   if (indent > maxDepth) {
     console.log(" ".repeat(indent * 2) + "...(truncated)");
     return;
@@ -97,10 +104,12 @@ function printStructTree(node: StructTreeNode, indent: number = 0, maxDepth: num
   }
 
   const mcidStr = mcids.length > 0 ? ` (MCIDs: ${mcids.join(", ")})` : "";
-  console.log(" ".repeat(indent * 2) + `<${node.role}>${attrStr}${mcidStr}`);
+  const hasMatch = mcids.some(id => highlightMcids.has(id));
+  const matchMarker = hasMatch ? "  # <-- found" : "";
+  console.log(" ".repeat(indent * 2) + `<${node.role}>${attrStr}${mcidStr}${matchMarker}`);
 
   for (const child of childNodes) {
-    printStructTree(child, indent + 1, maxDepth);
+    printStructTree(child, indent + 1, maxDepth, highlightMcids);
   }
 }
 
@@ -108,12 +117,10 @@ async function main() {
   const file = Deno.args[0];
   const searchText = Deno.args[1];
 
-  if (!file) {
-    console.error("Usage: pdf-tag-tree.ts <pdf-file> [search-text]");
+  if (!file || !searchText) {
+    console.error("Usage: quarto run tools/pdf-tag-tree.ts <pdf-file> <search-text>");
     Deno.exit(1);
   }
-
-  console.log(`Loading PDF: ${file}\n`);
 
   const data = await Deno.readFile(file);
   const pdf = await pdfjsLib.getDocument({
@@ -123,103 +130,99 @@ async function main() {
     useSystemFonts: true,
   }).promise;
 
-  console.log(`PDF has ${pdf.numPages} page(s)\n`);
-
-  // Collect all text items with their MCIDs
-  const allTextItems: { str: string; mcid: string | null; page: number; x: number; y: number }[] = [];
+  // First pass: find which page contains the search text
+  let foundPage: number | null = null;
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1.0 });
-
-    // Get structure tree for this page
-    const structTree = await page.getStructTree();
-
-    if (pageNum === 1) {
-      console.log("=== STRUCTURE TREE (Page 1) ===\n");
-      if (structTree) {
-        printStructTree(structTree as StructTreeNode, 0, 15);
-      } else {
-        console.log("No structure tree found (PDF may not be tagged)");
-      }
-      console.log("\n");
-    }
-
-    // Build MCID paths for this page
-    const mcidPaths = structTree ? buildMcidPaths(structTree as StructTreeNode) : new Map();
-
-    // Get text content
     const textContent = await page.getTextContent({ includeMarkedContent: true });
 
-    let currentMcid: string | null = null;
-
     for (const item of textContent.items) {
-      if (isTextMarkedContent(item)) {
-        // pdfjs uses "beginMarkedContentProps" (not "beginMarkedContent")
-        const mcidValue = (item as any).id;
-        if (item.type === "beginMarkedContentProps" && mcidValue !== undefined) {
-          currentMcid = mcidValue;
-        } else if (item.type === "endMarkedContent") {
-          currentMcid = null;
-        }
-      } else {
+      if (!isTextMarkedContent(item)) {
         const textItem = item as TextItem;
-        const x = textItem.transform[4];
-        const y = textItem.transform[5];
-        allTextItems.push({
-          str: textItem.str,
-          mcid: currentMcid,
-          page: pageNum,
-          x,
-          y
-        });
+        if (textItem.str.includes(searchText)) {
+          foundPage = pageNum;
+          break;
+        }
       }
     }
+    if (foundPage) break;
+  }
 
-    // If searching for specific text, show MCID info
-    if (searchText && pageNum === 1) {
-      console.log(`=== TEXT ITEMS CONTAINING "${searchText}" ===\n`);
+  if (!foundPage) {
+    console.error(`Error: "${searchText}" not found in PDF`);
+    Deno.exit(1);
+  }
 
-      for (const item of textContent.items) {
-        if (isTextMarkedContent(item)) {
-          const mcidValue = (item as any).id;
-          if (item.type === "beginMarkedContentProps" && mcidValue !== undefined) {
-            currentMcid = mcidValue;
-          } else if (item.type === "endMarkedContent") {
-            currentMcid = null;
-          }
-        } else {
-          const textItem = item as TextItem;
-          if (textItem.str.includes(searchText)) {
-            const x = textItem.transform[4];
-            const y = textItem.transform[5];
-            const pathInfo = currentMcid ? mcidPaths.get(currentMcid) : null;
+  console.log(`Found "${searchText}" on page ${foundPage}\n`);
 
-            console.log(`Text: "${textItem.str}"`);
-            console.log(`  MCID: ${currentMcid}`);
-            console.log(`  Position: x=${x.toFixed(1)}, y=${y.toFixed(1)}`);
-            if (pathInfo) {
-              console.log(`  Tag path: ${pathInfo.path.join(" > ")}`);
-              if (Object.keys(pathInfo.attrs).length > 0) {
-                console.log(`  Attrs: ${JSON.stringify(pathInfo.attrs)}`);
-              }
-            }
-            console.log();
-          }
-        }
+  // Get the page with the search text
+  const page = await pdf.getPage(foundPage);
+  const structTree = await page.getStructTree();
+
+  // Build MCID paths for this page
+  const mcidPaths = structTree ? buildMcidPaths(structTree as StructTreeNode) : new Map();
+
+  // Get text content and find MCIDs containing the search text
+  const textContent = await page.getTextContent({ includeMarkedContent: true });
+
+  // First pass: collect MCIDs that contain the search text
+  const matchingMcids = new Set<string>();
+  let currentMcid: string | null = null;
+
+  for (const item of textContent.items) {
+    if (isTextMarkedContent(item)) {
+      const mcidValue = (item as any).id;
+      if (item.type === "beginMarkedContentProps" && mcidValue !== undefined) {
+        currentMcid = mcidValue;
+      } else if (item.type === "endMarkedContent") {
+        currentMcid = null;
+      }
+    } else {
+      const textItem = item as TextItem;
+      if (textItem.str.includes(searchText) && currentMcid !== null) {
+        matchingMcids.add(currentMcid);
       }
     }
   }
 
-  // Show all text items in code blocks (looking for Figure or Code tags)
-  if (!searchText) {
-    console.log("\n=== SAMPLE TEXT ITEMS WITH MCIDs ===\n");
+  console.log(`=== STRUCTURE TREE (Page ${foundPage}) ===\n`);
+  if (structTree) {
+    printStructTree(structTree as StructTreeNode, 0, 15, matchingMcids);
+  } else {
+    console.log("No structure tree found (PDF may not be tagged)");
+  }
+  console.log("\n");
 
-    let count = 0;
-    for (const item of allTextItems) {
-      if (item.str.trim() && count < 30) {
-        console.log(`"${item.str.substring(0, 40).padEnd(40)}" | MCID: ${(item.mcid || "none").padEnd(12)} | x: ${item.x.toFixed(1).padStart(6)} | y: ${item.y.toFixed(1).padStart(6)}`);
-        count++;
+  console.log(`=== TEXT ITEMS CONTAINING "${searchText}" ===\n`);
+
+  currentMcid = null;
+
+  for (const item of textContent.items) {
+    if (isTextMarkedContent(item)) {
+      const mcidValue = (item as any).id;
+      if (item.type === "beginMarkedContentProps" && mcidValue !== undefined) {
+        currentMcid = mcidValue;
+      } else if (item.type === "endMarkedContent") {
+        currentMcid = null;
+      }
+    } else {
+      const textItem = item as TextItem;
+      if (textItem.str.includes(searchText)) {
+        const x = textItem.transform[4];
+        const y = textItem.transform[5];
+        const pathInfo = currentMcid ? mcidPaths.get(currentMcid) : null;
+
+        console.log(`Text: "${textItem.str}"`);
+        console.log(`  MCID: ${currentMcid}`);
+        console.log(`  Position: x=${x.toFixed(1)}, y=${y.toFixed(1)}`);
+        if (pathInfo) {
+          console.log(`  Tag path: ${pathInfo.path.join(" > ")}`);
+          if (Object.keys(pathInfo.attrs).length > 0) {
+            console.log(`  Attrs: ${JSON.stringify(pathInfo.attrs)}`);
+          }
+        }
+        console.log();
       }
     }
   }
