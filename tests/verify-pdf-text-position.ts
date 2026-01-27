@@ -943,9 +943,14 @@ export const ensurePdfTextPositions = (
 
       // Stage 9: Aggregate errors
       if (errors.length > 0) {
+        // Print detailed errors to stderr (stdout is captured by test framework)
+        console.error(`\nPDF position assertions failed in ${file}:`);
+        errors.forEach((e, i) => console.error(`  ${i + 1}. ${e}`));
+        console.error("");
+
         assert(
           false,
-          `PDF position assertions failed in ${file}:\n${errors.map((e, i) => `  ${i + 1}. ${e}`).join("\n")}`,
+          `PDF position assertions failed in ${file}: ${errors.length} error(s)`,
         );
       }
     },
