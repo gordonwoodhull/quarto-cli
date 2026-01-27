@@ -672,6 +672,7 @@ export const ensurePdfTextPositions = (
 
       // Stage 5: Find text items for each search text (must be unique, unless Decoration)
       const foundTexts = new Map<string, MarkedTextItem>();
+      const ambiguousTexts = new Set<string>();
       for (const searchText of searchTexts) {
         const matches = allTextItems.filter((t) => t.str.includes(searchText));
         if (matches.length === 1) {
@@ -681,6 +682,7 @@ export const ensurePdfTextPositions = (
           if (isDecoration(searchText)) {
             foundTexts.set(searchText, matches[0]);
           } else {
+            ambiguousTexts.add(searchText);
             errors.push(
               `Text "${searchText}" is ambiguous - found ${matches.length} matches. Use a more specific search string.`,
             );
@@ -718,7 +720,10 @@ export const ensurePdfTextPositions = (
       for (const searchText of searchTexts) {
         const textItem = foundTexts.get(searchText);
         if (!textItem) {
-          errors.push(`Text not found in PDF: "${searchText}"`);
+          // Don't report "not found" if we already reported "ambiguous"
+          if (!ambiguousTexts.has(searchText)) {
+            errors.push(`Text not found in PDF: "${searchText}"`);
+          }
           continue;
         }
 
