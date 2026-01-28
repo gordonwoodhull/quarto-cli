@@ -1,3 +1,10 @@
+---
+_quarto:
+  tests:
+    run:
+      skip: "Book chapter - only renders as part of full book"
+---
+
 # Additional Resources {#sec-resources}
 
 This appendix contains additional resources and supplementary material.

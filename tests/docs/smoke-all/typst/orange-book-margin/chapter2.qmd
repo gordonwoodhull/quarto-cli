@@ -1,3 +1,10 @@
+---
+_quarto:
+  tests:
+    run:
+      skip: "Book chapter - only renders as part of full book"
+---
+
 # Methods {#sec-methods}
 
 This is the second chapter of the book. Previousia foundations from @sec-intro inform our methodology.

@@ -1,3 +1,10 @@
+---
+_quarto:
+  tests:
+    run:
+      skip: "Book chapter - only renders as part of full book"
+---
+
 # Results {#sec-results}
 
 This is the third chapter of the book.

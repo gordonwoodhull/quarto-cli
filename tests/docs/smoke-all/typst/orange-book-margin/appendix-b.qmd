@@ -1,3 +1,10 @@
+---
+_quarto:
+  tests:
+    run:
+      skip: "Book chapter - only renders as part of full book"
+---
+
 # Supplementary Data {#sec-supplementary}
 
 This is the second appendix containing supplementary data and additional examples.
