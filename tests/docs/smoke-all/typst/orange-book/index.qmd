@@ -149,10 +149,12 @@ _quarto:
           # Section self-references
           - "Section 1\\.4 tests custom cross-reference types"
           - "Section 2\\.5 tests that custom cross-reference counters"
+          # Appendix section ref must appear inline (not fly to margin)
+          # This fails when orange-book appendices() numbering returns place()
+          - "Section A\\.5 phantasmagorically-validates"
           # Note: Orange-book appendix sections may use different numbering
           - "tests sub-figure numbering"
           - "tests callout numbering"
-          - "tests custom cross-reference numbering"
           # Cross-chapter references use @sec-intro/@sec-methods (rendered as "Chapter 1."/"Chapter 2.")
           - "see Dinosaur 1\\.1 from Chapter 1\\. and Dinosaur 2\\.1"
           - "Recall Equation \\(1\\.1\\) from Chapter 1\\. and Equation \\(1\\.2\\)"

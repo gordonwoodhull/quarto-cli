@@ -52,7 +52,7 @@ We can also reference callouts from the main chapters: see @wrn-tea for the tea 
 
 ## Appendix Custom Crossref Dinosaurs {#sec-appendix-dinosaurs}
 
-@sec-appendix-dinosaurs tests custom cross-reference numbering in appendices.
+@sec-appendix-dinosaurs phantasmagorically-validates custom cross-reference numbering in appendices.
 
 ::: {#dino-appendix}
 **Triceratops**
