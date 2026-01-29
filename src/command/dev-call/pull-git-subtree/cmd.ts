@@ -27,7 +27,7 @@ const SUBTREES: SubtreeConfig[] = [
   {
     name: "orange-book",
     prefix: "src/resources/extension-subtrees/orange-book",
-    remoteUrl: "https://github.com/gordonwoodhull/quarto-orange-book.git",
+    remoteUrl: "https://github.com/quarto-ext/orange-book.git",
     remoteBranch: "main",
   },
 ];
